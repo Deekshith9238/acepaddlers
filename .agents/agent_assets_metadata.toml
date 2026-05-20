@@ -24,3 +24,45 @@ id = "ECTAtuc7DPc4MVdN5Cs3s"
 uri = "file://artifacts/mockup-sandbox/public/images/camping.png"
 type = "image"
 title = "peaceful camping by river"
+
+[[generated]]
+id = "4VfIH1BhT-8N-G4YzGbD0"
+uri = "file://artifacts/mockup-sandbox/public/images/rafting-hero.png"
+type = "image"
+title = "Rafting action shot"
+
+[[generated]]
+id = "N6a_HRpuz8NbTH-nR9JFS"
+uri = "file://artifacts/mockup-sandbox/public/images/ghats-valley.png"
+type = "image"
+title = "Western Ghats valley"
+
+[[generated]]
+id = "zUoTzQOqRdZ27EMtHAvh3"
+uri = "file://artifacts/mockup-sandbox/public/images/forest-homestay.png"
+type = "image"
+title = "Forest homestay at dusk"
+
+[[generated]]
+id = "8PUs-73EBBMrN9P4F7x64"
+uri = "file://artifacts/mockup-sandbox/public/images/camp-karle.png"
+type = "image"
+title = "Intense camping scene"
+
+[[generated]]
+id = "t7b3N7h1vm4snQRozblFx"
+uri = "file://artifacts/mockup-sandbox/public/images/rafting-overhead.png"
+type = "image"
+title = "rafting overhead shot"
+
+[[generated]]
+id = "dYPYjT5OhaQ0qND6MpZeO"
+uri = "file://artifacts/mockup-sandbox/public/images/luxury-homestay.png"
+type = "image"
+title = "luxury rustic homestay"
+
+[[generated]]
+id = "ap0I6q2RzuG9J1lohQC3a"
+uri = "file://artifacts/mockup-sandbox/public/images/western-ghats-sunset.png"
+type = "image"
+title = "western ghats landscape sunset"
