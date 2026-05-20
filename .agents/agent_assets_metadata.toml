@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "UNK1-SLUULwdbhev_VVOq"
+uri = "file://artifacts/mockup-sandbox/public/images/hero-river.png"
+type = "image"
+title = "serene jungle river morning mist"
+
+[[generated]]
+id = "B2p8ka9YIEt5LoasuOcoU"
+uri = "file://artifacts/mockup-sandbox/public/images/homestay.png"
+type = "image"
+title = "karnataka homestay coffee plantation"
+
+[[generated]]
+id = "V1Krj_MYRcHJMGqp8jL2-"
+uri = "file://artifacts/mockup-sandbox/public/images/rafting.png"
+type = "image"
+title = "rafters navigating green canyon"
+
+[[generated]]
+id = "ECTAtuc7DPc4MVdN5Cs3s"
+uri = "file://artifacts/mockup-sandbox/public/images/camping.png"
+type = "image"
+title = "peaceful camping by river"
