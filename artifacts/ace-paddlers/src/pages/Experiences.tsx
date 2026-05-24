@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Waves, Home as HomeIcon, Tent, ArrowRight, ShieldCheck, Star, Clock } from "lucide-react";
+import { Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, ShieldCheck, Star, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import { C } from "@/data/constants";
 
@@ -8,63 +8,79 @@ const EXPERIENCES = [
     title: "White Water Rafting",
     icon: <Waves className="w-8 h-8" />,
     img: "/images/rafting.png",
-    heroImg: "/images/rafting-hero.png",
     tagline: "Navigate the roaring rapids of Karnataka's wildest rivers.",
     description:
-      "White water rafting with Ace Paddlers is the definitive Western Ghats adventure. We operate on two rivers — the Barpole in South Coorg and the Bhadra in Chikmagalur — both offering Grade II–III rapids through pristine jungle gorges. Our guides hold NOLS, WFR, and Rescue 3 swift-water certifications, ensuring every paddle stroke is guided by expertise built over two decades on the water.",
+      "White water rafting with Acepaddlers is the definitive Western Ghats adventure. We operate on two rivers — the Barapole in South Coorg and the Bhadra in Chikmagalur. Unlike conventional oar rafts where participants sit back while the guide controls the raft, we use paddle rafts and assisted paddle rafts, making every member an active part of the journey. Each raft accommodates up to eight participants along with a professional guide.",
     features: [
-      "Barpole river (South Coorg) and Bhadra river (Chikmagalur)",
-      "Grade II–III rapids — great for beginners and experienced rafters",
-      "NOLS, WFR & Rescue 3 certified guide team",
-      "International-grade safety equipment provided",
-      "Safety kayak escort on every run",
-      "Suitable from age 12 upward",
+      "Barapole river (South Coorg) — Grade I to IV rapids, monsoon season",
+      "Bhadra river (Chikmagalur) — year-round rafting including summer jacuzzis",
+      "Paddle rafts — every participant actively paddles, not just passengers",
+      "NOLS, WFR, CPR & Rescue 3 certified guide team",
+      "Detailed safety briefing before and during every trip",
+      "Zero-accident history over 20+ years of operation",
     ],
     tours: [
-      { slug: "barpole-rafting", title: "Barpole Rafting", price: "₹1,200" },
-      { slug: "bhadra-rafting", title: "Bhadra Rafting", price: "₹1,200" },
+      { slug: "barpole-rafting", title: "Barpole Rafting", price: "₹1,200", note: "Monsoon season, Grade I–IV" },
+      { slug: "bhadra-rafting", title: "Bhadra Rafting", price: "₹1,200", note: "Year-round, scenic Kudremukh" },
+    ],
+  },
+  {
+    title: "Harangi Dam Water Sports",
+    icon: <Anchor className="w-8 h-8" />,
+    img: "/images/western-ghats-sunset.png",
+    tagline: "Kayaking, speed boats, banana rides and paddle boating on Coorg's serene Kaveri backwaters.",
+    description:
+      "Nestled within the cool landscapes of Coorg, the serene backwaters of Harangi Dam offer a perfect blend of adventure, nature, and relaxation. Built across the majestic Kaveri River — the first dam on the river — Harangi is renowned for its shimmering waters, misty hills, and peaceful surroundings. At Acepaddlers, we bring excitement alive with a wide range of water sports available from 9 AM to 6 PM daily. Children above 5 are permitted; infants with adults are welcome on the speed boat.",
+    features: [
+      "Kayaking — glide through calm backwaters at your own pace",
+      "Speed Boat Ride — adrenaline rush across open sparkling water",
+      "Banana Boat Ride — fun-filled group adventure with laughter and splashes",
+      "Paddle Boating — peaceful ride perfect for families and couples",
+      "Elephant interaction nearby (9–11 AM and 4–6 PM)",
+      "Changing rooms, clean toilets and RO drinking water on-site",
+    ],
+    tours: [
+      { slug: "harangi-dam-water-sports", title: "Harangi Dam Water Sports", price: "From ₹300", note: "Open 9 AM – 6 PM daily" },
     ],
   },
   {
     title: "Eco Homestays",
     icon: <HomeIcon className="w-8 h-8" />,
     img: "/images/homestay.png",
-    heroImg: "/images/luxury-homestay.png",
     tagline: "Traditional Karnataka hospitality surrounded by pristine estates.",
     description:
       "Our network of eco homestays connects you with native Kodava and Karnataka families who open their homes, their kitchens, and their estates to travellers. Each stay is distinctive — a lakeside bungalow in Coorg, a hilltop retreat in the misty highlands, a century-old heritage planter's bungalow. What they share is warmth, authenticity, and food made entirely from estate-grown produce.",
     features: [
       "Three hand-picked homestay properties across Coorg",
-      "Locally owned and operated by native families",
+      "Locally owned and operated by native Kodava families",
       "All meals home-cooked with estate-grown produce",
       "Estate walks — coffee, cardamom, pepper, areca nut",
       "Bonfire evenings and village cultural experiences",
-      "Easily combinable with rafting and camping",
+      "Easily combinable with rafting or camping",
     ],
     tours: [
-      { slug: "lake-lounge-homestay", title: "Lake Lounge", price: "₹2,250" },
-      { slug: "misty-coorg-homestay", title: "Misty Coorg", price: "₹1,750" },
-      { slug: "thithimathi-heritage-stay", title: "Thithimathi Heritage", price: "₹2,500" },
+      { slug: "lake-lounge-homestay", title: "Lake Lounge", price: "₹2,250", note: "Lakeside, Coorg" },
+      { slug: "misty-coorg-homestay", title: "Misty Coorg", price: "₹1,750", note: "Hilltop, Badagarakeri" },
+      { slug: "thithimathi-heritage-stay", title: "Thithimathi Heritage", price: "₹2,500", note: "Century-old bungalow" },
     ],
   },
   {
     title: "Wilderness Camping",
     icon: <Tent className="w-8 h-8" />,
     img: "/images/camping.png",
-    heroImg: "/images/camping.png",
     tagline: "Sleep under stars by the riverside — raw, wild, unforgettable.",
     description:
-      "Our camping experiences take you away from everything — no city sounds, no screens, just the river, the forest, and the stars. Camp Karle in Hassan district sits at a pristine river confluence surrounded by ancient temple ruins. You'll sleep in quality tents, eat hot meals cooked over fire, and spend evenings around the bonfire sharing stories. Guided nature walks at dawn complete the experience.",
+      "Our camping experiences take you away from everything — no city sounds, no screens, just the river, the forest, and the stars. Camp Karle in Hassan district sits at a pristine river confluence surrounded by ancient temple ruins. You'll sleep in quality tents, eat hot meals cooked over fire, and spend evenings around the bonfire. Guided nature walks at dawn complete the experience.",
     features: [
       "Riverside campsite at scenic forest locations",
       "Quality tents, sleeping bags, and mats provided",
       "All meals cooked fresh on-site",
-      "Bonfire, stargazing, and swimming",
+      "Bonfire, stargazing, and river swimming",
       "Guided dawn nature walks",
       "Ancient temple ruins and forest trails nearby",
     ],
     tours: [
-      { slug: "camp-karle", title: "Camp Karle — Hassan", price: "₹1,500" },
+      { slug: "camp-karle", title: "Camp Karle — Hassan", price: "₹1,500", note: "Overnight, riverside" },
     ],
   },
 ];
@@ -83,7 +99,7 @@ export default function Experiences() {
             Our <span className="italic" style={{ color: "#a8dff0" }}>Experiences</span>
           </h1>
           <p className="text-lg max-w-2xl mx-auto" style={{ color: "rgba(168,223,240,0.80)" }}>
-            Three ways to experience the Western Ghats — each one crafted to take you deeper into the wild beauty of Karnataka.
+            Four ways to experience the Western Ghats — each one crafted to take you deeper into the wild beauty of Karnataka.
           </p>
         </div>
         <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none" style={{ height: "48px" }}>
@@ -95,8 +111,8 @@ export default function Experiences() {
 
       {/* Experience sections */}
       {EXPERIENCES.map((exp, i) => (
-        <section key={i} className={`py-24 px-6 ${i % 2 === 1 ? "" : ""}`}
-          style={{ backgroundColor: i % 2 === 1 ? C.muted : C.bg }}>
+        <section key={i} className="py-24 px-6"
+          style={{ backgroundColor: i % 2 === 0 ? C.bg : C.muted }}>
           <div className="max-w-7xl mx-auto">
             <div className={`grid lg:grid-cols-2 gap-16 items-center ${i % 2 === 1 ? "lg:grid-flow-dense" : ""}`}>
 
@@ -123,12 +139,12 @@ export default function Experiences() {
                 <div className="flex flex-wrap gap-3">
                   {exp.tours.map(t => (
                     <Link key={t.slug} href={`/tours/${t.slug}`}
-                      className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold border-2 transition-colors no-underline"
+                      className="inline-flex flex-col items-start rounded-xl px-5 py-3 text-sm font-semibold border-2 transition-colors no-underline"
                       style={{ borderColor: C.riverTeal, color: C.riverTeal }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
-                      {t.title} — {t.price}
-                      <ArrowRight className="w-4 h-4" />
+                      <span className="flex items-center gap-2">{t.title} — {t.price} <ArrowRight className="w-4 h-4" /></span>
+                      <span className="text-xs font-normal mt-0.5 opacity-70">{t.note}</span>
                     </Link>
                   ))}
                 </div>
@@ -145,7 +161,7 @@ export default function Experiences() {
         </section>
       ))}
 
-      {/* Why trust us */}
+      {/* Trust section */}
       <section className="py-24 px-6" style={{ backgroundColor: C.deepOcean }}>
         <div className="max-w-5xl mx-auto text-center text-white">
           <h2 className="text-4xl md:text-5xl mb-16" style={{ fontFamily: "'Fraunces', serif" }}>
@@ -153,7 +169,7 @@ export default function Experiences() {
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: <ShieldCheck className="w-8 h-8" />, stat: "Zero", label: "Incidents on record in 20+ years of operation" },
+              { icon: <ShieldCheck className="w-8 h-8" />, stat: "Zero", label: "Accidents on record in 20+ years of operation" },
               { icon: <Star className="w-8 h-8" />, stat: "NOLS", label: "National Outdoor Leadership School certified instructors" },
               { icon: <Clock className="w-8 h-8" />, stat: "87,000+", label: "Travellers hosted from across India and the world" },
             ].map((item, i) => (

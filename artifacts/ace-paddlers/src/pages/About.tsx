@@ -3,18 +3,43 @@ import Layout from "@/components/Layout";
 import { C } from "@/data/constants";
 
 const VALUES = [
-  { icon: <ShieldCheck className="w-6 h-6" />, title: "Safety First", desc: "Every guide holds NOLS, WFR, CPR, and Rescue 3 swift-water certifications. We have an unblemished safety record spanning more than two decades." },
-  { icon: <Heart className="w-6 h-6" />, title: "Love for Nature", desc: "We operate with deep respect for the Western Ghats ecosystem. Low-impact practices, minimal footprint, and a commitment to keeping the rivers clean." },
-  { icon: <Users className="w-6 h-6" />, title: "Community Rooted", desc: "Our homestays are run by native Kodava families. We employ local guides, use local produce, and ensure tourism benefits the communities we operate in." },
-  { icon: <Award className="w-6 h-6" />, title: "Authentic Experiences", desc: "We don't do tourist traps. Every experience we offer has been crafted to connect you genuinely with the landscape, the culture, and the people of Karnataka." },
-  { icon: <Star className="w-6 h-6" />, title: "Expert Guides", desc: "Our team are not just certified — they know every rock, eddy, and rapid on our rivers by name. Their local knowledge is your greatest asset on the water." },
-  { icon: <Anchor className="w-6 h-6" />, title: "Two Decades Strong", desc: "Founded over 20 years ago, Ace Paddlers is the oldest and most trusted adventure tourism company operating in the Western Ghats region of Karnataka." },
+  {
+    icon: <ShieldCheck className="w-6 h-6" />,
+    title: "Safety Is the Foundation",
+    desc: "Safety is not just a priority — it is the foundation of every experience we create. From state-of-the-art equipment to rigorously trained professionals, every adventure is designed in accordance with international safety standards and practices.",
+  },
+  {
+    icon: <Heart className="w-6 h-6" />,
+    title: "Passion for Adventure",
+    desc: "Adventure is not just about reaching destinations; it's about chasing the wild dreams that make your heart race. At Acepaddlers, that passion drives everything we do — from the routes we choose to the experiences we craft.",
+  },
+  {
+    icon: <Users className="w-6 h-6" />,
+    title: "Community & People",
+    desc: "Our guides, our homestay hosts, our local partners — the people of the Western Ghats are at the heart of every experience. We employ locally, source locally, and ensure that adventure tourism benefits the communities we operate in.",
+  },
+  {
+    icon: <Award className="w-6 h-6" />,
+    title: "NOLS Certified Excellence",
+    desc: "Our instructors are certified by the National Outdoor Leadership School (NOLS), a globally recognised leader in wilderness education based in the United States — the gold standard in outdoor professional training.",
+  },
+  {
+    icon: <Star className="w-6 h-6" />,
+    title: "Zero Accident History",
+    desc: "With an exceptional safety record and zero accident history to date, we continue to provide experiences where thrill meets trust — allowing you to explore the wild with complete peace of mind.",
+  },
+  {
+    icon: <Anchor className="w-6 h-6" />,
+    title: "20+ Years on the Water",
+    desc: "Founded over two decades ago, Acepaddlers is the most experienced adventure tourism company operating in the Western Ghats. We have safely hosted more than 87,000 travellers from around the world.",
+  },
 ];
 
-const TEAM = [
-  { name: "Rohan Thimmaiah", role: "Founder & Head Guide", cert: "NOLS · WFR · Rescue 3", img: "/images/rafting-hero.png" },
-  { name: "Kavitha Nair", role: "Operations Director", cert: "CPR · Swift-Water Rescue", img: "/images/homestay.png" },
-  { name: "Ajay Muthanna", role: "Lead Rafting Instructor", cert: "NOLS · WFR · 15 yrs experience", img: "/images/camping.png" },
+const CERTS = [
+  { title: "NOLS", subtitle: "National Outdoor Leadership School", desc: "Globally recognised wilderness education and outdoor skill training certification from the United States." },
+  { title: "WFR", subtitle: "Wilderness First Response", desc: "Advanced pre-hospital medical training specifically designed for remote wilderness and outdoor environments." },
+  { title: "CPR", subtitle: "Cardiopulmonary Resuscitation", desc: "Emergency life-saving response certification, mandatory for every member of our guide team." },
+  { title: "Rescue 3", subtitle: "Swift Water Rescue Professionals", desc: "Internationally recognised technical swift-water rescue certification — our guides are equipped for the most demanding conditions." },
 ];
 
 export default function About() {
@@ -25,23 +50,23 @@ export default function About() {
         <img src="/images/western-ghats-sunset.png" alt="Western Ghats"
           className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
-          style={{ background: "linear-gradient(to right, rgba(6,24,32,0.90) 0%, rgba(13,58,94,0.60) 60%, rgba(6,24,32,0.40) 100%)" }} />
+          style={{ background: "linear-gradient(to right, rgba(6,24,32,0.92) 0%, rgba(13,58,94,0.65) 60%, rgba(6,24,32,0.40) 100%)" }} />
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-44 pb-32 text-white">
           <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-4 block">
-            Our Story
+            Who We Are
           </span>
           <h1 className="text-5xl md:text-7xl font-medium mb-8 max-w-2xl leading-tight"
             style={{ fontFamily: "'Fraunces', serif" }}>
             Pioneers of the{" "}
             <span className="italic" style={{ color: "#a8dff0" }}>Western Ghats</span>
           </h1>
-          <p className="text-xl max-w-xl leading-relaxed" style={{ color: "rgba(168,223,240,0.85)" }}>
-            Anything that gets your heart racing is worth doing. With this simple belief, Ace Paddlers has been changing lives on the river for over twenty years.
+          <p className="text-xl max-w-2xl leading-relaxed" style={{ color: "rgba(168,223,240,0.85)" }}>
+            Adventure is not just about reaching destinations; it's about chasing the wild dreams that make your heart race.
           </p>
         </div>
       </section>
 
-      {/* Story */}
+      {/* Main story */}
       <section className="py-24 px-6" style={{ backgroundColor: C.bg }}>
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div className="relative">
@@ -60,19 +85,52 @@ export default function About() {
 
           <div>
             <h2 className="text-4xl md:text-5xl mb-8" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-              How it began
+              Our Story
             </h2>
             <div className="space-y-5 text-lg leading-relaxed" style={{ color: "#2e5a74" }}>
               <p>
-                Ace Paddlers was born on the banks of the Barpole river in South Coorg — a place where the jungle presses close to the water and the rapids sing. Our founder, a lifelong paddler and Coorg native, started with a single raft and an unshakeable belief: that the best way to truly know a place is to let a river take you through it.
+                At Acepaddlers, we turn wild dreams into unforgettable experiences. From thrilling water sports and serene camping escapes to breathtaking trekking expeditions, we curate adventures across India and Nepal with the support of our highly trained guides and dedicated staff.
               </p>
               <p>
-                Over two decades, that one raft became a fleet. The team grew from three friends to a network of NOLS-certified guides, WFR-trained first responders, and Rescue 3 swift-water professionals. Our home base expanded from Barpole to the Bhadra river in Chikmagalur, and from there to a network of eco homestays and riverside campsites across Karnataka.
+                With over <strong style={{ color: C.deepOcean }}>20 years of passionate service</strong>, we are proud to have hosted more than <strong style={{ color: C.deepOcean }}>87,000 travellers and adventure seekers</strong> from around the world, creating memories, conquering fears, and celebrating the spirit of adventure together.
               </p>
               <p>
-                Today, Ace Paddlers is the most trusted name in South Indian adventure tourism. More than <strong style={{ color: C.deepOcean }}>87,000 travellers</strong> from across the world have paddled with us — and every single one of them went home safe. That record is our greatest achievement, and our greatest responsibility.
+                Our mission has always been simple — to help you live your dreams while ensuring your safety at every step of the journey. At Acepaddlers, safety is not just a priority; it is the foundation of every experience we create.
+              </p>
+              <p>
+                From our state-of-the-art equipment to our rigorously trained professionals, every adventure is designed in accordance with international safety standards. Is it easy? No. Is it worth it? <em>Absolutely.</em>
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Certifications */}
+      <section className="py-24 px-6" style={{ backgroundColor: C.deepOcean }}>
+        <div className="max-w-7xl mx-auto text-white">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif" }}>
+              Our <span className="italic" style={{ color: "#a8dff0" }}>Certifications</span>
+            </h2>
+            <p className="max-w-2xl mx-auto" style={{ color: "rgba(168,223,240,0.75)" }}>
+              Every guide on our team holds internationally recognised certifications — making us highly skilled swift water rescue professionals equipped to handle the most demanding outdoor environments.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {CERTS.map((cert, i) => (
+              <div key={i} className="rounded-2xl p-8 text-center"
+                style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(168,223,240,0.12)" }}>
+                <div className="text-4xl font-bold mb-3" style={{ fontFamily: "'Fraunces', serif", color: "#a8dff0" }}>
+                  {cert.title}
+                </div>
+                <div className="font-semibold text-sm mb-3" style={{ color: "rgba(168,223,240,0.80)" }}>
+                  {cert.subtitle}
+                </div>
+                <p className="text-sm leading-relaxed" style={{ color: "rgba(168,223,240,0.55)" }}>
+                  {cert.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -101,45 +159,14 @@ export default function About() {
         </div>
       </section>
 
-      {/* Team */}
-      <section className="py-24 px-6" style={{ backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-              The people on the water
-            </h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#2e5a74" }}>
-              Every person on our team is certified, local, and deeply passionate about the Western Ghats.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {TEAM.map((member, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden bg-white border" style={{ borderColor: C.mutedBorder }}>
-                <img src={member.img} alt={member.name} className="w-full h-56 object-cover" />
-                <div className="p-6">
-                  <h3 className="text-xl mb-1" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                    {member.name}
-                  </h3>
-                  <div className="text-sm mb-3 font-medium" style={{ color: C.riverTeal }}>{member.role}</div>
-                  <div className="text-xs uppercase tracking-wider px-3 py-1 rounded-full inline-block"
-                    style={{ backgroundColor: C.muted, color: "#2e5a74" }}>
-                    {member.cert}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats bar */}
+      {/* Stats */}
       <section className="py-16 px-6" style={{ backgroundColor: C.deepOcean }}>
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
           {[
-            { val: "20+", label: "Years on the Water" },
+            { val: "20+", label: "Years of Service" },
             { val: "87,000+", label: "Travellers Hosted" },
             { val: "NOLS", label: "Certified Team" },
-            { val: "Zero", label: "Safety Incidents" },
+            { val: "Zero", label: "Accidents on Record" },
           ].map((s, i) => (
             <div key={i}>
               <div className="text-4xl font-bold mb-2" style={{ fontFamily: "'Fraunces', serif", color: "#a8dff0" }}>

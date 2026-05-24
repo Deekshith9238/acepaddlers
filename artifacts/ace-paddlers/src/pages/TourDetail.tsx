@@ -1,5 +1,5 @@
 import { Link, useParams } from "wouter";
-import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle } from "lucide-react";
+import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle, Calendar } from "lucide-react";
 import Layout from "@/components/Layout";
 import TOURS from "@/data/tours";
 import { C } from "@/data/constants";
@@ -20,6 +20,8 @@ export default function TourDetail() {
       </Layout>
     );
   }
+
+  const paragraphs = tour.description.split("\n\n");
 
   return (
     <Layout>
@@ -76,13 +78,78 @@ export default function TourDetail() {
               ))}
             </div>
 
+            {/* Season badge */}
+            {tour.season && (
+              <div className="flex items-center gap-3 px-5 py-3 rounded-xl"
+                style={{ backgroundColor: C.riverTeal + "14", border: `1px solid ${C.riverTeal}33` }}>
+                <Calendar className="w-5 h-5 shrink-0" style={{ color: C.riverTeal }} />
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold mr-2" style={{ color: C.riverTeal }}>Season:</span>
+                  <span className="text-sm" style={{ color: "#2e5a74" }}>{tour.season}</span>
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             <div>
-              <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+              <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
                 About this Experience
               </h2>
-              <p className="leading-relaxed text-lg" style={{ color: "#2e5a74" }}>{tour.description}</p>
+              <div className="space-y-4">
+                {paragraphs.map((p, i) => (
+                  <p key={i} className="leading-relaxed text-base" style={{ color: "#2e5a74" }}>{p}</p>
+                ))}
+              </div>
             </div>
+
+            {/* Activities (for water sports) */}
+            {tour.activities && (
+              <div>
+                <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                  Water Sports Activities
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {tour.activities.map((act, i) => {
+                    const [name, desc] = act.split(" — ");
+                    return (
+                      <div key={i} className="rounded-xl p-5 border bg-white" style={{ borderColor: C.mutedBorder }}>
+                        <div className="font-semibold mb-1" style={{ color: C.text }}>{name}</div>
+                        <div className="text-sm" style={{ color: "#5a8ea8" }}>{desc}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Rapid Grades */}
+            {tour.rapidGrades && (
+              <div>
+                <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                  Understanding River Rapid Grades
+                </h2>
+                <p className="mb-6 text-base" style={{ color: "#2e5a74" }}>
+                  White water rapids are classified internationally based on difficulty level, wave intensity, river obstacles, and technical skills required. The Barapole River features rapids ranging from Grade I to Grade IV.
+                </p>
+                <div className="space-y-4">
+                  {tour.rapidGrades.map((g, i) => (
+                    <div key={i} className="rounded-xl p-6 border bg-white flex gap-5" style={{ borderColor: C.mutedBorder }}>
+                      <div className="shrink-0 w-16 h-16 rounded-xl flex flex-col items-center justify-center text-white"
+                        style={{ backgroundColor: i === 0 ? "#16a34a" : i === 1 ? C.riverTeal : i === 2 ? "#d97706" : "#c94f28" }}>
+                        <div className="text-xs uppercase tracking-wider">Grade</div>
+                        <div className="text-2xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>
+                          {g.grade.replace("Grade ", "")}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-semibold mb-1" style={{ color: C.text }}>{g.title}</div>
+                        <div className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{g.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Highlights */}
             <div>
@@ -153,13 +220,13 @@ export default function TourDetail() {
                   style={{ borderColor: C.riverTeal, color: C.riverTeal }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
-                  <Phone className="w-4 h-4" /> Alternate Number
+                  <Phone className="w-4 h-4" /> +91 63619 56068
                 </a>
 
                 <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${C.muted}` }}>
                   {[
                     { icon: <ShieldCheck className="w-4 h-4" />, text: "NOLS certified guides" },
-                    { icon: <ShieldCheck className="w-4 h-4" />, text: "Zero incidents on record" },
+                    { icon: <ShieldCheck className="w-4 h-4" />, text: "Zero accidents on record" },
                     { icon: <Check className="w-4 h-4" />, text: "All safety gear provided" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm" style={{ color: "#2e5a74" }}>

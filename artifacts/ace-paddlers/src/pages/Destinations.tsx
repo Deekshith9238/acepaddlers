@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Mountain, Waves, Home as HomeIcon, Tent, ArrowRight, MapPin } from "lucide-react";
+import { Mountain, Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, MapPin, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import { C } from "@/data/constants";
 
@@ -11,15 +11,16 @@ const DESTINATIONS = [
     img: "/images/western-ghats-sunset.png",
     tagline: "Karnataka's adventure capital, cloaked in coffee and cardamom.",
     description:
-      "Coorg — or Kodagu as it's locally known — is the crown jewel of Karnataka's Western Ghats. This landlocked hill district receives some of India's heaviest rainfall, feeding the rivers that make it a rafting paradise. The landscape is a patchwork of coffee estates, pepper vines, cardamom plantations, and dense shola forest. The Barpole river cuts through South Coorg's wildest terrain, offering the best white-water rafting in the region.",
-    highlights: ["Barpole White Water Rafting", "Coffee & Spice Estate Stays", "Kodava Cultural Experiences", "Misty Hill Treks"],
+      "Coorg — or Kodagu as it's locally known — is the crown jewel of Karnataka's Western Ghats. This landlocked hill district receives some of India's heaviest rainfall, feeding the rivers that make it a rafting paradise. The landscape is a patchwork of coffee estates, pepper vines, cardamom plantations, and dense shola forest. The Barapole river cuts through South Coorg's wildest terrain — flowing through the misty foothills of Brahmagiri Hills, just minutes from the Glenlorna Tea Estate and 12 km from Iruppu Falls.",
+    highlights: ["Barpole White Water Rafting (Grade I–IV)", "Harangi Dam Water Sports", "Coffee & Spice Estate Stays", "Kodava Cultural Experiences"],
     tours: [
       { slug: "barpole-rafting", title: "Barpole Rafting", price: "₹1,200", type: "Rafting" },
+      { slug: "harangi-dam-water-sports", title: "Harangi Dam Water Sports", price: "From ₹300", type: "Water Sports" },
       { slug: "lake-lounge-homestay", title: "Lake Lounge Homestay", price: "₹2,250", type: "Homestay" },
       { slug: "misty-coorg-homestay", title: "Misty Coorg Homestay", price: "₹1,750", type: "Homestay" },
       { slug: "thithimathi-heritage-stay", title: "Thithimathi Heritage Stay", price: "₹2,500", type: "Homestay" },
     ],
-    bestTime: "June – October (rapids), October – February (homestays & estate tours)",
+    bestTime: "June – October (rafting & water sports), October – February (homestays & estate tours)",
     distance: "~270 km from Bengaluru",
   },
   {
@@ -29,14 +30,29 @@ const DESTINATIONS = [
     img: "/images/ghats-valley.png",
     tagline: "Misty peaks, cascading falls, and the wild Bhadra river.",
     description:
-      "Chikmagalur is where the coffee industry of India was born — and where the Western Ghats reach some of their most dramatic heights. The Bhadra river originates in the Gangamoola forests here and carves a thrilling course through the hills, perfect for white-water rafting. The region is also famous for cascading waterfalls, vast coffee estates, and some of Karnataka's most spectacular trekking trails up Mullayanagiri and Baba Budangiri peaks.",
-    highlights: ["Bhadra River Rafting", "Chikmagalur Coffee Trails", "Mullayanagiri Trekking", "Bhadra Wildlife Sanctuary"],
+      "Chikmagalur is where the coffee industry of India was born — and where the Western Ghats reach some of their most dramatic heights. The Bhadra river originates in the Gangamoola forests of the Kudremukh region and carves a thrilling course through the hills. What makes Bhadra unique is its year-round rafting — powerful monsoon rapids in the rains, and refreshing river jacuzzis and natural drops in the calmer summer months.",
+    highlights: ["Bhadra River Rafting (year-round)", "River Jacuzzis in Summer", "Mullayanagiri Trekking", "Bhadra Wildlife Sanctuary"],
     tours: [
       { slug: "bhadra-rafting", title: "Bhadra Rafting", price: "₹1,200", type: "Rafting" },
       { slug: "camp-karle", title: "Camp Karle — Hassan", price: "₹1,500", type: "Camping" },
     ],
-    bestTime: "June – October (rafting), September – February (trekking)",
+    bestTime: "Year-round rafting. September – February for trekking",
     distance: "~240 km from Bengaluru",
+  },
+  {
+    slug: "harangi",
+    name: "Harangi Dam",
+    fullName: "Harangi Reservoir — Kaveri River, Coorg",
+    img: "/images/rafting.png",
+    tagline: "Serene backwaters of the Kaveri's first dam — water sports, elephants, and misty hills.",
+    description:
+      "Harangi Dam, built across the majestic Kaveri River, is the first dam constructed on this sacred river and a stunning natural retreat in the heart of Coorg. The backwaters are surrounded by the lush greenery of Harangi Tree Park, a nearby elephant camp, and the scenic Chiklihole Reservoir. The shimmering water, misty hills, and peaceful picnic spots make it a perfect family destination. Acepaddlers operates a full water sports facility here from 9 AM to 6 PM daily.",
+    highlights: ["Kayaking on calm Kaveri backwaters", "Speed Boat & Banana Boat Rides", "Elephant Interaction (9–11 AM & 4–6 PM)", "Harangi Tree Park & Chiklihole Reservoir"],
+    tours: [
+      { slug: "harangi-dam-water-sports", title: "Harangi Dam Water Sports", price: "From ₹300", type: "Water Sports" },
+    ],
+    bestTime: "Year-round, 9 AM – 6 PM daily",
+    distance: "~260 km from Bengaluru",
   },
 ];
 
@@ -44,6 +60,7 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   Rafting: <Waves className="w-4 h-4" />,
   Homestay: <HomeIcon className="w-4 h-4" />,
   Camping: <Tent className="w-4 h-4" />,
+  "Water Sports": <Anchor className="w-4 h-4" />,
 };
 
 export default function Destinations() {
@@ -54,13 +71,13 @@ export default function Destinations() {
         style={{ background: `linear-gradient(160deg, ${C.deepOcean} 0%, ${C.midOcean} 100%)` }}>
         <div className="max-w-3xl mx-auto text-center">
           <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-4 block">
-            Western Ghats
+            Western Ghats, Karnataka
           </span>
           <h1 className="text-5xl md:text-6xl font-medium mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
             Our <span className="italic" style={{ color: "#a8dff0" }}>Destinations</span>
           </h1>
           <p className="text-lg max-w-2xl mx-auto" style={{ color: "rgba(168,223,240,0.80)" }}>
-            Two iconic hill destinations in Karnataka's Western Ghats — each with its own rivers, forests, and character.
+            Three iconic locations in Karnataka's Western Ghats — each with its own rivers, forests, and character.
           </p>
         </div>
         <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none" style={{ height: "48px" }}>
@@ -83,11 +100,15 @@ export default function Destinations() {
                   style={{ background: `linear-gradient(135deg, ${C.riverTeal}44, ${C.lightTeal}22)` }} />
                 <img src={dest.img} alt={dest.name}
                   className="relative z-10 rounded-2xl shadow-xl w-full aspect-video object-cover" />
-                <div className="absolute bottom-4 left-4 right-4 z-20 p-4 rounded-xl backdrop-blur-sm"
+                <div className="absolute bottom-4 left-4 right-4 z-20 flex gap-3 p-4 rounded-xl backdrop-blur-sm"
                   style={{ backgroundColor: "rgba(6,24,32,0.82)" }}>
-                  <div className="flex items-center gap-2 text-white text-sm">
+                  <div className="flex items-center gap-2 text-sm flex-1">
                     <MapPin className="w-4 h-4 shrink-0" style={{ color: "#a8dff0" }} />
                     <span style={{ color: "rgba(168,223,240,0.85)" }}>{dest.distance}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 shrink-0" style={{ color: "#a8dff0" }} />
+                    <span style={{ color: "rgba(168,223,240,0.85)" }} className="text-xs">{dest.bestTime.split(",")[0]}</span>
                   </div>
                 </div>
               </div>
@@ -118,7 +139,7 @@ export default function Destinations() {
                 </div>
 
                 {/* Best time */}
-                <div className="rounded-xl p-4 mb-8" style={{ backgroundColor: C.muted, borderLeft: `4px solid ${C.riverTeal}` }}>
+                <div className="rounded-xl p-4 mb-8" style={{ backgroundColor: i % 2 === 0 ? C.muted : C.bg, borderLeft: `4px solid ${C.riverTeal}` }}>
                   <div className="text-xs uppercase tracking-wider font-bold mb-1" style={{ color: "#5a8ea8" }}>
                     Best Time to Visit
                   </div>
@@ -157,15 +178,14 @@ export default function Destinations() {
         </section>
       ))}
 
-      {/* Map / CTA */}
-      <section className="py-20 px-6 text-center text-white"
-        style={{ backgroundColor: C.deepOcean }}>
+      {/* CTA */}
+      <section className="py-20 px-6 text-center text-white" style={{ backgroundColor: C.deepOcean }}>
         <div className="max-w-2xl mx-auto">
           <h2 className="text-4xl mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
             Ready to <span className="italic" style={{ color: "#a8dff0" }}>explore</span>?
           </h2>
           <p className="mb-10" style={{ color: "rgba(168,223,240,0.75)" }}>
-            Our guides know every trail, rapid, and hidden viewpoint across both destinations. Call us to plan your perfect itinerary.
+            Our guides know every trail, rapid, and hidden viewpoint across all three destinations. Call us to plan your perfect itinerary.
           </p>
           <Link href="/tours"
             className="inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold transition-colors no-underline"
