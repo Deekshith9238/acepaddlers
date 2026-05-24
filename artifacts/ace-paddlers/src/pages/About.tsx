@@ -2,55 +2,30 @@ import { ShieldCheck, Users, Anchor, Star, Heart, Award, Quote } from "lucide-re
 import Layout from "@/components/Layout";
 import { C } from "@/data/constants";
 
-const TEAM = [
+const LEADERS = [
   {
-    name: "Founder & Head Guide",
-    role: "Chief Instructor",
+    name: "Manjunatha M R",
+    role: "Co-Founder & Director",
     certs: ["NOLS", "WFR", "Rescue 3"],
-    quote: "Every river has its own personality. Our job is to introduce you to it safely.",
     img: "/images/rafting-hero.png",
-    years: "20+ years",
   },
   {
-    name: "Operations Director",
-    role: "Safety & Logistics",
+    name: "Sowmya H S",
+    role: "Co-Founder & Operations Head",
     certs: ["CPR", "Swift-Water Rescue", "WFR"],
-    quote: "Behind every great adventure is meticulous preparation. That's what we do.",
-    img: "/images/homestay.png",
-    years: "15+ years",
-  },
-  {
-    name: "Lead Rafting Instructor",
-    role: "Barpole & Bhadra Rivers",
-    certs: ["NOLS", "Rescue 3", "CPR"],
-    quote: "I've guided thousands of people down these rivers. The joy never gets old.",
-    img: "/images/rafting.png",
-    years: "12+ years",
-  },
-  {
-    name: "Nature & Camping Guide",
-    role: "Wilderness & Camping",
-    certs: ["WFR", "CPR", "Trail Leader"],
-    quote: "The forest teaches patience. The river teaches trust. We teach both.",
-    img: "/images/camping.png",
-    years: "10+ years",
-  },
-  {
-    name: "Water Sports Instructor",
-    role: "Harangi Dam & Water Sports",
-    certs: ["CPR", "Swift-Water Rescue"],
-    quote: "Water brings people together like nothing else can.",
     img: "/images/western-ghats-sunset.png",
-    years: "8+ years",
   },
-  {
-    name: "Homestay & Hospitality Lead",
-    role: "Guest Experience",
-    certs: ["Hospitality", "Local Guide"],
-    quote: "A warm meal and a good story — that's what Coorg is all about.",
-    img: "/images/forest-homestay.png",
-    years: "10+ years",
-  },
+];
+
+const BACKBONE = [
+  { name: "Sharath", role: "Lead Rafting Instructor", img: "/images/rafting.png" },
+  { name: "Kiran Kumar", role: "River Guide — Bhadra", img: "/images/rafting-hero.png" },
+  { name: "Naveen", role: "Water Sports Instructor", img: "/images/camping.png" },
+  { name: "Ravi Bhandari", role: "Safety & Rescue Specialist", img: "/images/homestay.png" },
+  { name: "Deepak Bhandari", role: "River Guide — Barpole", img: "/images/luxury-homestay.png" },
+  { name: "Umesh", role: "Camping & Nature Guide", img: "/images/forest-homestay.png" },
+  { name: "Ramesh Magar", role: "Harangi Water Sports Lead", img: "/images/ghats-valley.png" },
+  { name: "Sunil Kumar", role: "Guest Experience & Homestays", img: "/images/western-ghats-sunset.png" },
 ];
 
 const VALUES = [
@@ -226,58 +201,81 @@ export default function About() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {TEAM.map((member, i) => (
-              <div key={i} className="group rounded-2xl overflow-hidden bg-white border transition-all duration-300 hover:-translate-y-1"
-                style={{ borderColor: C.mutedBorder, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.14)")}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
-                {/* Photo */}
-                <div className="relative h-52 overflow-hidden">
-                  <img src={member.img} alt={member.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0"
-                    style={{ background: "linear-gradient(to top, rgba(6,24,32,0.70) 0%, transparent 55%)" }} />
-                  {/* Years badge */}
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm"
-                    style={{ backgroundColor: "rgba(6,24,32,0.72)", color: "#a8dff0" }}>
-                    {member.years}
+          {/* People in Charge */}
+          <div className="mb-16">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-px flex-1" style={{ backgroundColor: C.mutedBorder }} />
+              <span className="text-xs font-bold uppercase tracking-widest px-4" style={{ color: C.riverTeal }}>
+                People in Charge
+              </span>
+              <div className="h-px flex-1" style={{ backgroundColor: C.mutedBorder }} />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
+              {LEADERS.map((member, i) => (
+                <div key={i} className="group rounded-2xl overflow-hidden bg-white border transition-all duration-300 hover:-translate-y-1"
+                  style={{ borderColor: C.mutedBorder, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
+                  <div className="relative h-56 overflow-hidden">
+                    <img src={member.img} alt={member.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0"
+                      style={{ background: "linear-gradient(to top, rgba(6,24,32,0.75) 0%, transparent 55%)" }} />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-white font-semibold text-sm" style={{ color: "rgba(168,223,240,0.85)" }}>{member.role}</div>
+                    </div>
                   </div>
-                  {/* Role over image */}
-                  <div className="absolute bottom-4 left-4">
-                    <div className="text-white font-semibold text-sm">{member.role}</div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-1" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                    {member.name}
-                  </h3>
-
-                  {/* Certs */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {member.certs.map((cert, ci) => (
-                      <span key={ci} className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: C.riverTeal + "16", color: C.riverTeal }}>
-                        {cert}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Quote */}
-                  <div className="relative pl-4" style={{ borderLeft: `3px solid ${C.riverTeal}33` }}>
-                    <Quote className="w-3 h-3 mb-1 opacity-40" style={{ color: C.riverTeal }} />
-                    <p className="text-sm italic leading-relaxed" style={{ color: "#5a8ea8" }}>
-                      {member.quote}
-                    </p>
+                  <div className="p-6">
+                    <h3 className="text-xl mb-3" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                      {member.name}
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {member.certs.map((cert, ci) => (
+                        <span key={ci} className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                          style={{ backgroundColor: C.riverTeal + "16", color: C.riverTeal }}>
+                          {cert}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <p className="text-center text-sm mt-10" style={{ color: "#8aabb8" }}>
+          {/* Our Backbone */}
+          <div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-px flex-1" style={{ backgroundColor: C.mutedBorder }} />
+              <span className="text-xs font-bold uppercase tracking-widest px-4" style={{ color: C.riverTeal }}>
+                Our Backbone
+              </span>
+              <div className="h-px flex-1" style={{ backgroundColor: C.mutedBorder }} />
+            </div>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+              {BACKBONE.map((member, i) => (
+                <div key={i} className="group rounded-xl overflow-hidden bg-white border transition-all duration-300 hover:-translate-y-1"
+                  style={{ borderColor: C.mutedBorder, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 12px 32px rgba(13,58,94,0.14)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
+                  <div className="relative h-40 overflow-hidden">
+                    <img src={member.img} alt={member.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0"
+                      style={{ background: "linear-gradient(to top, rgba(6,24,32,0.70) 0%, transparent 60%)" }} />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold mb-0.5" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                      {member.name}
+                    </h3>
+                    <div className="text-xs" style={{ color: "#5a8ea8" }}>{member.role}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-center text-sm mt-12" style={{ color: "#8aabb8" }}>
             Want to meet us in person? Call us and we'll introduce you to your guide before your adventure.
           </p>
         </div>
