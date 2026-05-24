@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Ace Paddlers"
+version = "1.0.0"
+id = "artifacts/ace-paddlers"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18764
+
+[services.development]
+run = "pnpm --filter @workspace/ace-paddlers run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ace-paddlers", "run", "build" ]
+publicDir = "artifacts/ace-paddlers/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18764"
+BASE_PATH = "/"
