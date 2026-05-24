@@ -73,55 +73,55 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Natural & Earthy palette — #f8f5f0 warm linen background */
-  --background: 36 30% 97%;          /* #f8f5f0 */
-  --foreground: 90 17% 17%;          /* #2c3325 */
-  --border: 36 20% 82%;
-  --card: 36 30% 97%;
-  --card-foreground: 90 17% 17%;
-  --card-border: 36 20% 85%;
-  --sidebar: 36 30% 94%;
-  --sidebar-foreground: 90 17% 17%;
-  --sidebar-border: 36 20% 82%;
-  --sidebar-primary: 14 54% 45%;     /* #b34d35 clay red */
+  /* Ocean Blue palette */
+  --background: 200 40% 97%;          /* #f0f7fa soft water white */
+  --foreground: 205 60% 13%;          /* #0d2d40 deep navy */
+  --border: 200 30% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 205 60% 13%;
+  --card-border: 200 25% 88%;
+  --sidebar: 200 35% 94%;
+  --sidebar-foreground: 205 60% 13%;
+  --sidebar-border: 200 30% 82%;
+  --sidebar-primary: 198 72% 37%;     /* #1a7fa6 river teal */
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 90 15% 32%;      /* #4a5e3f forest green */
+  --sidebar-accent: 205 75% 20%;      /* #0d3a5e deep ocean */
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 14 54% 45%;
-  --popover: 36 30% 97%;
-  --popover-foreground: 90 17% 17%;
-  --popover-border: 36 20% 82%;
-  --primary: 14 54% 45%;             /* #b34d35 clay red */
+  --sidebar-ring: 198 72% 37%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 205 60% 13%;
+  --popover-border: 200 25% 88%;
+  --primary: 198 72% 37%;             /* #1a7fa6 river teal */
   --primary-foreground: 0 0% 100%;
-  --secondary: 90 15% 32%;           /* #4a5e3f forest green */
+  --secondary: 205 75% 20%;           /* #0d3a5e deep ocean */
   --secondary-foreground: 0 0% 100%;
-  --muted: 36 20% 89%;               /* #eae4d8 warm muted */
-  --muted-foreground: 30 10% 45%;
-  --accent: 90 20% 28%;              /* #3d4a31 dark green */
+  --muted: 200 35% 92%;               /* #dceef6 soft water mist */
+  --muted-foreground: 205 30% 42%;
+  --accent: 195 65% 28%;              /* #167899 mid ocean */
   --accent-foreground: 0 0% 100%;
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
-  --input: 36 20% 82%;
-  --ring: 14 54% 45%;
-  --chart-1: 14 54% 45%;
-  --chart-2: 90 15% 32%;
-  --chart-3: 90 20% 28%;
-  --chart-4: 36 40% 72%;
-  --chart-5: 30 60% 55%;
+  --input: 200 30% 82%;
+  --ring: 198 72% 37%;
+  --chart-1: 198 72% 37%;
+  --chart-2: 205 75% 20%;
+  --chart-3: 195 65% 28%;
+  --chart-4: 200 50% 60%;
+  --chart-5: 25 85% 55%;              /* warm coral for contrast */
 
   --app-font-sans: 'DM Sans', sans-serif;
   --app-font-serif: 'Fraunces', serif;
   --app-font-mono: Menlo, monospace;
   --radius: 0.75rem;
 
-  --shadow-2xs: 0px 1px 2px 0px rgba(44,51,37, 0.06);
-  --shadow-xs: 0px 1px 3px 0px rgba(44,51,37, 0.08);
-  --shadow-sm: 0px 2px 4px 0px rgba(44,51,37, 0.08), 0px 1px 2px -1px rgba(44,51,37, 0.05);
-  --shadow: 0px 4px 8px 0px rgba(44,51,37, 0.10), 0px 1px 2px -1px rgba(44,51,37, 0.06);
-  --shadow-md: 0px 6px 12px 0px rgba(44,51,37, 0.10), 0px 2px 4px -1px rgba(44,51,37, 0.06);
-  --shadow-lg: 0px 12px 24px 0px rgba(44,51,37, 0.12), 0px 4px 8px -1px rgba(44,51,37, 0.06);
-  --shadow-xl: 0px 20px 40px 0px rgba(44,51,37, 0.14), 0px 8px 16px -1px rgba(44,51,37, 0.08);
-  --shadow-2xl: 0px 32px 64px 0px rgba(44,51,37, 0.16);
+  --shadow-2xs: 0px 1px 2px 0px rgba(13,45,64, 0.06);
+  --shadow-xs: 0px 1px 3px 0px rgba(13,45,64, 0.08);
+  --shadow-sm: 0px 2px 4px 0px rgba(13,45,64, 0.08), 0px 1px 2px -1px rgba(13,45,64, 0.05);
+  --shadow: 0px 4px 8px 0px rgba(13,45,64, 0.10), 0px 1px 2px -1px rgba(13,45,64, 0.06);
+  --shadow-md: 0px 6px 12px 0px rgba(13,45,64, 0.10), 0px 2px 4px -1px rgba(13,45,64, 0.06);
+  --shadow-lg: 0px 12px 24px 0px rgba(13,45,64, 0.12), 0px 4px 8px -1px rgba(13,45,64, 0.06);
+  --shadow-xl: 0px 20px 40px 0px rgba(13,45,64, 0.14), 0px 8px 16px -1px rgba(13,45,64, 0.08);
+  --shadow-2xl: 0px 32px 64px 0px rgba(13,45,64, 0.16);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
