@@ -64,9 +64,9 @@ export default function Home() {
         <div className="flex items-center gap-4">
           <a href="tel:+919480987672"
             className="hidden md:block text-sm font-semibold rounded-full px-5 py-2 transition-colors"
-            style={{ backgroundColor: C.coral, color: "white" }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.darkCoral)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.coral)}
+            style={{ backgroundColor: C.riverTeal, color: "white" }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.midOcean)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.riverTeal)}
           >
             Book Now
           </a>
@@ -96,9 +96,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <img src="/images/hero-river.png" alt="Jungle river in Western Ghats"
             className="w-full h-full object-cover object-center" />
-          {/* Deep blue-tinted overlay — not pure black */}
-          <div className="absolute inset-0"
-            style={{ background: "linear-gradient(160deg, rgba(6,24,32,0.55) 0%, rgba(13,58,94,0.48) 60%, rgba(6,24,32,0.70) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
           {/* bottom fade into page bg */}
           <div className="absolute bottom-0 left-0 right-0 h-48"
             style={{ background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
@@ -121,12 +119,12 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => scrollTo("tours")}
               className="rounded-full px-8 py-4 text-lg font-semibold shadow-lg transition-all hover:-translate-y-1"
-              style={{ backgroundColor: C.coral, color: "white" }}>
+              style={{ backgroundColor: C.riverTeal, color: "white" }}>
               Start Exploring
             </button>
             <a href="tel:+919480987672"
               className="rounded-full px-8 py-4 text-lg font-medium transition-all hover:-translate-y-1 border backdrop-blur-sm"
-              style={{ backgroundColor: "rgba(26,127,166,0.25)", borderColor: "rgba(46,170,200,0.50)", color: "white" }}>
+              style={{ backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.40)", color: "white" }}>
               Call Local Guide
             </a>
           </div>
