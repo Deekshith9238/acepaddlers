@@ -1,103 +1,21 @@
-import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import {
-  Phone, MapPin, Anchor, Tent, Home as HomeIcon, ArrowRight,
-  ShieldCheck, Clock, Users, Star, Mountain, Menu, X, Waves
+  Phone, MapPin, Tent, Home as HomeIcon, ArrowRight,
+  ShieldCheck, Clock, Users, Star, Mountain, Anchor, Waves
 } from "lucide-react";
-
-const C = {
-  bg:         "#f0f7fa",   /* soft water-white */
-  bgCard:     "#ffffff",
-  text:       "#0d2d40",   /* deep navy */
-  deepOcean:  "#0d3a5e",   /* darkest navy */
-  midOcean:   "#167899",   /* rich teal */
-  riverTeal:  "#1a7fa6",   /* primary river teal */
-  lightTeal:  "#2eaac8",   /* lighter water */
-  coral:      "#e8643a",   /* warm coral CTA — pops against blues */
-  darkCoral:  "#c94f28",
-  footer:     "#061820",   /* midnight ocean */
-  muted:      "#dceef6",   /* water mist section bg */
-  mutedBorder:"#b8d9e8",
-};
+import Layout from "@/components/Layout";
+import { C } from "@/data/constants";
+import TOURS from "@/data/tours";
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMenuOpen(false);
-  };
-
   return (
-    <div style={{ backgroundColor: C.bg, color: C.text, fontFamily: "'DM Sans', sans-serif" }}
-      className="min-h-screen selection:bg-[#1a7fa6] selection:text-white">
-
-      {/* ── Navigation ── */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center transition-all duration-300"
-        style={{
-          backgroundColor: scrolled ? "rgba(6,24,32,0.95)" : "transparent",
-          backdropFilter: scrolled ? "blur(12px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
-        }}
-      >
-        <div className="flex items-center gap-2 text-white">
-          <Waves className="w-5 h-5" style={{ color: C.lightTeal }} />
-          <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Fraunces', serif" }}>
-            Ace Paddlers
-          </span>
-        </div>
-
-        <div className="hidden md:flex gap-8 text-sm font-medium tracking-wide text-white/90">
-          {[["experiences","Experiences"],["about","Who We Are"],["tours","Tours"],["destinations","Destinations"]].map(([id,label]) => (
-            <button key={id} onClick={() => scrollTo(id)}
-              className="hover:text-cyan-300 transition-colors">{label}</button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-4">
-          <a href="tel:+919480987672"
-            className="hidden md:block text-sm font-semibold rounded-full px-5 py-2 transition-colors"
-            style={{ backgroundColor: C.riverTeal, color: "white" }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.midOcean)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.riverTeal)}
-          >
-            Book Now
-          </a>
-          <button className="md:hidden text-white" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 text-white text-2xl font-semibold"
-          style={{ backgroundColor: C.footer, fontFamily: "'Fraunces', serif" }}>
-          {[["experiences","Experiences"],["about","Who We Are"],["tours","Tours"],["destinations","Destinations"]].map(([id,label]) => (
-            <button key={id} onClick={() => scrollTo(id)} className="hover:text-cyan-300 transition-colors">{label}</button>
-          ))}
-          <a href="tel:+919480987672"
-            className="mt-4 text-base font-sans font-semibold rounded-full px-8 py-3"
-            style={{ backgroundColor: C.coral, color: "white" }}>
-            Call to Book
-          </a>
-        </div>
-      )}
-
+    <Layout>
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img src="/images/hero-river.png" alt="Jungle river in Western Ghats"
             className="w-full h-full object-cover object-center" />
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
-          {/* bottom fade into page bg */}
           <div className="absolute bottom-0 left-0 right-0 h-48"
             style={{ background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
         </div>
@@ -117,29 +35,29 @@ export default function Home() {
             River rafting, wild camping, and eco-homestays that reconnect you with nature.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => scrollTo("tours")}
-              className="rounded-full px-8 py-4 text-lg font-semibold shadow-lg transition-all hover:-translate-y-1"
-              style={{ backgroundColor: C.riverTeal, color: "white" }}>
+            <Link href="/tours"
+              className="rounded-full px-8 py-4 text-lg font-semibold shadow-lg transition-all hover:-translate-y-1 no-underline"
+              style={{ backgroundColor: C.riverTeal, color: "white" }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
               Start Exploring
-            </button>
+            </Link>
             <a href="tel:+919480987672"
-              className="rounded-full px-8 py-4 text-lg font-medium transition-all hover:-translate-y-1 border backdrop-blur-sm"
+              className="rounded-full px-8 py-4 text-lg font-medium transition-all hover:-translate-y-1 border backdrop-blur-sm no-underline"
               style={{ backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.40)", color: "white" }}>
               Call Local Guide
             </a>
           </div>
         </div>
 
-        {/* Wave divider hint */}
         <div className="absolute bottom-0 left-0 right-0 z-10 overflow-hidden leading-none" style={{ height: "64px" }}>
-          <svg viewBox="0 0 1440 64" preserveAspectRatio="none" className="w-full h-full"
-            fill={C.bg}>
+          <svg viewBox="0 0 1440 64" preserveAspectRatio="none" className="w-full h-full" fill={C.bg}>
             <path d="M0,32 C360,64 1080,0 1440,32 L1440,64 L0,64 Z" />
           </svg>
         </div>
       </section>
 
-      {/* ── Water stats strip ── */}
+      {/* ── Stats strip ── */}
       <section style={{ backgroundColor: C.deepOcean }}>
         <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-white text-center">
           {[
@@ -174,38 +92,18 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            {
-              title: "White Water Rafting",
-              price: "₹1,200",
-              desc: "Navigate the thrilling rapids of Barpole and Bhadra rivers under expert guidance.",
-              icon: <Waves className="w-6 h-6" />,
-              img: "/images/rafting.png",
-            },
-            {
-              title: "Eco Homestays",
-              price: "₹1,500",
-              desc: "Traditional Karnataka hospitality surrounded by pristine coffee plantations.",
-              icon: <HomeIcon className="w-6 h-6" />,
-              img: "/images/homestay.png",
-            },
-            {
-              title: "Wilderness Camping",
-              price: "₹1,500",
-              desc: "Sleep under the stars by the riverbank — bonfires, flowing water, and open skies.",
-              icon: <Tent className="w-6 h-6" />,
-              img: "/images/camping.png",
-            },
+            { title: "White Water Rafting", price: "₹1,200", desc: "Navigate the thrilling rapids of Barpole and Bhadra rivers under expert guidance.", icon: <Waves className="w-6 h-6" />, img: "/images/rafting.png", href: "/experiences" },
+            { title: "Eco Homestays", price: "₹1,500", desc: "Traditional Karnataka hospitality surrounded by pristine coffee plantations.", icon: <HomeIcon className="w-6 h-6" />, img: "/images/homestay.png", href: "/experiences" },
+            { title: "Wilderness Camping", price: "₹1,500", desc: "Sleep under the stars by the riverbank — bonfires, flowing water, and open skies.", icon: <Tent className="w-6 h-6" />, img: "/images/camping.png", href: "/experiences" },
           ].map((exp, i) => (
-            <div key={i}
-              className="group cursor-pointer rounded-2xl overflow-hidden bg-white flex flex-col transition-all duration-300 hover:-translate-y-1"
+            <Link key={i} href={exp.href}
+              className="group cursor-pointer rounded-2xl overflow-hidden bg-white flex flex-col transition-all duration-300 hover:-translate-y-1 no-underline"
               style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}
-            >
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
               <div className="relative h-64 overflow-hidden">
                 <img src={exp.img} alt={exp.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                {/* water shimmer overlay on hover */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{ background: "linear-gradient(to bottom, rgba(26,127,166,0.12), transparent)" }} />
                 <div className="absolute top-4 right-4 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold"
@@ -228,7 +126,7 @@ export default function Home() {
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -237,7 +135,6 @@ export default function Home() {
       <section id="about" className="py-24" style={{ backgroundColor: C.muted }}>
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           <div className="relative">
-            {/* ocean-tinted glow behind image */}
             <div className="absolute -inset-4 rounded-3xl rotate-2 opacity-60"
               style={{ background: `linear-gradient(135deg, ${C.riverTeal}33, ${C.lightTeal}22)` }} />
             <img src="/images/rafting-hero.png" alt="River rafting in Western Ghats"
@@ -291,14 +188,13 @@ export default function Home() {
               ))}
             </div>
 
-            <button onClick={() => scrollTo("tours")}
-              className="inline-block rounded-full px-8 py-4 text-lg font-semibold transition-colors"
+            <Link href="/about"
+              className="inline-block rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
               style={{ backgroundColor: C.deepOcean, color: "white" }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.midOcean)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.deepOcean)}
-            >
-              View Our Tours
-            </button>
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.deepOcean)}>
+              Our Full Story
+            </Link>
           </div>
         </div>
       </section>
@@ -315,44 +211,35 @@ export default function Home() {
               <span className="italic" style={{ color: C.riverTeal }}>Tours</span>
             </h2>
           </div>
-          <a href="https://www.acepaddlers.com/collections/tours" target="_blank" rel="noopener noreferrer"
-            className="inline-block rounded-full px-6 py-3 text-sm font-semibold border-2 transition-colors whitespace-nowrap"
+          <Link href="/tours"
+            className="inline-block rounded-full px-6 py-3 text-sm font-semibold border-2 transition-colors whitespace-nowrap no-underline"
             style={{ borderColor: C.riverTeal, color: C.riverTeal }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = C.riverTeal; e.currentTarget.style.color = "white"; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = C.riverTeal; }}
-          >
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
             View All Tours
-          </a>
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { title: "Barpole Rafting", price: "₹1,200", duration: "1 Hour", loc: "T. Shettigeri, Karnataka", type: "Rafting", img: "/images/rafting.png", link: "https://www.acepaddlers.com/tours/white-water-rafting-barpole-south-coorg-21910" },
-            { title: "Bhadra Rafting", price: "₹1,200", duration: "1 Hour", loc: "Chikkamagaluru, Karnataka", type: "Rafting", img: "/images/rafting-hero.png", link: "https://www.acepaddlers.com/tours/bhadra-rafting-22201" },
-            { title: "Camp Karle — Hassan", price: "₹1,500", duration: "Overnight", loc: "Karle, Karnataka", type: "Camping", img: "/images/camping.png", link: "https://www.acepaddlers.com/tours/camp-karle-22026" },
-            { title: "Lake Lounge Homestay", price: "₹2,250", duration: "Overnight", loc: "Bekke Sodlur, Karnataka", type: "Homestay", img: "/images/homestay.png", link: "https://www.acepaddlers.com/tours/lakelounge-22205" },
-            { title: "Misty Coorg Homestay", price: "₹1,750", duration: "Overnight", loc: "Badagarakeri, Karnataka", type: "Homestay", img: "/images/luxury-homestay.png", link: "https://www.acepaddlers.com/tours/misty-coorg-22203" },
-            { title: "Thithimathi Heritage Stay", price: "₹2,500", duration: "Overnight", loc: "Thithimathi, Karnataka", type: "Homestay", img: "/images/forest-homestay.png", link: "https://www.acepaddlers.com/tours/thithimathi-heritage-stay-22204" },
-          ].map((tour, i) => (
-            <a key={i} href={tour.link} target="_blank" rel="noopener noreferrer"
-              className="group block rounded-2xl overflow-hidden bg-white transition-all duration-300 hover:-translate-y-1"
+          {TOURS.map((tour) => (
+            <Link key={tour.slug} href={`/tours/${tour.slug}`}
+              className="group block rounded-2xl overflow-hidden bg-white transition-all duration-300 hover:-translate-y-1 no-underline"
               style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}
-            >
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
               <div className="relative h-48 overflow-hidden">
                 <img src={tour.img} alt={tour.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{ background: "linear-gradient(to bottom, rgba(13,58,94,0.15), transparent)" }} />
                 <div className="absolute top-3 left-3 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "rgba(13,58,94,0.82)", color: "#a8dff0" }}>
+                  style={{ backgroundColor: "rgba(6,24,32,0.82)", color: "#a8dff0" }}>
                   {tour.type}
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-medium leading-tight transition-colors"
+                  <h3 className="text-lg font-medium leading-tight"
                     style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
                     {tour.title}
                   </h3>
@@ -363,7 +250,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-1.5 text-sm" style={{ color: "#5a8ea8" }}>
                   <div className="flex items-center gap-2"><Clock className="w-4 h-4 shrink-0" /> {tour.duration}</div>
-                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4 shrink-0" /> {tour.loc}</div>
+                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4 shrink-0" /> {tour.location}</div>
                 </div>
                 <div className="mt-4 pt-4 flex items-center justify-between text-sm font-semibold transition-colors"
                   style={{ borderTop: `1px solid ${C.muted}`, color: C.riverTeal }}>
@@ -371,7 +258,7 @@ export default function Home() {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
@@ -391,11 +278,11 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              { name: "Coorg Packages", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barpole river.", link: "https://www.acepaddlers.com/collections/tours" },
-              { name: "Chikmagalur Packages", img: "/images/ghats-valley.png", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river.", link: "https://www.acepaddlers.com/collections/tours" },
-            ].map((dest, i) => (
-              <a key={i} href={dest.link} target="_blank" rel="noopener noreferrer"
-                className="group relative rounded-2xl overflow-hidden block" style={{ height: "400px" }}>
+              { name: "Coorg", slug: "coorg", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barpole river." },
+              { name: "Chikmagalur", slug: "chikmagalur", img: "/images/ghats-valley.png", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river." },
+            ].map((dest) => (
+              <Link key={dest.slug} href="/destinations"
+                className="group relative rounded-2xl overflow-hidden block no-underline" style={{ height: "400px" }}>
                 <img src={dest.img} alt={dest.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0"
@@ -405,14 +292,14 @@ export default function Home() {
                     <Mountain className="w-4 h-4" />
                     <span className="uppercase tracking-widest text-xs font-bold">Destination</span>
                   </div>
-                  <h3 className="text-3xl mb-3" style={{ fontFamily: "'Fraunces', serif" }}>{dest.name}</h3>
+                  <h3 className="text-3xl mb-3 text-white" style={{ fontFamily: "'Fraunces', serif" }}>{dest.name}</h3>
                   <p className="text-sm mb-4 line-clamp-2" style={{ color: "rgba(168,223,240,0.80)" }}>{dest.desc}</p>
                   <span className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
                     style={{ color: "#a8dff0" }}>
                     Explore <ArrowRight className="w-4 h-4" />
                   </span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -432,96 +319,22 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="tel:+919480987672"
-              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-colors"
-              style={{ backgroundColor: C.coral, color: "white" }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.darkCoral)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.coral)}
-            >
+              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
+              style={{ backgroundColor: C.riverTeal, color: "white" }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
               <Phone className="w-5 h-5" /> +91 94809 87672
             </a>
             <a href="tel:+916361956068"
-              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold border-2 transition-colors"
+              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold border-2 transition-colors no-underline"
               style={{ borderColor: C.riverTeal, color: C.riverTeal }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = C.riverTeal; e.currentTarget.style.color = "white"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = C.riverTeal; }}
-            >
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
               <Phone className="w-5 h-5" /> +91 63619 56068
             </a>
           </div>
         </div>
       </section>
-
-      {/* ── Footer ── */}
-      <footer className="pt-20 pb-10" style={{ backgroundColor: C.footer, color: "#6b8fa0", borderTop: `1px solid rgba(26,127,166,0.20)` }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-2 mb-6">
-                <Waves className="w-5 h-5" style={{ color: C.lightTeal }} />
-                <span className="text-3xl font-bold text-white" style={{ fontFamily: "'Fraunces', serif" }}>
-                  Ace Paddlers
-                </span>
-              </div>
-              <p className="mb-8 max-w-sm" style={{ color: "#6b8fa0" }}>
-                The pioneers of South Indian adventure tourism. Crafting unforgettable rafting, camping,
-                and homestay experiences in the Western Ghats for over two decades.
-              </p>
-              <div className="space-y-3">
-                {["+91 9480987672", "+91 6361956068", "+91 9380986884"].map((num, i) => (
-                  <a key={i} href={`tel:${num.replace(/\s/g,"")}`}
-                    className="flex items-center gap-3 hover:text-white transition-colors">
-                    <Phone className="w-4 h-4 shrink-0" style={{ color: C.riverTeal }} />
-                    <span>{num}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Quick Links</h4>
-              <ul className="space-y-3">
-                {[
-                  ["About Us", "https://www.acepaddlers.com/about-us"],
-                  ["Contact Us", "https://www.acepaddlers.com/contact-us"],
-                  ["Cancellation Policy", "https://www.acepaddlers.com/terms-and-conditions"],
-                  ["Privacy Policy", "https://www.acepaddlers.com/privacy-policy"],
-                  ["Sitemap", "https://www.acepaddlers.com/sitemap"],
-                ].map(([label, href]) => (
-                  <li key={label}><a href={href} target="_blank" rel="noopener noreferrer"
-                    className="hover:text-white transition-colors">{label}</a></li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Top Tours</h4>
-              <ul className="space-y-3">
-                {[
-                  ["Barpole Rafting", "https://www.acepaddlers.com/tours/white-water-rafting-barpole-south-coorg-21910"],
-                  ["Bhadra Rafting", "https://www.acepaddlers.com/tours/bhadra-rafting-22201"],
-                  ["Camp Karle", "https://www.acepaddlers.com/tours/camp-karle-22026"],
-                  ["Lake Lounge Homestay", "https://www.acepaddlers.com/tours/lakelounge-22205"],
-                  ["Bhadra Rafting & Camping", "https://www.acepaddlers.com/tours/bhadra-rafting-camping-chikkamagalur-57207"],
-                ].map(([label, href]) => (
-                  <li key={label}><a href={href} target="_blank" rel="noopener noreferrer"
-                    className="hover:text-white transition-colors">{label}</a></li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm"
-            style={{ borderTop: "1px solid rgba(26,127,166,0.15)", color: "#4a7080" }}>
-            <div>© 2026, Ace Paddlers. All rights reserved.</div>
-            <div className="flex gap-6">
-              {["Instagram","Facebook","TripAdvisor"].map(s => (
-                <a key={s} href="https://www.acepaddlers.com" target="_blank" rel="noopener noreferrer"
-                  className="hover:text-white transition-colors">{s}</a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </Layout>
   );
 }
