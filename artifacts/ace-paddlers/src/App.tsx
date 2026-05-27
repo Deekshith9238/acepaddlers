@@ -9,6 +9,7 @@ import TourDetail from "@/pages/TourDetail";
 import Experiences from "@/pages/Experiences";
 import About from "@/pages/About";
 import Destinations from "@/pages/Destinations";
+import Gallery from "@/pages/Gallery";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/experiences" component={Experiences} />
       <Route path="/about" component={About} />
       <Route path="/destinations" component={Destinations} />
+      <Route path="/gallery" component={Gallery} />
       <Route component={NotFound} />
     </Switch>
   );

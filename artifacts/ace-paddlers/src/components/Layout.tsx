@@ -29,6 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Who We Are", href: "/about" },
     { label: "Tours", href: "/tours" },
     { label: "Destinations", href: "/destinations" },
+    { label: "Gallery", href: "/gallery" },
   ];
 
   return (
