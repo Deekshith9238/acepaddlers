@@ -1,6 +1,7 @@
 import { Link, useParams } from "wouter";
 import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle, Calendar } from "lucide-react";
 import Layout from "@/components/Layout";
+import Animate from "@/components/Animate";
 import TOURS from "@/data/tours";
 import { C } from "@/data/constants";
 
@@ -30,7 +31,7 @@ export default function TourDetail() {
         <img src={tour.heroImg} alt={tour.title} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(6,24,32,0.90) 0%, rgba(6,24,32,0.30) 60%, transparent 100%)" }} />
-        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-12 w-full text-white">
+        <Animate immediate variant="up" className="relative z-10 max-w-7xl mx-auto px-6 pb-12 w-full text-white">
           <Link href="/tours"
             className="inline-flex items-center gap-2 text-sm mb-6 no-underline hover:text-cyan-300 transition-colors"
             style={{ color: "rgba(168,223,240,0.80)" }}>
@@ -52,7 +53,7 @@ export default function TourDetail() {
             {tour.title}
           </h1>
           <p className="text-lg max-w-2xl" style={{ color: "rgba(168,223,240,0.85)" }}>{tour.tagline}</p>
-        </div>
+        </Animate>
       </section>
 
       {/* Main content */}
@@ -63,141 +64,158 @@ export default function TourDetail() {
           <div className="lg:col-span-2 space-y-12">
 
             {/* Quick info */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { icon: <Clock className="w-5 h-5" />, label: "Duration", val: tour.duration },
-                { icon: <MapPin className="w-5 h-5" />, label: "Location", val: tour.location.split(",")[0] },
-                { icon: <Users className="w-5 h-5" />, label: "Group Size", val: tour.groupSize ?? "Flexible" },
-                { icon: <AlertTriangle className="w-5 h-5" />, label: "Min Age", val: tour.minAge ?? "5 years" },
-              ].map((item, i) => (
-                <div key={i} className="rounded-xl p-4 text-center" style={{ backgroundColor: C.muted }}>
-                  <div className="flex justify-center mb-2" style={{ color: C.riverTeal }}>{item.icon}</div>
-                  <div className="text-xs uppercase tracking-wider mb-1" style={{ color: "#5a8ea8" }}>{item.label}</div>
-                  <div className="font-semibold text-sm" style={{ color: C.text }}>{item.val}</div>
-                </div>
-              ))}
-            </div>
+            <Animate variant="up">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { icon: <Clock className="w-5 h-5" />, label: "Duration", val: tour.duration },
+                  { icon: <MapPin className="w-5 h-5" />, label: "Location", val: tour.location.split(",")[0] },
+                  { icon: <Users className="w-5 h-5" />, label: "Group Size", val: tour.groupSize ?? "Flexible" },
+                  { icon: <AlertTriangle className="w-5 h-5" />, label: "Min Age", val: tour.minAge ?? "5 years" },
+                ].map((item, i) => (
+                  <div key={i} className="rounded-xl p-4 text-center" style={{ backgroundColor: C.muted }}>
+                    <div className="flex justify-center mb-2" style={{ color: C.riverTeal }}>{item.icon}</div>
+                    <div className="text-xs uppercase tracking-wider mb-1" style={{ color: "#5a8ea8" }}>{item.label}</div>
+                    <div className="font-semibold text-sm" style={{ color: C.text }}>{item.val}</div>
+                  </div>
+                ))}
+              </div>
+            </Animate>
 
             {/* Season badge */}
             {tour.season && (
-              <div className="flex items-center gap-3 px-5 py-3 rounded-xl"
-                style={{ backgroundColor: C.riverTeal + "14", border: `1px solid ${C.riverTeal}33` }}>
-                <Calendar className="w-5 h-5 shrink-0" style={{ color: C.riverTeal }} />
-                <div>
-                  <span className="text-xs uppercase tracking-wider font-bold mr-2" style={{ color: C.riverTeal }}>Season:</span>
-                  <span className="text-sm" style={{ color: "#2e5a74" }}>{tour.season}</span>
+              <Animate variant="fade">
+                <div className="flex items-center gap-3 px-5 py-3 rounded-xl"
+                  style={{ backgroundColor: C.riverTeal + "14", border: `1px solid ${C.riverTeal}33` }}>
+                  <Calendar className="w-5 h-5 shrink-0" style={{ color: C.riverTeal }} />
+                  <div>
+                    <span className="text-xs uppercase tracking-wider font-bold mr-2" style={{ color: C.riverTeal }}>Season:</span>
+                    <span className="text-sm" style={{ color: "#2e5a74" }}>{tour.season}</span>
+                  </div>
                 </div>
-              </div>
+              </Animate>
             )}
 
             {/* Description */}
-            <div>
-              <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                About this Experience
-              </h2>
-              <div className="space-y-4">
-                {paragraphs.map((p, i) => (
-                  <p key={i} className="leading-relaxed text-base" style={{ color: "#2e5a74" }}>{p}</p>
-                ))}
+            <Animate variant="up">
+              <div>
+                <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                  About this Experience
+                </h2>
+                <div className="space-y-4">
+                  {paragraphs.map((p, i) => (
+                    <p key={i} className="leading-relaxed text-base" style={{ color: "#2e5a74" }}>{p}</p>
+                  ))}
+                </div>
               </div>
-            </div>
+            </Animate>
 
             {/* Activities (for water sports) */}
             {tour.activities && (
-              <div>
-                <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                  Water Sports Activities
-                </h2>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {tour.activities.map((act, i) => {
-                    const [name, desc] = act.split(" — ");
-                    return (
-                      <div key={i} className="rounded-xl p-5 border bg-white" style={{ borderColor: C.mutedBorder }}>
-                        <div className="font-semibold mb-1" style={{ color: C.text }}>{name}</div>
-                        <div className="text-sm" style={{ color: "#5a8ea8" }}>{desc}</div>
-                      </div>
-                    );
-                  })}
+              <Animate variant="up">
+                <div>
+                  <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                    Water Sports Activities
+                  </h2>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {tour.activities.map((act, i) => {
+                      const [name, desc] = act.split(" — ");
+                      return (
+                        <div key={i} className="rounded-xl p-5 border bg-white" style={{ borderColor: C.mutedBorder }}>
+                          <div className="font-semibold mb-1" style={{ color: C.text }}>{name}</div>
+                          <div className="text-sm" style={{ color: "#5a8ea8" }}>{desc}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              </Animate>
             )}
 
             {/* Rapid Grades */}
             {tour.rapidGrades && (
-              <div>
-                <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                  Understanding River Rapid Grades
-                </h2>
-                <p className="mb-6 text-base" style={{ color: "#2e5a74" }}>
-                  White water rapids are classified internationally based on difficulty level, wave intensity, river obstacles, and technical skills required. The Barapole River features rapids ranging from Grade I to Grade IV.
-                </p>
-                <div className="space-y-4">
-                  {tour.rapidGrades.map((g, i) => (
-                    <div key={i} className="rounded-xl p-6 border bg-white flex gap-5" style={{ borderColor: C.mutedBorder }}>
-                      <div className="shrink-0 w-16 h-16 rounded-xl flex flex-col items-center justify-center text-white"
-                        style={{ backgroundColor: i === 0 ? "#16a34a" : i === 1 ? C.riverTeal : i === 2 ? "#d97706" : "#c94f28" }}>
-                        <div className="text-xs uppercase tracking-wider">Grade</div>
-                        <div className="text-2xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>
-                          {g.grade.replace("Grade ", "")}
+              <Animate variant="up">
+                <div>
+                  <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                    Understanding River Rapid Grades
+                  </h2>
+                  <p className="mb-6 text-base" style={{ color: "#2e5a74" }}>
+                    White water rapids are classified internationally based on difficulty level, wave intensity, river obstacles, and technical skills required. The Barapole River features rapids ranging from Grade I to Grade IV.
+                  </p>
+                  <div className="space-y-4">
+                    {tour.rapidGrades.map((g, i) => (
+                      <Animate key={i} variant="left" delay={i * 80}>
+                        <div className="rounded-xl p-6 border bg-white flex gap-5" style={{ borderColor: C.mutedBorder }}>
+                          <div className="shrink-0 w-16 h-16 rounded-xl flex flex-col items-center justify-center text-white"
+                            style={{ backgroundColor: i === 0 ? "#16a34a" : i === 1 ? C.riverTeal : i === 2 ? "#d97706" : "#c94f28" }}>
+                            <div className="text-xs uppercase tracking-wider">Grade</div>
+                            <div className="text-2xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>
+                              {g.grade.replace("Grade ", "")}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-semibold mb-1" style={{ color: C.text }}>{g.title}</div>
+                            <div className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{g.desc}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="font-semibold mb-1" style={{ color: C.text }}>{g.title}</div>
-                        <div className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{g.desc}</div>
-                      </div>
-                    </div>
-                  ))}
+                      </Animate>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Animate>
             )}
 
             {/* Highlights */}
-            <div>
-              <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                Highlights
-              </h2>
-              <ul className="space-y-3 list-none p-0 m-0">
-                {tour.highlights.map((h, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: C.riverTeal }}>
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                    <span style={{ color: "#2e5a74" }}>{h}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <Animate variant="up">
+              <div>
+                <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                  Highlights
+                </h2>
+                <ul className="space-y-3 list-none p-0 m-0">
+                  {tour.highlights.map((h, i) => (
+                    <li key={i} className="flex items-start gap-3"
+                      style={{ opacity: 0, animation: `acefadeup 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms both` }}>
+                      <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: C.riverTeal }}>
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span style={{ color: "#2e5a74" }}>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Animate>
 
             {/* Included / Excluded */}
-            <div className="grid sm:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-xl mb-4 font-semibold" style={{ color: C.text }}>What's Included</h3>
-                <ul className="space-y-2.5 list-none p-0 m-0">
-                  {tour.included.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
-                      <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+            <Animate variant="up">
+              <div className="grid sm:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xl mb-4 font-semibold" style={{ color: C.text }}>What's Included</h3>
+                  <ul className="space-y-2.5 list-none p-0 m-0">
+                    {tour.included.map((item, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
+                        <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-xl mb-4 font-semibold" style={{ color: C.text }}>Not Included</h3>
+                  <ul className="space-y-2.5 list-none p-0 m-0">
+                    {tour.excluded.map((item, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />
+                        <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl mb-4 font-semibold" style={{ color: C.text }}>Not Included</h3>
-                <ul className="space-y-2.5 list-none p-0 m-0">
-                  {tour.excluded.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />
-                      <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            </Animate>
           </div>
 
           {/* Right: booking card */}
-          <div className="lg:col-span-1">
+          <Animate variant="right" className="lg:col-span-1">
             <div className="sticky top-28 rounded-2xl overflow-hidden border shadow-xl"
               style={{ borderColor: C.mutedBorder, boxShadow: "0 8px 40px rgba(13,58,94,0.14)" }}>
               <div className="p-6" style={{ backgroundColor: C.deepOcean }}>
@@ -258,7 +276,7 @@ export default function TourDetail() {
                 ))}
               </div>
             </div>
-          </div>
+          </Animate>
         </div>
       </section>
     </Layout>

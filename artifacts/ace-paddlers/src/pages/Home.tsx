@@ -4,6 +4,7 @@ import {
   ShieldCheck, Clock, Users, Star, Mountain, Anchor, Waves
 } from "lucide-react";
 import Layout from "@/components/Layout";
+import Animate from "@/components/Animate";
 import { C } from "@/data/constants";
 import TOURS from "@/data/tours";
 
@@ -21,33 +22,41 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center text-white px-6 mt-16">
-          <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-6 block">
-            Western Ghats, Karnataka
-          </span>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium leading-[1.1] mb-8"
-            style={{ fontFamily: "'Fraunces', serif" }}>
-            Find Your <br />
-            <span className="italic" style={{ color: "#a8dff0" }}>Flow.</span>
-          </h1>
-          <p className="text-lg md:text-xl font-light mb-12 max-w-2xl mx-auto leading-relaxed"
-            style={{ color: "rgba(224,242,252,0.90)" }}>
-            Experience the raw beauty of the Western Ghats with the pioneers of South Indian adventure tourism.
-            River rafting, wild camping, and eco-homestays that reconnect you with nature.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/tours"
-              className="rounded-full px-8 py-4 text-lg font-semibold shadow-lg transition-all hover:-translate-y-1 no-underline"
-              style={{ backgroundColor: C.riverTeal, color: "white" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
-              Start Exploring
-            </Link>
-            <a href="tel:+919480987672"
-              className="rounded-full px-8 py-4 text-lg font-medium transition-all hover:-translate-y-1 border backdrop-blur-sm no-underline"
-              style={{ backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.40)", color: "white" }}>
-              Call Local Guide
-            </a>
-          </div>
+          <Animate immediate variant="fade" delay={0}>
+            <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-6 block">
+              Western Ghats, Karnataka
+            </span>
+          </Animate>
+          <Animate immediate variant="up" delay={120}>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium leading-[1.1] mb-8"
+              style={{ fontFamily: "'Fraunces', serif" }}>
+              Find Your <br />
+              <span className="italic" style={{ color: "#a8dff0" }}>Flow.</span>
+            </h1>
+          </Animate>
+          <Animate immediate variant="up" delay={260}>
+            <p className="text-lg md:text-xl font-light mb-12 max-w-2xl mx-auto leading-relaxed"
+              style={{ color: "rgba(224,242,252,0.90)" }}>
+              Experience the raw beauty of the Western Ghats with the pioneers of South Indian adventure tourism.
+              River rafting, wild camping, and eco-homestays that reconnect you with nature.
+            </p>
+          </Animate>
+          <Animate immediate variant="up" delay={380}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/tours"
+                className="rounded-full px-8 py-4 text-lg font-semibold shadow-lg transition-all hover:-translate-y-1 no-underline"
+                style={{ backgroundColor: C.riverTeal, color: "white" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
+                Start Exploring
+              </Link>
+              <a href="tel:+919480987672"
+                className="rounded-full px-8 py-4 text-lg font-medium transition-all hover:-translate-y-1 border backdrop-blur-sm no-underline"
+                style={{ backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.40)", color: "white" }}>
+                Call Local Guide
+              </a>
+            </div>
+          </Animate>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 z-10 overflow-hidden leading-none" style={{ height: "64px" }}>
@@ -66,29 +75,33 @@ export default function Home() {
             { value: "NOLS", label: "Certified Instructors" },
             { value: "Zero", label: "Incidents on Record" },
           ].map((s, i) => (
-            <div key={i} className="py-2">
-              <div className="text-3xl font-bold mb-1" style={{ fontFamily: "'Fraunces', serif", color: "#a8dff0" }}>
-                {s.value}
+            <Animate key={i} variant="up" delay={i * 100}>
+              <div className="py-2">
+                <div className="text-3xl font-bold mb-1" style={{ fontFamily: "'Fraunces', serif", color: "#a8dff0" }}>
+                  {s.value}
+                </div>
+                <div className="text-xs uppercase tracking-widest" style={{ color: "rgba(168,223,240,0.65)" }}>
+                  {s.label}
+                </div>
               </div>
-              <div className="text-xs uppercase tracking-widest" style={{ color: "rgba(168,223,240,0.65)" }}>
-                {s.label}
-              </div>
-            </div>
+            </Animate>
           ))}
         </div>
       </section>
 
       {/* ── Core Experiences ── */}
       <section id="experiences" className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.deepOcean }}>
-            Our Core Experiences
-          </h2>
-          <div className="w-16 h-1 rounded-full mx-auto mb-6" style={{ backgroundColor: C.riverTeal }} />
-          <p className="max-w-2xl mx-auto text-lg" style={{ color: C.midOcean }}>
-            Whether you seek the rush of rapids or the quiet of a misty morning, we have a path for you.
-          </p>
-        </div>
+        <Animate variant="up">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.deepOcean }}>
+              Our Core Experiences
+            </h2>
+            <div className="w-16 h-1 rounded-full mx-auto mb-6" style={{ backgroundColor: C.riverTeal }} />
+            <p className="max-w-2xl mx-auto text-lg" style={{ color: C.midOcean }}>
+              Whether you seek the rush of rapids or the quiet of a misty morning, we have a path for you.
+            </p>
+          </div>
+        </Animate>
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
@@ -96,37 +109,39 @@ export default function Home() {
             { title: "Eco Homestays", price: "₹1,500", desc: "Traditional Karnataka hospitality surrounded by pristine coffee plantations.", icon: <HomeIcon className="w-6 h-6" />, img: "/images/homestay.png", href: "/experiences" },
             { title: "Wilderness Camping", price: "₹1,500", desc: "Sleep under the stars by the riverbank — bonfires, flowing water, and open skies.", icon: <Tent className="w-6 h-6" />, img: "/images/camping.png", href: "/experiences" },
           ].map((exp, i) => (
-            <Link key={i} href={exp.href}
-              className="group cursor-pointer rounded-2xl overflow-hidden bg-white flex flex-col transition-all duration-300 hover:-translate-y-1 no-underline"
-              style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
-              <div className="relative h-64 overflow-hidden">
-                <img src={exp.img} alt={exp.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{ background: "linear-gradient(to bottom, rgba(26,127,166,0.12), transparent)" }} />
-                <div className="absolute top-4 right-4 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold"
-                  style={{ backgroundColor: "rgba(6,24,32,0.72)", color: "#a8dff0" }}>
-                  From {exp.price}
+            <Animate key={i} variant="up" delay={i * 120}>
+              <Link href={exp.href}
+                className="group cursor-pointer rounded-2xl overflow-hidden bg-white flex flex-col transition-all duration-300 hover:-translate-y-1 no-underline h-full"
+                style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
+                <div className="relative h-64 overflow-hidden">
+                  <img src={exp.img} alt={exp.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ background: "linear-gradient(to bottom, rgba(26,127,166,0.12), transparent)" }} />
+                  <div className="absolute top-4 right-4 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold"
+                    style={{ backgroundColor: "rgba(6,24,32,0.72)", color: "#a8dff0" }}>
+                    From {exp.price}
+                  </div>
                 </div>
-              </div>
-              <div className="p-8 flex-1 flex flex-col">
-                <div className="mb-4 w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ color: C.riverTeal, backgroundColor: "#dceef6" }}>
-                  {exp.icon}
+                <div className="p-8 flex-1 flex flex-col">
+                  <div className="mb-4 w-12 h-12 rounded-full flex items-center justify-center"
+                    style={{ color: C.riverTeal, backgroundColor: "#dceef6" }}>
+                    {exp.icon}
+                  </div>
+                  <h3 className="text-2xl mb-3" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                    {exp.title}
+                  </h3>
+                  <p className="mb-6 flex-1 leading-relaxed" style={{ color: "#4a6f82" }}>{exp.desc}</p>
+                  <div className="flex items-center font-semibold transition-colors mt-auto"
+                    style={{ color: C.riverTeal }}>
+                    <span>Discover more</span>
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
-                <h3 className="text-2xl mb-3" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                  {exp.title}
-                </h3>
-                <p className="mb-6 flex-1 leading-relaxed" style={{ color: "#4a6f82" }}>{exp.desc}</p>
-                <div className="flex items-center font-semibold transition-colors mt-auto"
-                  style={{ color: C.riverTeal }}>
-                  <span>Discover more</span>
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </Animate>
           ))}
         </div>
       </section>
@@ -134,131 +149,139 @@ export default function Home() {
       {/* ── Who We Are ── */}
       <section id="about" className="py-24" style={{ backgroundColor: C.muted }}>
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl rotate-2 opacity-60"
-              style={{ background: `linear-gradient(135deg, ${C.riverTeal}33, ${C.lightTeal}22)` }} />
-            <img src="/images/rafting-hero.png" alt="River rafting in Western Ghats"
-              className="rounded-2xl shadow-xl relative z-10 aspect-[4/5] object-cover w-full" />
-            <div className="absolute -bottom-8 -right-8 bg-white p-6 rounded-2xl z-20 border shadow-lg"
-              style={{ borderColor: C.mutedBorder }}>
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full" style={{ backgroundColor: C.riverTeal }}>
-                  <ShieldCheck className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <div className="font-bold text-2xl" style={{ color: C.text }}>20+ Years</div>
-                  <div className="text-sm uppercase tracking-wide" style={{ color: "#5a8ea8" }}>On the water</div>
+          <Animate variant="left">
+            <div className="relative">
+              <div className="absolute -inset-4 rounded-3xl rotate-2 opacity-60"
+                style={{ background: `linear-gradient(135deg, ${C.riverTeal}33, ${C.lightTeal}22)` }} />
+              <img src="/images/rafting-hero.png" alt="River rafting in Western Ghats"
+                className="rounded-2xl shadow-xl relative z-10 aspect-[4/5] object-cover w-full" />
+              <div className="absolute -bottom-8 -right-8 bg-white p-6 rounded-2xl z-20 border shadow-lg"
+                style={{ borderColor: C.mutedBorder }}>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full" style={{ backgroundColor: C.riverTeal }}>
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-2xl" style={{ color: C.text }}>20+ Years</div>
+                    <div className="text-sm uppercase tracking-wide" style={{ color: "#5a8ea8" }}>On the water</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </Animate>
 
-          <div>
-            <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
-              Our Heritage
-            </span>
-            <h2 className="text-4xl md:text-5xl mb-8 leading-tight" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-              Pioneers of the{" "}
-              <span className="italic" style={{ color: C.riverTeal }}>South Indian</span> Adventure
-            </h2>
-            <p className="text-lg mb-6 leading-relaxed" style={{ color: "#2e5a74" }}>
-              Anything that gets your heart racing is worth doing. With this belief, Ace Paddlers started water sports,
-              camping and trekking across India and Nepal. In over two decades, we have hosted more than{" "}
-              <strong style={{ color: C.deepOcean }}>87,000 travelers</strong> from across the world.
-            </p>
-            <p className="text-lg mb-10 leading-relaxed" style={{ color: "#2e5a74" }}>
-              Your safety is our sanctuary. Our instructors are NOLS certified, Wilderness First Responders,
-              and CPR & Rescue 3 certified swift-water rescue professionals — with an exceptional safety record.
-            </p>
+          <Animate variant="right">
+            <div>
+              <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
+                Our Heritage
+              </span>
+              <h2 className="text-4xl md:text-5xl mb-8 leading-tight" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                Pioneers of the{" "}
+                <span className="italic" style={{ color: C.riverTeal }}>South Indian</span> Adventure
+              </h2>
+              <p className="text-lg mb-6 leading-relaxed" style={{ color: "#2e5a74" }}>
+                Anything that gets your heart racing is worth doing. With this belief, Ace Paddlers started water sports,
+                camping and trekking across India and Nepal. In over two decades, we have hosted more than{" "}
+                <strong style={{ color: C.deepOcean }}>87,000 travelers</strong> from across the world.
+              </p>
+              <p className="text-lg mb-10 leading-relaxed" style={{ color: "#2e5a74" }}>
+                Your safety is our sanctuary. Our instructors are NOLS certified, Wilderness First Responders,
+                and CPR & Rescue 3 certified swift-water rescue professionals — with an exceptional safety record.
+              </p>
 
-            <div className="grid grid-cols-2 gap-6 mb-10">
-              {[
-                { label: "Happy Travelers", value: "87,000+", icon: <Users className="w-5 h-5" /> },
-                { label: "NOLS Certified", value: "Instructors", icon: <Star className="w-5 h-5" /> },
-                { label: "First Responders", value: "Wilderness", icon: <ShieldCheck className="w-5 h-5" /> },
-                { label: "Safety Record", value: "Zero Incidents", icon: <Anchor className="w-5 h-5" /> },
-              ].map((stat, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="mt-1" style={{ color: C.riverTeal }}>{stat.icon}</div>
-                  <div>
-                    <div className="font-bold text-lg" style={{ color: C.text }}>{stat.value}</div>
-                    <div className="text-sm" style={{ color: "#5a8ea8" }}>{stat.label}</div>
+              <div className="grid grid-cols-2 gap-6 mb-10">
+                {[
+                  { label: "Happy Travelers", value: "87,000+", icon: <Users className="w-5 h-5" /> },
+                  { label: "NOLS Certified", value: "Instructors", icon: <Star className="w-5 h-5" /> },
+                  { label: "First Responders", value: "Wilderness", icon: <ShieldCheck className="w-5 h-5" /> },
+                  { label: "Safety Record", value: "Zero Incidents", icon: <Anchor className="w-5 h-5" /> },
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-1" style={{ color: C.riverTeal }}>{stat.icon}</div>
+                    <div>
+                      <div className="font-bold text-lg" style={{ color: C.text }}>{stat.value}</div>
+                      <div className="text-sm" style={{ color: "#5a8ea8" }}>{stat.label}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <Link href="/about"
-              className="inline-block rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
-              style={{ backgroundColor: C.deepOcean, color: "white" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.deepOcean)}>
-              Our Full Story
-            </Link>
-          </div>
+              <Link href="/about"
+                className="inline-block rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
+                style={{ backgroundColor: C.deepOcean, color: "white" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.deepOcean)}>
+                Our Full Story
+              </Link>
+            </div>
+          </Animate>
         </div>
       </section>
 
       {/* ── Tours ── */}
       <section id="tours" className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-          <div className="max-w-2xl">
-            <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
-              Curated Journeys
-            </span>
-            <h2 className="text-4xl md:text-5xl" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-              Most Beloved{" "}
-              <span className="italic" style={{ color: C.riverTeal }}>Tours</span>
-            </h2>
+        <Animate variant="up">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div className="max-w-2xl">
+              <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
+                Curated Journeys
+              </span>
+              <h2 className="text-4xl md:text-5xl" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                Most Beloved{" "}
+                <span className="italic" style={{ color: C.riverTeal }}>Tours</span>
+              </h2>
+            </div>
+            <Link href="/tours"
+              className="inline-block rounded-full px-6 py-3 text-sm font-semibold border-2 transition-colors whitespace-nowrap no-underline"
+              style={{ borderColor: C.riverTeal, color: C.riverTeal }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
+              View All Tours
+            </Link>
           </div>
-          <Link href="/tours"
-            className="inline-block rounded-full px-6 py-3 text-sm font-semibold border-2 transition-colors whitespace-nowrap no-underline"
-            style={{ borderColor: C.riverTeal, color: C.riverTeal }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
-            View All Tours
-          </Link>
-        </div>
+        </Animate>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {TOURS.map((tour) => (
-            <Link key={tour.slug} href={`/tours/${tour.slug}`}
-              className="group block rounded-2xl overflow-hidden bg-white transition-all duration-300 hover:-translate-y-1 no-underline"
-              style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
-              <div className="relative h-48 overflow-hidden">
-                <img src={tour.img} alt={tour.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{ background: "linear-gradient(to bottom, rgba(13,58,94,0.15), transparent)" }} />
-                <div className="absolute top-3 left-3 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "rgba(6,24,32,0.82)", color: "#a8dff0" }}>
-                  {tour.type}
+          {TOURS.map((tour, i) => (
+            <Animate key={tour.slug} variant="up" delay={i * 80}>
+              <Link href={`/tours/${tour.slug}`}
+                className="group block rounded-2xl overflow-hidden bg-white transition-all duration-300 hover:-translate-y-1 no-underline h-full"
+                style={{ border: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 8px rgba(13,45,64,0.07)" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
+                <div className="relative h-48 overflow-hidden">
+                  <img src={tour.img} alt={tour.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ background: "linear-gradient(to bottom, rgba(13,58,94,0.15), transparent)" }} />
+                  <div className="absolute top-3 left-3 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full"
+                    style={{ backgroundColor: "rgba(6,24,32,0.82)", color: "#a8dff0" }}>
+                    {tour.type}
+                  </div>
                 </div>
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-medium leading-tight"
-                    style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                    {tour.title}
-                  </h3>
-                  <span className="font-bold text-lg ml-3 shrink-0"
-                    style={{ fontFamily: "'Fraunces', serif", color: C.deepOcean }}>
-                    {tour.price}
-                  </span>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-medium leading-tight"
+                      style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                      {tour.title}
+                    </h3>
+                    <span className="font-bold text-lg ml-3 shrink-0"
+                      style={{ fontFamily: "'Fraunces', serif", color: C.deepOcean }}>
+                      {tour.price}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 text-sm" style={{ color: "#5a8ea8" }}>
+                    <div className="flex items-center gap-2"><Clock className="w-4 h-4 shrink-0" /> {tour.duration}</div>
+                    <div className="flex items-center gap-2"><MapPin className="w-4 h-4 shrink-0" /> {tour.location}</div>
+                  </div>
+                  <div className="mt-4 pt-4 flex items-center justify-between text-sm font-semibold transition-colors"
+                    style={{ borderTop: `1px solid ${C.muted}`, color: C.riverTeal }}>
+                    <span>View Details</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
-                <div className="space-y-1.5 text-sm" style={{ color: "#5a8ea8" }}>
-                  <div className="flex items-center gap-2"><Clock className="w-4 h-4 shrink-0" /> {tour.duration}</div>
-                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4 shrink-0" /> {tour.location}</div>
-                </div>
-                <div className="mt-4 pt-4 flex items-center justify-between text-sm font-semibold transition-colors"
-                  style={{ borderTop: `1px solid ${C.muted}`, color: C.riverTeal }}>
-                  <span>View Details</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </Animate>
           ))}
         </div>
       </section>
@@ -266,40 +289,44 @@ export default function Home() {
       {/* ── Destinations ── */}
       <section id="destinations" className="py-24 text-white" style={{ backgroundColor: C.deepOcean }}>
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
-              Explore the{" "}
-              <span className="italic" style={{ color: "#a8dff0" }}>Western Ghats</span>
-            </h2>
-            <p className="max-w-2xl mx-auto text-lg" style={{ color: "rgba(168,223,240,0.70)" }}>
-              Two breathtaking regions, countless rivers, and endless trails.
-            </p>
-          </div>
+          <Animate variant="up">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
+                Explore the{" "}
+                <span className="italic" style={{ color: "#a8dff0" }}>Western Ghats</span>
+              </h2>
+              <p className="max-w-2xl mx-auto text-lg" style={{ color: "rgba(168,223,240,0.70)" }}>
+                Two breathtaking regions, countless rivers, and endless trails.
+              </p>
+            </div>
+          </Animate>
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
               { name: "Coorg", slug: "coorg", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barpole river." },
               { name: "Chikmagalur", slug: "chikmagalur", img: "/images/ghats-valley.png", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river." },
-            ].map((dest) => (
-              <Link key={dest.slug} href="/destinations"
-                className="group relative rounded-2xl overflow-hidden block no-underline" style={{ height: "400px" }}>
-                <img src={dest.img} alt={dest.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(6,24,32,0.88) 0%, rgba(13,58,94,0.35) 55%, transparent 100%)" }} />
-                <div className="absolute bottom-0 left-0 p-8 w-full">
-                  <div className="flex items-center gap-2 mb-2" style={{ color: "#a8dff0" }}>
-                    <Mountain className="w-4 h-4" />
-                    <span className="uppercase tracking-widest text-xs font-bold">Destination</span>
+            ].map((dest, i) => (
+              <Animate key={dest.slug} variant="up" delay={i * 150}>
+                <Link href="/destinations"
+                  className="group relative rounded-2xl overflow-hidden block no-underline" style={{ height: "400px" }}>
+                  <img src={dest.img} alt={dest.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0"
+                    style={{ background: "linear-gradient(to top, rgba(6,24,32,0.88) 0%, rgba(13,58,94,0.35) 55%, transparent 100%)" }} />
+                  <div className="absolute bottom-0 left-0 p-8 w-full">
+                    <div className="flex items-center gap-2 mb-2" style={{ color: "#a8dff0" }}>
+                      <Mountain className="w-4 h-4" />
+                      <span className="uppercase tracking-widest text-xs font-bold">Destination</span>
+                    </div>
+                    <h3 className="text-3xl mb-3 text-white" style={{ fontFamily: "'Fraunces', serif" }}>{dest.name}</h3>
+                    <p className="text-sm mb-4 line-clamp-2" style={{ color: "rgba(168,223,240,0.80)" }}>{dest.desc}</p>
+                    <span className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
+                      style={{ color: "#a8dff0" }}>
+                      Explore <ArrowRight className="w-4 h-4" />
+                    </span>
                   </div>
-                  <h3 className="text-3xl mb-3 text-white" style={{ fontFamily: "'Fraunces', serif" }}>{dest.name}</h3>
-                  <p className="text-sm mb-4 line-clamp-2" style={{ color: "rgba(168,223,240,0.80)" }}>{dest.desc}</p>
-                  <span className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
-                    style={{ color: "#a8dff0" }}>
-                    Explore <ArrowRight className="w-4 h-4" />
-                  </span>
-                </div>
-              </Link>
+                </Link>
+              </Animate>
             ))}
           </div>
         </div>
@@ -307,33 +334,35 @@ export default function Home() {
 
       {/* ── CTA ── */}
       <section className="py-20 px-6" style={{ backgroundColor: C.muted }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <Waves className="w-10 h-10" style={{ color: C.riverTeal }} />
+        <Animate variant="up">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="flex justify-center mb-6">
+              <Waves className="w-10 h-10" style={{ color: C.riverTeal }} />
+            </div>
+            <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+              Ready to find your flow?
+            </h2>
+            <p className="text-lg mb-10" style={{ color: "#2e5a74" }}>
+              Call us to plan your perfect Western Ghats adventure. Our guides are ready to help you pick the right experience.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="tel:+919480987672"
+                className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
+                style={{ backgroundColor: C.riverTeal, color: "white" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
+                <Phone className="w-5 h-5" /> +91 94809 87672
+              </a>
+              <a href="tel:+916361956068"
+                className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold border-2 transition-colors no-underline"
+                style={{ borderColor: C.riverTeal, color: C.riverTeal }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
+                <Phone className="w-5 h-5" /> +91 63619 56068
+              </a>
+            </div>
           </div>
-          <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-            Ready to find your flow?
-          </h2>
-          <p className="text-lg mb-10" style={{ color: "#2e5a74" }}>
-            Call us to plan your perfect Western Ghats adventure. Our guides are ready to help you pick the right experience.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:+919480987672"
-              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-colors no-underline"
-              style={{ backgroundColor: C.riverTeal, color: "white" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
-              <Phone className="w-5 h-5" /> +91 94809 87672
-            </a>
-            <a href="tel:+916361956068"
-              className="flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold border-2 transition-colors no-underline"
-              style={{ borderColor: C.riverTeal, color: C.riverTeal }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
-              <Phone className="w-5 h-5" /> +91 63619 56068
-            </a>
-          </div>
-        </div>
+        </Animate>
       </section>
     </Layout>
   );
