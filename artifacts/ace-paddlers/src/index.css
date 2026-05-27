@@ -175,8 +175,8 @@
 .ace-anim-ready {
   opacity: 0;
 }
-.ace-anim-fadeup    { animation: acefadeup    0.65s cubic-bezier(0.22,1,0.36,1) both; }
-.ace-anim-fadein    { animation: acefadein    0.55s ease both; }
-.ace-anim-fadeleft  { animation: acefadeleft  0.65s cubic-bezier(0.22,1,0.36,1) both; }
-.ace-anim-faderight { animation: acefaderight 0.65s cubic-bezier(0.22,1,0.36,1) both; }
-.ace-anim-scaleup   { animation: acescaleup   0.60s cubic-bezier(0.22,1,0.36,1) both; }
+.ace-anim-fadeup    { animation: acefadeup    1.0s cubic-bezier(0.22,1,0.36,1) both; }
+.ace-anim-fadein    { animation: acefadein    0.9s ease both; }
+.ace-anim-fadeleft  { animation: acefadeleft  1.0s cubic-bezier(0.22,1,0.36,1) both; }
+.ace-anim-faderight { animation: acefaderight 1.0s cubic-bezier(0.22,1,0.36,1) both; }
+.ace-anim-scaleup   { animation: acescaleup   0.95s cubic-bezier(0.22,1,0.36,1) both; }
