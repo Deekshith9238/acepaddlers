@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Phone, Menu, X, Waves, ChevronDown, MessageCircle, MapPin, Tent, Home as HomeIcon, Anchor } from "lucide-react";
+import { Phone, Menu, X, ChevronDown, MessageCircle, MapPin } from "lucide-react";
 import { C } from "@/data/constants";
 
 type DropItem = { label: string; href: string; sub?: string };
@@ -118,11 +118,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 text-white no-underline shrink-0">
-            <Waves className="w-5 h-5" style={{ color: C.lightTeal }} />
-            <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Fraunces', serif" }}>
-              Ace Paddlers
-            </span>
+          <Link href="/" className="flex items-center no-underline shrink-0">
+            <img src="/images/logo.png" alt="Ace Paddlers" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop nav */}
@@ -201,9 +198,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }}>
         <div className="flex justify-between items-center px-6 py-5 border-b"
           style={{ borderColor: "rgba(26,127,166,0.18)" }}>
-          <div className="flex items-center gap-2 text-white">
-            <Waves className="w-5 h-5" style={{ color: C.lightTeal }} />
-            <span className="text-xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>Ace Paddlers</span>
+          <div className="flex items-center">
+            <img src="/images/logo.png" alt="Ace Paddlers" className="h-10 w-auto" />
           </div>
           <button className="text-white p-1" onClick={() => setMenuOpen(false)}>
             <X className="w-6 h-6" />
@@ -277,11 +273,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="lg:col-span-2">
-              <div className="flex items-center gap-2 mb-6">
-                <Waves className="w-5 h-5" style={{ color: C.lightTeal }} />
-                <span className="text-3xl font-bold text-white" style={{ fontFamily: "'Fraunces', serif" }}>
-                  Ace Paddlers
-                </span>
+              <div className="mb-6">
+                <img src="/images/logo.png" alt="Ace Paddlers" className="h-14 w-auto" />
               </div>
               <p className="mb-8 max-w-sm" style={{ color: "#6b8fa0" }}>
                 The pioneers of South Indian adventure tourism. Crafting unforgettable rafting, camping,
