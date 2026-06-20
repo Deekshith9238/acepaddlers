@@ -6,6 +6,11 @@ export interface RapidGrade {
   desc: string;
 }
 
+export interface FAQ {
+  q: string;
+  a: string;
+}
+
 export interface Tour {
   slug: string;
   title: string;
@@ -24,15 +29,18 @@ export interface Tour {
   difficulty?: "Easy" | "Moderate" | "Challenging";
   groupSize?: string;
   minAge?: string;
+  maxWeight?: string;
   season?: string;
+  stretchLength?: string;
   rapidGrades?: RapidGrade[];
   activities?: string[];
+  faqs?: FAQ[];
 }
 
 const TOURS: Tour[] = [
   {
-    slug: "barpole-rafting",
-    title: "Barpole White Water Rafting",
+    slug: "barapole-rafting",
+    title: "Barapole White Water Rafting",
     price: "₹1,200",
     priceValue: 1200,
     duration: "1 Hour",
@@ -42,22 +50,25 @@ const TOURS: Tour[] = [
     heroImg: "/images/rafting-hero.png",
     tagline: "Conquer the wild rapids of South Coorg's legendary Barapole river.",
     season: "June – October (Monsoon Season)",
+    stretchLength: "4.5 km",
     description:
-      "Flowing through the misty forests and lush landscapes near the foothills of Brahmagiri Hills, the Barapole River is one of South India's most thrilling white water rafting destinations. Located just a few minutes from the famous Glenlorna Tea Estate — the only Tata Group tea plantation in South Coorg — and around 12 kilometres from the breathtaking Iruppu Falls, Barapole offers the perfect combination of wilderness, adventure, and scenic beauty.\n\nDuring the monsoon, the calm river transforms into a roaring stream of frothy white rapids cutting through dense forests and rocky terrains, creating an unforgettable rafting experience. Unlike many year-round rivers, Barapole is ideal for rafting only during the monsoon season, as the river turns into a gentle stream during summer months.\n\nAt Acepaddlers, we combine decades of experience, regional expertise, and international safety standards to deliver an unforgettable rafting experience. Our trained professionals possess extensive knowledge of the river and carefully classify rapids according to internationally recognised grades. We use paddle rafts — making every member an active participant — not oar rafts where you simply sit back.",
+      "Flowing through the misty forests and lush landscapes near the foothills of Brahmagiri Hills, the Barapole River is one of South India's most thrilling white water rafting destinations. Located just a few minutes from the famous Glenlorna Tea Estate — the only Tata Group tea plantation in South Coorg — and around 12 kilometres from the breathtaking Iruppu Falls, Barapole offers the perfect combination of wilderness, adventure, and scenic beauty.\n\nDuring the monsoon (June–October), the calm river transforms into a roaring stream of frothy white rapids cutting through 4.5 kilometres of dense forest and rocky terrain. The river runs at Grade 3–4 during peak monsoon — powerful enough to provide genuine adrenaline, technical enough to require real team coordination, yet managed with international safety standards so that even first-timers and non-swimmers can participate safely.\n\nUnlike many year-round rivers, Barapole is ideal for rafting only during the monsoon season, as the river turns into a gentle stream during summer months. This seasonality is also what makes the experience so special: you're rafting a river at its most alive, through forest at its most lush, in conditions that simply cannot be replicated at any other time of year.\n\nThe 4.5 km stretch features four named rapids that our guides have navigated thousands of times. Morning Coffee eases you into the current with rolling Grade II–III waves — the name refers to the frothy, dark-and-white water that resembles a freshly poured filter coffee. Grasshopper follows, named for the way the raft 'hops' through a narrow rocky channel requiring rapid paddle commands and team coordination. Wicked Witch is the technical centrepiece of the run — a Grade III–IV rapid with powerful hydraulics, lateral waves, and a long sustained run that tests every paddler in the boat. The grand finale is Big Bang: a Grade IV drop into a crashing wave train that earns its name completely. Surviving Big Bang together is the moment groups bond permanently.\n\nAt Acepaddlers, we use paddle rafts — making every member an active participant — not oar rafts where you simply sit back. Each raft carries up to eight guests plus one NOLS-certified guide. The entire run concludes with a safety debrief and the collective high of a shared adventure.\n\nSafety at Acepaddlers is not a marketing claim — it is our operating culture. Every guide holds NOLS, WFR, CPR, and Rescue 3 certifications. A dedicated safety kayaker accompanies every raft run. Water levels are assessed every morning before any guests arrive, and we cancel or modify runs whenever conditions fall outside our safety parameters. Our 20+ year, 87,000+ guest track record with zero serious incidents is the result of never compromising on these standards — not once, not for any reason.",
     highlights: [
-      "Grade I to Grade IV rapids — suitable for all levels",
+      "Grade 3–4 rapids across 4.5 km of wild Barapole river",
+      "Four named rapids: Morning Coffee, Grasshopper, Wicked Witch, Big Bang",
       "Located near Glenlorna Tea Estate and Iruppu Falls",
       "Paddle rafts — every person actively paddles",
-      "NOLS, WFR & Rescue 3 certified guides",
-      "Zero-accident safety record over decades of operation",
+      "NOLS, WFR, CPR & Rescue 3 certified guides",
+      "Zero-accident safety record: 20+ years, 87,000+ guests",
       "Detailed safety briefing before every run",
+      "Dedicated safety kayaker at all key rapids",
     ],
     included: [
       "Safety equipment (helmet, life jacket, paddle)",
       "NOLS-certified lead guide",
       "Safety kayaker escort",
       "Changing rooms & lockers",
-      "Safety orientation briefing",
+      "Safety orientation briefing (20 min)",
     ],
     excluded: [
       "Personal travel insurance",
@@ -68,6 +79,29 @@ const TOURS: Tour[] = [
     difficulty: "Moderate",
     groupSize: "Up to 8 per raft",
     minAge: "12 years",
+    maxWeight: "120 kg",
+    faqs: [
+      {
+        q: "Is Barapole rafting safe for first-timers and non-swimmers?",
+        a: "Yes. The Barapole is run exclusively during monsoon (June–October) when water levels are optimal — powerful enough to be thrilling, controlled enough to be safe with proper guidance. Non-swimmers can participate fully: your life jacket provides buoyancy, your NOLS-certified guide provides instruction, and a dedicated safety kayaker is positioned at every significant rapid. In 20+ years and 87,000+ guests, we have maintained a zero serious-incident record.",
+      },
+      {
+        q: "What is the minimum age and weight limit for Barapole rafting?",
+        a: "Minimum age: 12 years. Maximum weight: 120 kg. Participants must be in reasonable physical health. Pregnant women and individuals with recent back, neck, or heart conditions should consult a doctor before rafting. Children under 12 are welcome at our Harangi Dam water sports facility, which has no age restrictions.",
+      },
+      {
+        q: "What should I wear for the Barapole rafting run?",
+        a: "Wear quick-dry shorts and a synthetic T-shirt (avoid cotton and jeans — they become heavy when wet). Sports sandals with a strap work better than flip-flops. Remove watches, earrings, and necklaces. Bring a change of dry clothes for after the run. Leave your phone in the locker unless it's in a waterproof case — the Barapole will get you thoroughly wet.",
+      },
+      {
+        q: "What are the named rapids on the Barapole River?",
+        a: "The 4.5 km run features four named rapids: Morning Coffee (Grade II–III) — your warm-up, with frothy rolling waves through a beautiful forested stretch; Grasshopper (Grade III) — a narrow rocky channel requiring rapid team coordination; Wicked Witch (Grade III–IV) — the technical highlight, with hydraulics and lateral waves; and Big Bang (Grade IV) — the grand finale, a powerful drop into a crashing wave train.",
+      },
+      {
+        q: "When is the best time to raft the Barapole River?",
+        a: "The Barapole runs exclusively during monsoon: June through October. July and August offer the most powerful rapids (Grade IV conditions) — ideal for thrill-seekers. September is our most recommended month: consistent flows, reliable Grade III–IV conditions, and fewer extreme closure days due to very high water. October (first half) is still excellent. Outside this window, the river is too shallow to raft.",
+      },
+    ],
     rapidGrades: [
       {
         grade: "Grade I",
@@ -258,12 +292,12 @@ const TOURS: Tour[] = [
     heroImg: "/images/forest-homestay.png",
     tagline: "Drift into the mist of Coorg at this charming hilltop homestay.",
     description:
-      "The Misty Coorg Homestay sits high on a hill in Badagarakeri, perpetually wrapped in the cool mist that gives Coorg its legendary character. Owned and run by a native Kodava family, the homestay feels like staying with relatives — warm, unhurried, and deeply personal. The estate grows coffee, cardamom, and orange, and your hosts are delighted to show you around. Meals are entirely home-cooked using estate produce and traditional Coorgi recipes. The nearby Barpole river makes it an ideal base for combining rafting with a homestay experience.",
+      "The Misty Coorg Homestay sits high on a hill in Badagarakeri, perpetually wrapped in the cool mist that gives Coorg its legendary character. Owned and run by a native Kodava family, the homestay feels like staying with relatives — warm, unhurried, and deeply personal. The estate grows coffee, cardamom, and orange, and your hosts are delighted to show you around. Meals are entirely home-cooked using estate produce and traditional Coorgi recipes. The nearby Barapole river makes it an ideal base for combining rafting with a homestay experience.",
     highlights: [
       "Hilltop location with sweeping valley views",
       "Kodava family hosting — warm and personal",
       "Working coffee, cardamom & orange estate",
-      "Proximity to Barpole river rafting",
+      "Proximity to Barapole river rafting",
       "Traditional Coorgi breakfast & dinner",
     ],
     included: [

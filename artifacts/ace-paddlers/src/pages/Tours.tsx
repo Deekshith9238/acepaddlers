@@ -1,9 +1,10 @@
 import { Link } from "wouter";
 import { Clock, MapPin, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
+import PageMeta from "@/components/PageMeta";
 import TOURS, { TourType } from "@/data/tours";
 import { C } from "@/data/constants";
-import { useState } from "react";
 
 const FILTERS: { label: string; value: TourType | "All" }[] = [
   { label: "All", value: "All" },
@@ -18,6 +19,11 @@ export default function Tours() {
 
   return (
     <Layout>
+      <PageMeta
+        title="All Tours — River Rafting, Camping & Homestays | Ace Paddlers"
+        description="Browse all Ace Paddlers tours: white water rafting on Barapole & Bhadra rivers, overnight camping, eco-homestays in Coorg & Chikmagalur. From ₹1,200."
+        url="/tours"
+      />
       {/* Hero */}
       <section className="relative pt-40 pb-24 px-6 text-white"
         style={{ background: `linear-gradient(160deg, ${C.deepOcean} 0%, ${C.midOcean} 100%)` }}>

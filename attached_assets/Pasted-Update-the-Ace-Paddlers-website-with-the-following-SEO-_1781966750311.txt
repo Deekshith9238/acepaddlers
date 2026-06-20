@@ -1,0 +1,34 @@
+Update the Ace Paddlers website with the following SEO and content improvements:
+
+1. CRITICAL — Enable Server-Side Rendering (SSR). The site is currently client-side JS only. Google cannot index any content. Switch to SSR or SSG so all page content is in the HTML response, not rendered by the browser.
+
+2. TITLE TAG — Change homepage title from "Ace Paddlers — River Rafting, Homestays & Camping in Western Ghats" to "White Water Rafting in Coorg & Chikmagalur | Ace Paddlers". Every inner page needs its own unique title tag containing that page's specific keyword.
+
+3. META DESCRIPTION — Change homepage meta description to: "Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur."
+
+4. SPELLING — Do a global find-and-replace: change "Barpole" to "Barapole" everywhere — in all copy, page titles, image alt text, and URLs.
+
+5. SITEMAP + ROBOTS — Add /sitemap.xml listing all page URLs and /robots.txt allowing all crawlers.
+
+6. BARAPOLE RAFTING PAGE — Expand this page from ~80 words to 800+ words. Add: rapid names (Morning Coffee, Grasshopper, Wicked Witch, Big Bang), river grade (Grade 3–4), stretch length (4.5 km), best season (June–October), age and weight limits, what's included, safety briefing process, and a 5-question FAQ section at the bottom.
+
+7. IMAGE ALT TEXT — Update all image alt attributes from filenames (e.g. acepaddlers__13_.jpg) to descriptive text (e.g. "white water rafting on Barapole river Coorg").
+
+8. H1 TAGS — Add a single H1 tag per page. Homepage H1: "White Water Rafting in Coorg & Chikmagalur". Each tour page H1 should match the tour name + location.
+
+9. SCHEMA MARKUP — Add JSON-LD structured data: LocalBusiness schema on homepage, TouristAttraction schema on rafting pages, FAQPage schema on FAQ sections.
+
+10. FOOTER NAP — Add to footer on every page: "Ace Paddlers | T. Shettigeri, Virajpet, Kodagu — 571218 | [phone numbers] | [email]"
+
+11. CURRENCY — Remove the 150-country currency dropdown. Default to INR (₹) only.
+
+12. BLOG SECTION — Create a /blog section. Add 5 initial posts with proper H1/H2 structure and 600+ words each: (a) Barapole rapids guide by name, (b) Best time for Coorg rafting, (c) Why NOLS certification matters for rafting safety, (d) Barapole vs Bhadra river — which should you choose, (e) What to pack for white water rafting in Coorg.
+
+13. SAFETY PAGE — Create a dedicated /safety page showcasing: NOLS certification, Wilderness First Responder certification, CPR certification, Rescue 3 certification, 20+ year track record, and zero accident history.
+
+14. REVIEWS SECTION — Add a testimonials/reviews section to each tour page. Display at minimum 5–8 guest reviews with star ratings.
+
+15. CORPORATE PAGE — Create a /corporate-groups page targeting "corporate team outing Coorg" with group package details and an inquiry form.
+
+16. GOOGLE MAP — Embed a Google Maps iframe on the Contact page pointing to T. Shettigeri, Virajpet, Kodagu.
+    

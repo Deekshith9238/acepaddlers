@@ -1,5 +1,6 @@
 import { ShieldCheck, Users, Anchor, Star, Heart, Award, Quote } from "lucide-react";
 import Layout from "@/components/Layout";
+import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 
 const LEADERS = [
@@ -22,7 +23,7 @@ const BACKBONE = [
   { name: "Kiran Kumar", role: "River Guide — Bhadra", img: "/images/rafting-hero.png" },
   { name: "Naveen", role: "Water Sports Instructor", img: "/images/camping.png" },
   { name: "Ravi Bhandari", role: "Safety & Rescue Specialist", img: "/images/homestay.png" },
-  { name: "Deepak Bhandari", role: "River Guide — Barpole", img: "/images/luxury-homestay.png" },
+  { name: "Deepak Bhandari", role: "River Guide — Barapole", img: "/images/luxury-homestay.png" },
   { name: "Umesh", role: "Camping & Nature Guide", img: "/images/forest-homestay.png" },
   { name: "Ramesh Magar", role: "Harangi Water Sports Lead", img: "/images/ghats-valley.png" },
   { name: "Sunil Kumar", role: "Guest Experience & Homestays", img: "/images/western-ghats-sunset.png" },
@@ -71,6 +72,11 @@ const CERTS = [
 export default function About() {
   return (
     <Layout>
+      <PageMeta
+        title="About Ace Paddlers — 20+ Years of Adventure in the Western Ghats"
+        description="Meet the team behind South India's most trusted rafting operator. NOLS, WFR & Rescue 3 certified founders Manjunatha M R and Sowmya H S. Virajpet, Kodagu."
+        url="/about"
+      />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <img src="/images/western-ghats-sunset.png" alt="Western Ghats"
@@ -98,7 +104,7 @@ export default function About() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-3xl -rotate-1 opacity-40"
               style={{ background: `linear-gradient(135deg, ${C.riverTeal}44, ${C.lightTeal}22)` }} />
-            <img src="/images/rafting.png" alt="Rafting on the Barpole"
+            <img src="/images/rafting.png" alt="Rafting on the Barapole"
               className="relative z-10 rounded-2xl shadow-xl w-full aspect-[4/3] object-cover" />
             <div className="absolute -bottom-8 -right-8 bg-white rounded-2xl p-6 z-20 border shadow-lg"
               style={{ borderColor: C.mutedBorder }}>

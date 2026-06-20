@@ -5,16 +5,52 @@ import {
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
+import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 import TOURS from "@/data/tours";
+
+const LOCAL_BUSINESS_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: "Ace Paddlers",
+  description: "South India's premier white water rafting operator. NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. Rafting on Barapole & Bhadra rivers in Coorg & Chikmagalur.",
+  url: "https://acepaddlers.com",
+  telephone: "+91-9480987672",
+  priceRange: "₹₹",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "T. Shettigeri",
+    addressLocality: "Virajpet",
+    addressRegion: "Kodagu",
+    postalCode: "571218",
+    addressCountry: "IN",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: "12.138",
+    longitude: "75.868",
+  },
+  openingHours: "Mo-Su 07:00-18:00",
+  sameAs: [
+    "https://www.instagram.com/acepaddlers",
+    "https://www.facebook.com/acepaddlers",
+  ],
+};
 
 export default function Home() {
   return (
     <Layout>
+      <PageMeta
+        title="White Water Rafting in Coorg & Chikmagalur | Ace Paddlers"
+        description="Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur."
+        url="/"
+        schema={LOCAL_BUSINESS_SCHEMA}
+      />
+
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src="/images/hero-river.png" alt="Jungle river in Western Ghats"
+          <img src="/images/hero-river.png" alt="White water rafting on the Barapole River, Coorg, Western Ghats"
             className="w-full h-full object-cover object-center" />
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
           <div className="absolute bottom-0 left-0 right-0 h-48"
@@ -28,17 +64,22 @@ export default function Home() {
             </span>
           </Animate>
           <Animate immediate variant="up" delay={120}>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium leading-[1.1] mb-8"
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-medium leading-[1.1] mb-4"
               style={{ fontFamily: "'Fraunces', serif" }}>
-              Find Your <br />
-              <span className="italic" style={{ color: "#a8dff0" }}>Flow.</span>
+              White Water Rafting in{" "}
+              <span className="italic" style={{ color: "#a8dff0" }}>Coorg & Chikmagalur</span>
             </h1>
           </Animate>
-          <Animate immediate variant="up" delay={260}>
+          <Animate immediate variant="up" delay={200}>
+            <p className="text-2xl md:text-3xl font-light mb-6" style={{ color: "rgba(224,242,252,0.80)", fontFamily: "'Fraunces', serif" }}>
+              Find Your Flow.
+            </p>
+          </Animate>
+          <Animate immediate variant="up" delay={300}>
             <p className="text-lg md:text-xl font-light mb-12 max-w-2xl mx-auto leading-relaxed"
               style={{ color: "rgba(224,242,252,0.90)" }}>
-              Experience the raw beauty of the Western Ghats with the pioneers of South Indian adventure tourism.
-              River rafting, wild camping, and eco-homestays that reconnect you with nature.
+              South India's most experienced rafting team — NOLS-certified guides, 20+ years, 87,000+ guests,
+              zero accidents on the Barapole & Bhadra rivers.
             </p>
           </Animate>
           <Animate immediate variant="up" delay={380}>
@@ -105,7 +146,7 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { title: "White Water Rafting", price: "₹1,200", desc: "Navigate the thrilling rapids of Barpole and Bhadra rivers under expert guidance.", icon: <Waves className="w-6 h-6" />, img: "/images/rafting.png", href: "/experiences" },
+            { title: "White Water Rafting", price: "₹1,200", desc: "Navigate the thrilling rapids of Barapole and Bhadra rivers under expert guidance.", icon: <Waves className="w-6 h-6" />, img: "/images/rafting.png", href: "/experiences" },
             { title: "Eco Homestays", price: "₹1,500", desc: "Traditional Karnataka hospitality surrounded by pristine coffee plantations.", icon: <HomeIcon className="w-6 h-6" />, img: "/images/homestay.png", href: "/experiences" },
             { title: "Wilderness Camping", price: "₹1,500", desc: "Sleep under the stars by the riverbank — bonfires, flowing water, and open skies.", icon: <Tent className="w-6 h-6" />, img: "/images/camping.png", href: "/experiences" },
           ].map((exp, i) => (
@@ -303,7 +344,7 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              { name: "Coorg", slug: "coorg", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barpole river." },
+              { name: "Coorg", slug: "coorg", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barapole river." },
               { name: "Chikmagalur", slug: "chikmagalur", img: "/images/ghats-valley.png", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river." },
             ].map((dest, i) => (
               <Animate key={dest.slug} variant="up" delay={i * 150}>

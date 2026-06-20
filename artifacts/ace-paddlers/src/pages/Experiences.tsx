@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, ShieldCheck, Star, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
+import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 
 const EXPERIENCES = [
@@ -20,7 +21,7 @@ const EXPERIENCES = [
       "Zero-accident history over 20+ years of operation",
     ],
     tours: [
-      { slug: "barpole-rafting", title: "Barpole Rafting", price: "₹1,200", note: "Monsoon season, Grade I–IV" },
+      { slug: "barapole-rafting", title: "Barapole Rafting", price: "₹1,200", note: "Monsoon season, Grade I–IV" },
       { slug: "bhadra-rafting", title: "Bhadra Rafting", price: "₹1,200", note: "Year-round, scenic Kudremukh" },
     ],
   },
@@ -88,6 +89,11 @@ const EXPERIENCES = [
 export default function Experiences() {
   return (
     <Layout>
+      <PageMeta
+        title="Adventure Experiences — Rafting, Camping & Homestays | Ace Paddlers"
+        description="White water rafting on Barapole & Bhadra rivers, riverside camping, and eco-homestays in Coorg's Western Ghats. NOLS-certified. From ₹1,200."
+        url="/experiences"
+      />
       {/* Hero */}
       <section className="relative pt-40 pb-24 px-6 text-white"
         style={{ background: `linear-gradient(160deg, ${C.deepOcean} 0%, ${C.midOcean} 100%)` }}>

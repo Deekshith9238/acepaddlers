@@ -21,12 +21,12 @@ const PH = {
 };
 
 export const GALLERY: GalleryItem[] = [
-  { id: "r01", src: PH.raftingHero,  alt: "Rafting on Barpole River",        caption: "Barpole River — Grade III–IV rapids",   category: "Rafting",      tall: true },
+  { id: "r01", src: PH.raftingHero,  alt: "Rafting on Barapole River",        caption: "Barapole River — Grade III–IV rapids",   category: "Rafting",      tall: true },
   { id: "r02", src: PH.rafting,      alt: "Team navigating white water",      caption: "Team run through the narrows",          category: "Rafting" },
   { id: "r03", src: PH.raftingHero,  alt: "Paddle crew in action",            caption: "Full crew paddle — Bhadra River",       category: "Rafting",      tall: true },
   { id: "r04", src: PH.rafting,      alt: "Approaching a rapid",              caption: "Scouting the drop ahead",               category: "Rafting" },
   { id: "r05", src: PH.raftingHero,  alt: "Rafters celebrating after a run",  caption: "Victory smiles after the big run",      category: "Rafting" },
-  { id: "r06", src: PH.rafting,      alt: "Sunset on the river",              caption: "Golden hour on the Barpole",            category: "Rafting",      tall: true },
+  { id: "r06", src: PH.rafting,      alt: "Sunset on the river",              caption: "Golden hour on the Barapole",            category: "Rafting",      tall: true },
 
   { id: "c01", src: PH.camping,      alt: "Campfire under the stars",         caption: "Night camp in the Western Ghats",       category: "Camping",      tall: true },
   { id: "c02", src: PH.valley,       alt: "Tent pitched in a forest clearing",caption: "Forest camping — Coorg highlands",      category: "Camping" },

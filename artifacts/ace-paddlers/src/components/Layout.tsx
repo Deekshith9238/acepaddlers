@@ -10,7 +10,7 @@ const NAV: NavItem[] = [
   {
     label: "Rivers",
     items: [
-      { label: "Barpole River", href: "/tours/barpole-rafting", sub: "Grade III–IV · Coorg" },
+      { label: "Barapole River", href: "/tours/barapole-rafting", sub: "Grade III–IV · Coorg" },
       { label: "Bhadra River", href: "/tours/bhadra-rafting", sub: "Grade II–III · Chikmagalur" },
       { label: "Harangi Dam", href: "/tours/harangi-dam-water-sports", sub: "Water Sports · Coorg" },
     ],
@@ -18,7 +18,7 @@ const NAV: NavItem[] = [
   {
     label: "Activities",
     items: [
-      { label: "White Water Rafting", href: "/experiences", sub: "Barpole & Bhadra rivers" },
+      { label: "White Water Rafting", href: "/experiences", sub: "Barapole & Bhadra rivers" },
       { label: "Wilderness Camping", href: "/experiences", sub: "Riverbank & forest camps" },
       { label: "Eco Homestays", href: "/experiences", sub: "Coffee estate stays" },
       { label: "Water Sports", href: "/tours/harangi-dam-water-sports", sub: "Kayaking, speed boats & more" },
@@ -296,11 +296,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Explore</h4>
               <ul className="space-y-3 list-none p-0 m-0">
                 {[
-                  ["Barpole Rafting", "/tours/barpole-rafting"],
+                  ["Barapole Rafting", "/tours/barapole-rafting"],
                   ["Bhadra Rafting", "/tours/bhadra-rafting"],
                   ["Camping", "/experiences"],
                   ["Homestays", "/experiences"],
                   ["Harangi Water Sports", "/tours/harangi-dam-water-sports"],
+                  ["Corporate Groups", "/corporate-groups"],
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
@@ -313,8 +314,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div>
-              <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Destinations</h4>
+              <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Company</h4>
               <ul className="space-y-3 list-none p-0 m-0 mb-8">
+                {[
+                  ["About Us", "/about"],
+                  ["Safety & Certifications", "/safety"],
+                  ["Blog", "/blog"],
+                  ["Gallery", "/gallery"],
+                  ["All Tours", "/tours"],
+                  ["Contact Us", "/contact"],
+                ].map(([label, href]) => (
+                  <li key={label}>
+                    <Link href={href} className="hover:text-white transition-colors no-underline"
+                      style={{ color: "#6b8fa0" }}>
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <h4 className="text-white font-bold mb-4 uppercase tracking-wider text-xs">Destinations</h4>
+              <ul className="space-y-3 list-none p-0 m-0">
                 {[
                   ["Coorg", "/destinations"],
                   ["Chikmagalur", "/destinations"],
@@ -328,22 +347,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </li>
                 ))}
               </ul>
-              <h4 className="text-white font-bold mb-4 uppercase tracking-wider text-xs">Company</h4>
-              <ul className="space-y-3 list-none p-0 m-0">
-                {[
-                  ["About Us", "/about"],
-                  ["Gallery", "/gallery"],
-                  ["All Tours", "/tours"],
-                ].map(([label, href]) => (
-                  <li key={label}>
-                    <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
+          </div>
+
+          {/* NAP — Name, Address, Phone */}
+          <div className="py-6 px-6 mb-4 rounded-xl text-center" style={{ backgroundColor: "rgba(26,127,166,0.08)", border: "1px solid rgba(26,127,166,0.15)" }}>
+            <p className="text-sm" style={{ color: "#5a8ea8" }}>
+              <strong className="text-white">Ace Paddlers</strong> &nbsp;|&nbsp; T. Shettigeri, Virajpet, Kodagu — 571218 &nbsp;|&nbsp;
+              <a href="tel:+919480987672" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 94809 87672</a>
+              {" · "}
+              <a href="tel:+916361956068" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 63619 56068</a>
+              {" · "}
+              <a href="tel:+919380986884" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 93809 86884</a>
+            </p>
           </div>
 
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm"

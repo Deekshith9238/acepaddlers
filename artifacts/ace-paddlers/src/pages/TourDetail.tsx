@@ -1,11 +1,47 @@
 import { Link, useParams } from "wouter";
-import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle, Calendar } from "lucide-react";
+import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle, Calendar, Star, ChevronDown, ChevronUp, Weight } from "lucide-react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
+import PageMeta from "@/components/PageMeta";
 import TOURS from "@/data/tours";
+import { REVIEWS } from "@/data/reviews";
 import { C } from "@/data/constants";
 
 const BADGE: Record<string, string> = { Easy: "#16a34a", Moderate: C.riverTeal, Challenging: "#c94f28" };
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star key={i} className="w-4 h-4" fill={i <= rating ? "#f59e0b" : "none"}
+          style={{ color: i <= rating ? "#f59e0b" : "#d1d5db" }} />
+      ))}
+    </div>
+  );
+}
+
+function FAQItem({ q, a, i }: { q: string; a: string; i: number }) {
+  const [open, setOpen] = useState(i === 0);
+  return (
+    <div className="border rounded-xl overflow-hidden" style={{ borderColor: C.mutedBorder }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left bg-white hover:bg-gray-50 transition-colors"
+      >
+        <span className="font-semibold text-sm" style={{ color: C.text }}>{q}</span>
+        {open
+          ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: C.riverTeal }} />
+          : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: "#8aabb8" }} />}
+      </button>
+      {open && (
+        <div className="px-6 pb-5 bg-white border-t" style={{ borderColor: C.mutedBorder }}>
+          <p className="text-sm leading-relaxed pt-4" style={{ color: "#2e5a74" }}>{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TourDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -23,12 +59,71 @@ export default function TourDetail() {
   }
 
   const paragraphs = tour.description.split("\n\n");
+  const reviews = REVIEWS[tour.slug] ?? [];
+
+  const avgRating = reviews.length
+    ? Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length * 10) / 10
+    : null;
+
+  const touristSchema = {
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    name: tour.title,
+    description: tour.description.split("\n\n")[0],
+    url: `https://acepaddlers.com/tours/${tour.slug}`,
+    image: `https://acepaddlers.com${tour.heroImg}`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "T. Shettigeri",
+      addressLocality: "Virajpet",
+      addressRegion: "Kodagu",
+      postalCode: "571218",
+      addressCountry: "IN",
+    },
+    offers: {
+      "@type": "Offer",
+      price: tour.priceValue,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+    },
+    ...(avgRating ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: avgRating,
+        reviewCount: reviews.length,
+        bestRating: 5,
+      }
+    } : {}),
+  };
+
+  const faqSchema = tour.faqs ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: tour.faqs.map(f => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  } : null;
+
+  const combinedSchema = tour.faqs
+    ? [touristSchema, faqSchema]
+    : touristSchema;
 
   return (
     <Layout>
+      <PageMeta
+        title={`${tour.title} | ${tour.location.split(",")[0]} | Ace Paddlers`}
+        description={`${tour.tagline} ${tour.price}/person. NOLS-certified guides. ${tour.season ?? "Year-round"}. Book with Ace Paddlers — 20+ years, zero accidents.`}
+        url={`/tours/${tour.slug}`}
+        image={tour.heroImg}
+        schema={combinedSchema}
+      />
+
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[420px] flex items-end overflow-hidden">
-        <img src={tour.heroImg} alt={tour.title} className="absolute inset-0 w-full h-full object-cover" />
+        <img src={tour.heroImg} alt={`${tour.title} — white water rafting in ${tour.location.split(",")[0]}`}
+          className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(6,24,32,0.90) 0%, rgba(6,24,32,0.30) 60%, transparent 100%)" }} />
         <Animate immediate variant="up" className="relative z-10 max-w-7xl mx-auto px-6 pb-12 w-full text-white">
@@ -52,7 +147,17 @@ export default function TourDetail() {
           <h1 className="text-4xl md:text-5xl font-medium mb-3" style={{ fontFamily: "'Fraunces', serif" }}>
             {tour.title}
           </h1>
-          <p className="text-lg max-w-2xl" style={{ color: "rgba(168,223,240,0.85)" }}>{tour.tagline}</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="text-lg" style={{ color: "rgba(168,223,240,0.85)" }}>{tour.tagline}</p>
+            {avgRating && (
+              <div className="flex items-center gap-2">
+                <StarRating rating={Math.round(avgRating)} />
+                <span className="text-sm" style={{ color: "rgba(168,223,240,0.75)" }}>
+                  {avgRating} ({reviews.length} reviews)
+                </span>
+              </div>
+            )}
+          </div>
         </Animate>
       </section>
 
@@ -79,6 +184,22 @@ export default function TourDetail() {
                   </div>
                 ))}
               </div>
+              {(tour.stretchLength || tour.maxWeight) && (
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {tour.stretchLength && (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                      style={{ backgroundColor: C.riverTeal + "14", color: C.riverTeal, border: `1px solid ${C.riverTeal}33` }}>
+                      <MapPin className="w-3.5 h-3.5" /> {tour.stretchLength} stretch
+                    </div>
+                  )}
+                  {tour.maxWeight && (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                      style={{ backgroundColor: C.riverTeal + "14", color: C.riverTeal, border: `1px solid ${C.riverTeal}33` }}>
+                      <Weight className="w-3.5 h-3.5" /> Max weight: {tour.maxWeight}
+                    </div>
+                  )}
+                </div>
+              )}
             </Animate>
 
             {/* Season badge */}
@@ -212,6 +333,73 @@ export default function TourDetail() {
                 </div>
               </div>
             </Animate>
+
+            {/* FAQ */}
+            {tour.faqs && tour.faqs.length > 0 && (
+              <Animate variant="up">
+                <div>
+                  <h2 className="text-2xl mb-6" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                    Frequently Asked Questions
+                  </h2>
+                  <div className="space-y-3">
+                    {tour.faqs.map((faq, i) => (
+                      <FAQItem key={i} q={faq.q} a={faq.a} i={i} />
+                    ))}
+                  </div>
+                </div>
+              </Animate>
+            )}
+
+            {/* Reviews */}
+            {reviews.length > 0 && (
+              <Animate variant="up">
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+                      Guest Reviews
+                    </h2>
+                    {avgRating && (
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl font-bold" style={{ fontFamily: "'Fraunces', serif", color: C.deepOcean }}>
+                          {avgRating}
+                        </div>
+                        <div>
+                          <StarRating rating={Math.round(avgRating)} />
+                          <div className="text-xs mt-1" style={{ color: "#8aabb8" }}>{reviews.length} reviews</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    {reviews.map((r, i) => (
+                      <Animate key={i} variant="up" delay={i * 60}>
+                        <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: C.mutedBorder }}>
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-bold"
+                              style={{ backgroundColor: C.riverTeal }}>
+                              {r.avatar}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div>
+                                  <div className="font-semibold text-sm" style={{ color: C.text }}>{r.name}</div>
+                                  <div className="text-xs" style={{ color: "#8aabb8" }}>{r.location}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <StarRating rating={r.rating} />
+                                  <span className="text-xs" style={{ color: "#8aabb8" }}>{r.date}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm leading-relaxed" style={{ color: "#2e5a74" }}>{r.text}</p>
+                        </div>
+                      </Animate>
+                    ))}
+                  </div>
+                </div>
+              </Animate>
+            )}
           </div>
 
           {/* Right: booking card */}

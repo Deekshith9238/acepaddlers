@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, ZoomIn } from "lucide-react";
 import Layout from "@/components/Layout";
+import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 import { GALLERY, CATEGORIES, type GalleryCategory, type GalleryItem } from "@/data/gallery";
 
@@ -12,6 +13,11 @@ export default function Gallery() {
 
   return (
     <Layout>
+      <PageMeta
+        title="Photo Gallery — Rafting, Camping & Homestay | Ace Paddlers"
+        description="Photos from white water rafting on the Barapole & Bhadra rivers, riverside camping, and Coorg homestays with Ace Paddlers."
+        url="/gallery"
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center" style={{ backgroundColor: C.deepOcean }}>
         <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.lightTeal }}>

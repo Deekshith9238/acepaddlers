@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Mountain, Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, MapPin, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
+import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 
 const DESTINATIONS = [
@@ -12,9 +13,9 @@ const DESTINATIONS = [
     tagline: "Karnataka's adventure capital, cloaked in coffee and cardamom.",
     description:
       "Coorg — or Kodagu as it's locally known — is the crown jewel of Karnataka's Western Ghats. This landlocked hill district receives some of India's heaviest rainfall, feeding the rivers that make it a rafting paradise. The landscape is a patchwork of coffee estates, pepper vines, cardamom plantations, and dense shola forest. The Barapole river cuts through South Coorg's wildest terrain — flowing through the misty foothills of Brahmagiri Hills, just minutes from the Glenlorna Tea Estate and 12 km from Iruppu Falls.",
-    highlights: ["Barpole White Water Rafting (Grade I–IV)", "Harangi Dam Water Sports", "Coffee & Spice Estate Stays", "Kodava Cultural Experiences"],
+    highlights: ["Barapole White Water Rafting (Grade I–IV)", "Harangi Dam Water Sports", "Coffee & Spice Estate Stays", "Kodava Cultural Experiences"],
     tours: [
-      { slug: "barpole-rafting", title: "Barpole Rafting", price: "₹1,200", type: "Rafting" },
+      { slug: "barapole-rafting", title: "Barapole Rafting", price: "₹1,200", type: "Rafting" },
       { slug: "harangi-dam-water-sports", title: "Harangi Dam Water Sports", price: "From ₹300", type: "Water Sports" },
       { slug: "lake-lounge-homestay", title: "Lake Lounge Homestay", price: "₹2,250", type: "Homestay" },
       { slug: "misty-coorg-homestay", title: "Misty Coorg Homestay", price: "₹1,750", type: "Homestay" },
@@ -66,6 +67,11 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 export default function Destinations() {
   return (
     <Layout>
+      <PageMeta
+        title="Destinations — Coorg, Chikmagalur & Harangi Dam | Ace Paddlers"
+        description="Explore our adventure destinations: Coorg (Kodagu) for Barapole rafting, Chikmagalur for Bhadra river rafting, and Harangi Dam for year-round water sports."
+        url="/destinations"
+      />
       {/* Hero */}
       <section className="relative pt-40 pb-24 px-6 text-white"
         style={{ background: `linear-gradient(160deg, ${C.deepOcean} 0%, ${C.midOcean} 100%)` }}>
