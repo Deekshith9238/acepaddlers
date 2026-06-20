@@ -48,12 +48,11 @@ export default function Gallery() {
 
       {/* Masonry Grid */}
       <section className="py-12 px-6" style={{ backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto"
+        <div className="max-w-7xl mx-auto [columns:1] sm:[columns:2] lg:[columns:3] gap-4"
           style={{
             columns: "1",
             columnGap: "16px",
-          }}
-          className="[columns:1] sm:[columns:2] lg:[columns:3] gap-4">
+          }}>
           {filtered.map((item) => (
             <div key={item.id}
               className="group relative mb-4 overflow-hidden rounded-xl cursor-pointer break-inside-avoid"

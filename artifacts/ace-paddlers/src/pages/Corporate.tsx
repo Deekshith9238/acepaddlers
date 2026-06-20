@@ -142,7 +142,7 @@ export default function Corporate() {
             {PACKAGES.map((pkg, i) => (
               <Animate key={i} variant="up" delay={i * 100}>
                 <div className={`rounded-2xl overflow-hidden border h-full flex flex-col ${pkg.highlight ? "ring-2" : ""}`}
-                  style={{ borderColor: pkg.highlight ? C.riverTeal : C.mutedBorder, ringColor: C.riverTeal }}>
+                  style={{ borderColor: pkg.highlight ? C.riverTeal : C.mutedBorder }}>
                   {pkg.highlight && (
                     <div className="text-center py-2 text-xs font-bold uppercase tracking-wider text-white"
                       style={{ backgroundColor: C.riverTeal }}>
