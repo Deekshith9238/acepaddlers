@@ -209,6 +209,158 @@ export const BLOG_POSTS: BlogPost[] = [
         body: "Before you leave for the Barapole, run through this quick checklist:\n\n□ Quick-dry shorts and shirt — packed\n□ Sports sandals — wearing\n□ Dry change of clothes — in the car\n□ Towel — in the bag\n□ Waterproof phone pouch — in the bag\n□ Sunscreen applied before arrival\n□ Light breakfast eaten 2 hours before\n□ Contact lenses swapped for glasses\n□ Booking confirmed with Acepaddlers — +91 94809 87672\n□ Arrival time: 30 minutes before your slot for the briefing\n\nWith this list sorted, you're ready for one of South India's finest adventure experiences. See you on the Barapole!"
       }
     ]
+  },
+  {
+    slug: "best-time-barapole-rafting",
+    title: "The Best Time for Barapole Rafting — Month, Week & Time of Day",
+    metaTitle: "Best Time for Barapole Rafting in Coorg | Month & Season Guide | Ace Paddlers",
+    metaDesc: "When is the best time to raft the Barapole River in Coorg? A month-by-month and time-of-day guide to water levels, rapid grades, and avoiding the crowds. June–October monsoon season.",
+    category: "River Guides",
+    readTime: "6 min read",
+    date: "May 28, 2025",
+    coverImg: "/images/rafting-hero.png",
+    excerpt: "The Barapole runs only during the monsoon — but not every monsoon week is the same. Here's exactly when to come for the rapids you want, from peak Grade IV thrills to beginner-friendly flows.",
+    sections: [
+      {
+        heading: "Barapole Is a Monsoon-Only River",
+        body: "Unlike year-round rivers, the Barapole in South Coorg is rafted exclusively during the monsoon season — June through October. For the rest of the year the river drops to a shallow, wading-depth stream that simply cannot support a raft. This seasonality is the whole point: you're rafting the river at its most alive, through forest at its most lush, in conditions that can't be replicated any other time of year.\n\nThat means timing matters more on the Barapole than on most rivers. The difference between early June and late July can be the difference between a gentle Grade II–III float and a roaring Grade IV run."
+      },
+      {
+        heading: "June: The Season Opens",
+        body: "Early June is when the first reliable rains arrive and water levels begin to rise. The rapids are typically at Grade II–III — exciting but forgiving, which makes June an excellent month for first-timers, families with older kids, and anyone easing into white water.\n\nThe forest is freshly green, crowds are thin, and you'll often have a more relaxed, personal experience with your guide. The one caveat: in a weak start to the monsoon, very early June can occasionally be too low. Call ahead to confirm the river is running before you travel."
+      },
+      {
+        heading: "July & August: Peak Power",
+        body: "July and August are the most powerful months on the Barapole. Heavy, sustained monsoon rain pushes the river to Grade III–IV, and the marquee rapids — Wicked Witch and Big Bang — are at their most thrilling.\n\nThis is the window for adrenaline seekers and returning rafters who want the full experience. The trade-off is unpredictability: after exceptionally heavy rainfall, water levels can rise beyond our safety parameters and we will pause or modify runs. We assess the river every morning before guests arrive, and we cancel without hesitation when conditions demand it. If you're coming in peak monsoon, keep your plans flexible by a day."
+      },
+      {
+        heading: "September: The Sweet Spot",
+        body: "If we had to recommend a single month, it would be September. The heaviest rains have usually passed, but flows are still strong and consistent — reliable Grade III–IV conditions with far fewer extreme-water closure days than July or August.\n\nSeptember gives you the best combination of powerful rapids, dependable run days, and gorgeous post-monsoon scenery. It's the month we steer most first-time visitors toward when they ask for the ideal balance of thrill and reliability."
+      },
+      {
+        heading: "October: The Season Winds Down",
+        body: "The first half of October is still excellent — flows ease toward Grade II–III, the weather is more settled, and the landscape is at its greenest. It's a great time for a slightly mellower run and beautiful photography.\n\nBy late October the river begins dropping toward its dry-season level, and rafting winds down for the year. If October is your only window, aim for the first two weeks and confirm availability before you book travel."
+      },
+      {
+        heading: "Best Time of Day — and How to Book",
+        body: "Morning slots (the first runs after our daily water-level check) are ideal: water conditions are freshly assessed, light is good for photos, and you beat the weekend afternoon rush. Weekdays are noticeably quieter than weekends and holidays.\n\nWhatever month you choose, book 2–3 days ahead during weekends and peak monsoon, as slots fill quickly. Rates start from ₹1,200 per person. Call +91 94809 87672 or +91 63619 56068 and we'll help you pick the right day for the experience you're after."
+      }
+    ]
+  },
+  {
+    slug: "barapole-vs-dubare-rafting",
+    title: "Barapole vs Dubare — Which Coorg Rafting Experience Is Right for You?",
+    metaTitle: "Barapole vs Dubare Rafting in Coorg — Which Is Better? | Ace Paddlers",
+    metaDesc: "Barapole vs Dubare rafting in Coorg compared — rapid grades, season, difficulty, location, and who each river suits best. Find the right Coorg rafting experience for your group.",
+    category: "River Guides",
+    readTime: "7 min read",
+    date: "April 18, 2025",
+    coverImg: "/images/rafting.png",
+    excerpt: "Two of Coorg's best-known rafting names — but they offer very different experiences. Here's an honest comparison of the wild Barapole and the gentle Dubare so you can pick the right one.",
+    sections: [
+      {
+        heading: "Two Very Different Rivers",
+        body: "When people search for 'rafting in Coorg', two names come up again and again: Barapole and Dubare. They're often mentioned in the same breath, but they are genuinely different experiences — different rivers, different difficulty, different seasons, and different audiences.\n\nThe short version: Barapole is the adrenaline run, a monsoon-only Grade III–IV white water experience in South Coorg. Dubare is the gentle, family-friendly float on the Kaveri near Kushalanagar, famous for its elephant camp. Choosing between them comes down to what kind of day you want."
+      },
+      {
+        heading: "Barapole: Wild Monsoon White Water",
+        body: "The Barapole River flows through the misty foothills of the Brahmagiri Hills in South Coorg, near T. Shettigeri. During monsoon (June–October) it transforms into a powerful 4.5 km stretch of Grade III–IV white water with four named rapids — Morning Coffee, Grasshopper, Wicked Witch, and Big Bang.\n\nThis is real white water rafting: technical, drenching, and genuinely exhilarating. It requires team coordination and a proper safety briefing, and it runs only during the monsoon. Minimum age is 12 years. If you want an adventure that gets your heart racing — and a story to tell afterward — Barapole is the one."
+      },
+      {
+        heading: "Dubare: Gentle Family Floats on the Kaveri",
+        body: "Dubare sits on the Kaveri River near Kushalanagar in North Coorg, beside the well-known Dubare Elephant Camp. The rafting here is a calm, scenic float — generally Grade I–II — suitable for young children, grandparents, and anyone who wants the river experience without the intensity.\n\nDubare's big draw is the combination: an easy paddle plus the elephant camp, where you can watch and interact with elephants. It's a lovely half-day outing for mixed-age families, but it is not a white water adventure in the way Barapole is."
+      },
+      {
+        heading: "Head-to-Head Comparison",
+        body: "Rapid grade: Barapole is Grade III–IV (challenging); Dubare is Grade I–II (easy).\n\nSeason: Barapole runs only June–October (monsoon); Dubare's calm stretches are accessible across much of the year.\n\nLocation: Barapole is in South Coorg near T. Shettigeri; Dubare is in North Coorg near Kushalanagar.\n\nMinimum age: Barapole is 12+; Dubare suits all ages, including young children.\n\nIntensity: Barapole is a high-adrenaline workout; Dubare is a relaxed scenic float.\n\nBest for: Barapole — thrill-seekers and adventurous groups. Dubare — families with small children and first-timers who want calm water."
+      },
+      {
+        heading: "Which Should You Choose?",
+        body: "Choose Barapole if you want genuine white water thrills, you're travelling in monsoon, everyone in your group is 12 or older, and an adrenaline rush is the goal. This is the standout adventure experience in Coorg.\n\nChoose Dubare if you have young children or older relatives, you want a gentle and scenic outing, or you're combining rafting with the elephant camp. And remember — if calm water is what you want but you'd still like variety, our Harangi Dam water sports near Kushalanagar offer kayaking, speed boats, banana rides, and paddle boating in one family-friendly spot, year-round."
+      },
+      {
+        heading: "Book Your Coorg Rafting Adventure",
+        body: "At Acepaddlers we specialise in the Barapole white water run — South Coorg's premier Grade III–IV experience — backed by NOLS, WFR, and Rescue 3 certified guides and a 20+ year, 87,000+ guest safety record. Barapole rates start from ₹1,200 per person during the June–October season.\n\nNot sure which experience fits your group? Call us on +91 94809 87672 or +91 63619 56068 and we'll point you to the right river — Barapole for the thrill, or our calm-water Harangi Dam water sports for the whole family."
+      }
+    ]
+  },
+  {
+    slug: "how-to-reach-shettigeri-from-bangalore",
+    title: "How to Reach Shettigeri (Barapole Rafting) from Bangalore — Routes, Time & Tips",
+    metaTitle: "How to Reach Shettigeri from Bangalore — Barapole Rafting Route Guide | Ace Paddlers",
+    metaDesc: "Driving directions, distance, travel time, and tips for reaching T. Shettigeri in South Coorg from Bangalore for Barapole white water rafting. Best route via Mysore, where to stop, and where to stay.",
+    category: "Planning",
+    readTime: "6 min read",
+    date: "March 22, 2025",
+    coverImg: "/images/ghats-valley.png",
+    excerpt: "Barapole rafting happens at T. Shettigeri in South Coorg — about 250 km from Bangalore. Here's the best route, how long it takes, and where to stop and stay along the way.",
+    sections: [
+      {
+        heading: "Where Is Shettigeri?",
+        body: "T. Shettigeri is a small village in South Coorg (Kodagu district), near Gonikoppal and Virajpet, and it's the launch point for Barapole white water rafting. It sits close to the Glenlorna Tea Estate and around 12 km from the beautiful Iruppu Falls, deep in the forested foothills of the Brahmagiri Hills.\n\nFrom Bangalore the drive is roughly 250 km and takes about 5.5 to 6.5 hours depending on traffic out of the city and stops along the way."
+      },
+      {
+        heading: "The Best Route: Bangalore → Mysore → Gonikoppal → Shettigeri",
+        body: "The most reliable route runs via Mysore:\n\nBangalore → Mysore (via NH275 / Mysore Road, ~145 km) → Hunsur → Gonikoppal → T. Shettigeri.\n\nThe Bangalore–Mysore stretch is fast, expressway-grade road. After Mysore you head toward Hunsur and then turn into Coorg via Gonikoppal, where the landscape shifts to coffee estates and forest. The final stretch to Shettigeri is scenic but narrower — drive carefully, especially in monsoon when roads are wet and visibility can drop."
+      },
+      {
+        heading: "Travel Time & When to Leave",
+        body: "Plan for 5.5–6.5 hours of total travel. Because Barapole runs are best in the morning (after our daily water-level check), most visitors either:\n\n1. Leave Bangalore very early (around 4–5 AM) to reach Shettigeri for a late-morning or midday slot, or\n2. Travel the day before and stay overnight nearby, then raft fresh the next morning.\n\nWe strongly recommend option 2 during monsoon weekends. A 5 AM start plus a long wet-weather drive is tiring, and arriving relaxed makes the rafting far more enjoyable. Aim to arrive at the launch point 30 minutes before your slot for the safety briefing."
+      },
+      {
+        heading: "Where to Stop Along the Way",
+        body: "Mysore is the natural halfway break — good for breakfast, fuel, and a quick stretch. There are plenty of clean restaurants on the Mysore bypass.\n\nAfter Mysore, options thin out, so top up fuel and snacks in Mysore or Hunsur. Once you're into Coorg the scenery is the reward: coffee estates, spice plantations, and forest. If you have time, Iruppu Falls (about 12 km from Shettigeri) and the Glenlorna Tea Estate are worth a visit on the same trip."
+      },
+      {
+        heading: "Where to Stay Near Shettigeri",
+        body: "South Coorg has a wonderful range of stays close to the Barapole. Acepaddlers runs and partners with several homestays ideal for combining with rafting — including the Misty Coorg Homestay (near the Barapole), Thithimathi Heritage Stay, and Lake Lounge Homestay. Staying the night before lets you raft first thing and avoid a punishing same-day round trip.\n\nThese are authentic Kodava family stays with home-cooked Coorgi meals — a perfect complement to a day on the river."
+      },
+      {
+        heading: "Plan Your Trip",
+        body: "Coming from Bangalore for Barapole rafting? Book your slot and ask us about combining it with a homestay so you can travel the evening before and raft refreshed. Rafting runs June–October, rates from ₹1,200 per person.\n\nCall +91 94809 87672 or +91 63619 56068 and we'll help you plan the route, timing, and stay around your rafting date."
+      }
+    ]
+  },
+  {
+    slug: "coorg-water-sports-guide-2026",
+    title: "Coorg Water Sports Guide 2026 — Rafting, Kayaking, Speed Boats & More",
+    metaTitle: "Coorg Water Sports Guide 2026 — Rafting, Kayaking & Speed Boats | Ace Paddlers",
+    metaDesc: "The complete 2026 guide to water sports in Coorg — Barapole white water rafting, Harangi Dam kayaking, speed boats, banana rides & paddle boating. Seasons, prices, locations & booking tips.",
+    category: "Destination Guides",
+    readTime: "8 min read",
+    date: "January 14, 2026",
+    coverImg: "/images/western-ghats-sunset.png",
+    excerpt: "From Grade IV white water on the Barapole to gentle kayaking on Harangi Dam's backwaters, Coorg has water sports for every age and appetite. Here's your complete 2026 guide.",
+    sections: [
+      {
+        heading: "Why Coorg Is South India's Water Sports Capital",
+        body: "Wrapped in mist, coffee estates, and the rivers of the Western Ghats, Coorg (Kodagu) offers an unusually rich mix of water adventures — from genuinely wild white water rafting to calm, family-friendly backwater fun.\n\nWhat makes Coorg special is the range. You can chase Grade IV rapids on the Barapole in the morning and float gently on Harangi Dam's backwaters the next day. This 2026 guide breaks down every option, who it suits, when to come, and what it costs."
+      },
+      {
+        heading: "Barapole White Water Rafting — The Headline Adventure",
+        body: "The Barapole River in South Coorg is the region's premier white water experience: a 4.5 km monsoon run with Grade III–IV rapids and four named drops — Morning Coffee, Grasshopper, Wicked Witch, and Big Bang.\n\nSeason: June–October only (monsoon).\nGrade: III–IV (challenging, but safe with certified guides).\nMinimum age: 12 years.\nPrice: from ₹1,200 per person.\nBest for: thrill-seekers, friend groups, and adventurous families with teens.\n\nThis is the one to plan a trip around. With NOLS-certified guides and a 20+ year zero-accident record, even first-timers and non-swimmers can take it on safely."
+      },
+      {
+        heading: "Harangi Dam Water Sports — Fun for the Whole Family",
+        body: "If you want water fun without the intensity, Harangi Dam near Kushalanagar is the spot. Set on the calm Kaveri River backwaters beside Harangi Tree Park and a nearby elephant camp, it offers a menu of activities for all ages.\n\nActivities: kayaking, speed boat rides, banana boat rides, and paddle boating.\nSeason: year-round, 9 AM–6 PM daily.\nMinimum age: 5 years (infants welcome on the speed boat with an adult).\nPrice: from ₹300 per person.\nBest for: families, couples, and anyone who wants calm-water fun.\n\nLife jackets are mandatory and provided, and trained staff supervise every activity — no swimming experience needed."
+      },
+      {
+        heading: "Bhadra River Rafting — Year-Round Option",
+        body: "Just outside Coorg proper, near Chikkamagaluru, the Bhadra River offers a rare year-round rafting experience. In monsoon it delivers powerful rapids; in summer it mellows into gentle drops and natural river 'jacuzzis'.\n\nSeason: year-round (monsoon for rapids, summer for scenic runs).\nMinimum age: 12 years.\nPrice: from ₹1,200 per person.\nBest for: travellers visiting outside the Barapole monsoon window who still want to raft.\n\nIt's an excellent alternative when the Barapole isn't running."
+      },
+      {
+        heading: "When to Visit for Each Activity",
+        body: "Barapole rafting: come June–October, with September the sweet spot for reliable Grade III–IV flows.\n\nHarangi Dam water sports: available all year, 9 AM–6 PM. The post-monsoon months (October–February) offer pleasant weather and full backwaters.\n\nBhadra rafting: monsoon for big rapids, summer for calm scenic runs.\n\nIf you're building a multi-day Coorg trip in 2026, a great combination is monsoon Barapole rafting plus a relaxed Harangi Dam afternoon — adrenaline one day, gentle fun the next."
+      },
+      {
+        heading: "Safety: What to Look For in an Operator",
+        body: "Water sports are only as safe as the operator running them. Before you book anywhere in Coorg, ask: Are the guides certified (NOLS, WFR, Rescue 3)? Is there a dedicated safety kayaker on rafting runs? Are water levels checked daily? Is equipment international-standard and regularly inspected?\n\nAt Acepaddlers, the answer to all of these is yes. Our 20+ year, 87,000+ guest record with zero serious incidents is the result of never compromising on these standards — we assess the river every morning and cancel or modify runs whenever conditions fall outside our safety parameters."
+      },
+      {
+        heading: "Plan Your 2026 Coorg Water Sports Trip",
+        body: "Whether you want the wild thrill of the Barapole, year-round Bhadra rafting, or a relaxed family day at Harangi Dam, Acepaddlers has you covered. Barapole and Bhadra rafting start from ₹1,200 per person; Harangi Dam water sports from ₹300 per person.\n\nCall +91 94809 87672 or +91 63619 56068 to book, or ask us to help build a multi-activity Coorg itinerary for your group in 2026."
+      }
+    ]
   }
 ];
 

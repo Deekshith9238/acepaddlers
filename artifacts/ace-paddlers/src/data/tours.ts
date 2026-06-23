@@ -14,6 +14,8 @@ export interface FAQ {
 export interface Tour {
   slug: string;
   title: string;
+  metaTitle?: string;
+  metaDescription?: string;
   price: string;
   priceValue: number;
   duration: string;
@@ -41,6 +43,8 @@ const TOURS: Tour[] = [
   {
     slug: "barapole-rafting",
     title: "Barapole White Water Rafting",
+    metaDescription:
+      "Grade 3+ rapids on South Coorg's Barapole River. NOLS-certified guides. From ₹1,200/person — instant confirmation.",
     price: "₹1,200",
     priceValue: 1200,
     duration: "1 Hour",
@@ -167,6 +171,9 @@ const TOURS: Tour[] = [
   {
     slug: "harangi-dam-water-sports",
     title: "Harangi Dam Water Sports",
+    metaTitle: "Coorg Water Sports at Harangi Dam | Ace Paddlers",
+    metaDescription:
+      "Speed boats, kayaking, banana rides & more at Harangi Dam backwaters near Kushalanagar, Coorg. Family-friendly. Book with Ace Paddlers — instant confirmation.",
     price: "₹300",
     priceValue: 300,
     duration: "5 – 30 mins",
@@ -206,6 +213,28 @@ const TOURS: Tour[] = [
       "Speed Boat Ride — adrenaline rush across sparkling open water",
       "Banana Boat Ride — fun-filled group adventure with splashes and laughter",
       "Paddle Boating — peaceful and relaxing, perfect for families and couples",
+    ],
+    faqs: [
+      {
+        q: "What water sports are available at Harangi Dam?",
+        a: "At Harangi Dam backwaters we offer kayaking, speed boat rides, banana boat rides, and paddle boating. Activities run every day from 9 AM to 6 PM on the calm Kaveri River backwaters, so you can pick a high-adrenaline speed boat ride or a relaxed paddle boat outing for the family. Prices start from ₹300 per person.",
+      },
+      {
+        q: "Is Harangi Dam water sports suitable for kids and families?",
+        a: "Yes — Harangi is our most family-friendly destination. The backwaters are calm, life jackets are mandatory and provided for everyone, and trained staff supervise every activity. The minimum age is 5 years, and infants are welcome on the speed boat with an accompanying adult. Paddle boating and banana boat rides are especially popular with families and couples.",
+      },
+      {
+        q: "Do I need to know swimming to do water sports at Harangi Dam?",
+        a: "No. Swimming is not required for any of the Harangi water sports. A mandatory life jacket provides buoyancy, the backwaters are calm, and trained activity staff are present throughout. Non-swimmers can safely enjoy kayaking, speed boats, banana rides, and paddle boating.",
+      },
+      {
+        q: "How do I reach Harangi Dam and where is it located?",
+        a: "Harangi Dam is in Coorg (Kodagu), Karnataka, near Kushalanagar — roughly 35–40 minutes' drive from Kushalanagar town and about 4–5 hours from Bengaluru. It is the first dam built across the Kaveri River and sits beside Harangi Tree Park and a nearby elephant camp, making it an easy add-on to a Coorg trip.",
+      },
+      {
+        q: "What are the timings and prices for Harangi Dam water sports?",
+        a: "Water sports run daily from 9 AM to 6 PM, year-round. Activities start from ₹300 per person depending on the ride and duration (5–30 minutes). No advance booking is required, but you can call ahead to confirm availability on weekends and holidays. Elephant interaction at the nearby camp is available 9–11 AM and 4–6 PM.",
+      },
     ],
   },
   {
