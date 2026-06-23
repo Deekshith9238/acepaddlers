@@ -113,8 +113,8 @@ export default function TourDetail() {
   return (
     <Layout>
       <PageMeta
-        title={`${tour.title} | ${tour.location.split(",")[0]} | Ace Paddlers`}
-        description={`${tour.tagline} ${tour.price}/person. NOLS-certified guides. ${tour.season ?? "Year-round"}. Book with Ace Paddlers — 20+ years, zero accidents.`}
+        title={tour.metaTitle ?? `${tour.title} | ${tour.location.split(",")[0]} | Ace Paddlers`}
+        description={tour.metaDescription ?? `${tour.tagline} ${tour.price}/person. NOLS-certified guides. ${tour.season ?? "Year-round"}. Book with Ace Paddlers — 20+ years, zero accidents.`}
         url={`/tours/${tour.slug}`}
         image={tour.heroImg}
         schema={combinedSchema}

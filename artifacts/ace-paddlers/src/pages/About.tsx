@@ -74,7 +74,7 @@ export default function About() {
     <Layout>
       <PageMeta
         title="About Ace Paddlers — 20+ Years of Adventure in the Western Ghats"
-        description="Meet the team behind South India's most trusted rafting operator. NOLS, WFR & Rescue 3 certified founders Manjunatha M R and Sowmya H S. Virajpet, Kodagu."
+        description="South India's pioneer white water rafting company since 1999. NOLS-certified guides, 25 years of safety, 87,000+ guests on Barapole & Bhadra rivers."
         url="/about"
       />
       {/* Hero */}
