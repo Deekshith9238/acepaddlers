@@ -35,6 +35,7 @@ import type {
   GenerateResult,
   GenerateSlotsInput,
   GetAvailabilityParams,
+  GoogleStatus,
   HealthStatus,
   ListBookingsParams,
   ListSlotsParams,
@@ -2675,6 +2676,153 @@ export function useListBookings<TData = Awaited<ReturnType<typeof listBookings>>
 
 
 
+
+export const getGetGoogleIntegrationUrl = () => {
+
+
+
+
+  return `/api/admin/integrations/google`
+}
+
+/**
+ * @summary Google Calendar connection status
+ */
+export const getGoogleIntegration = async ( options?: RequestInit): Promise<GoogleStatus> => {
+
+  return customFetch<GoogleStatus>(getGetGoogleIntegrationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGoogleIntegrationQueryKey = () => {
+    return [
+    `/api/admin/integrations/google`
+    ] as const;
+    }
+
+
+export const getGetGoogleIntegrationQueryOptions = <TData = Awaited<ReturnType<typeof getGoogleIntegration>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGoogleIntegration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoogleIntegrationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoogleIntegration>>> = ({ signal }) => getGoogleIntegration({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGoogleIntegration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGoogleIntegrationQueryResult = NonNullable<Awaited<ReturnType<typeof getGoogleIntegration>>>
+export type GetGoogleIntegrationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Google Calendar connection status
+ */
+
+export function useGetGoogleIntegration<TData = Awaited<ReturnType<typeof getGoogleIntegration>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGoogleIntegration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGoogleIntegrationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDisconnectGoogleIntegrationUrl = () => {
+
+
+
+
+  return `/api/admin/integrations/google`
+}
+
+/**
+ * @summary Disconnect Google Calendar
+ */
+export const disconnectGoogleIntegration = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDisconnectGoogleIntegrationUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDisconnectGoogleIntegrationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectGoogleIntegration>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectGoogleIntegration>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectGoogleIntegration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectGoogleIntegration>>, void> = () => {
+
+
+          return  disconnectGoogleIntegration(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectGoogleIntegrationMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectGoogleIntegration>>>
+
+    export type DisconnectGoogleIntegrationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disconnect Google Calendar
+ */
+export const useDisconnectGoogleIntegration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectGoogleIntegration>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectGoogleIntegration>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectGoogleIntegrationMutationOptions(options));
+    }
 
 export const getUpdateBookingStatusUrl = (id: string,) => {
 

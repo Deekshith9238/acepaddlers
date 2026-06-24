@@ -369,6 +369,13 @@ export interface BookingStatusInput {
   status: BookingStatusInputStatus;
 }
 
+export interface GoogleStatus {
+  configured: boolean;
+  connected: boolean;
+  calendarId?: string | null;
+  connectedAt?: string | null;
+}
+
 export type ListToursParams = {
 /**
  * Filter by destination slug

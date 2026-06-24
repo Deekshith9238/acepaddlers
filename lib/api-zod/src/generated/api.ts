@@ -804,6 +804,17 @@ export const ListBookingsResponse = zod.array(ListBookingsResponseItem)
 
 
 /**
+ * @summary Google Calendar connection status
+ */
+export const GetGoogleIntegrationResponse = zod.object({
+  "configured": zod.boolean(),
+  "connected": zod.boolean(),
+  "calendarId": zod.string().nullish(),
+  "connectedAt": zod.string().nullish()
+})
+
+
+/**
  * @summary Update a booking's status
  */
 export const UpdateBookingStatusParams = zod.object({

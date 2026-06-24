@@ -29,6 +29,7 @@ export * from './galleryItemInput';
 export * from './generateResult';
 export * from './generateSlotsInput';
 export * from './getAvailabilityParams';
+export * from './googleStatus';
 export * from './guestDetail';
 export * from './healthStatus';
 export * from './listBookingsParams';

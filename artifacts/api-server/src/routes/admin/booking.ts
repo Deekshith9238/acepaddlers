@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { toBookingDetail, releaseBookingCapacity } from "../../lib/booking";
+import { getCalendarClient } from "../../lib/calendar";
 
 const router: IRouter = Router();
 router.use(requireAdmin);
@@ -127,17 +128,36 @@ router.patch("/bookings/:id", async (req, res) => {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  // Releasing seats when moving into "cancelled" from an active state.
-  if (parsed.data.status === "cancelled" && existing.status !== "cancelled") {
-    await releaseBookingCapacity(existing.id);
+  const newStatus = parsed.data.status;
+  const [tour] = await db.select().from(tours).where(eq(tours.id, existing.tourId)).limit(1);
+  const [slot] = await db.select().from(tourSlots).where(eq(tourSlots.id, existing.slotId)).limit(1);
+
+  // Calendar sync: create on confirm, delete on cancel. Never let it break the
+  // status change — failures are logged inside the client.
+  let googleEventId = existing.googleEventId;
+  const calendar = await getCalendarClient();
+  if (newStatus === "confirmed" && existing.status !== "confirmed" && !googleEventId && slot) {
+    googleEventId = await calendar.createEvent({
+      summary: tour?.title ?? "Ace Paddlers booking",
+      description: `Booking ${existing.bookingRef} — ${existing.customerName} (${existing.numGuests} guest(s)). ${existing.customerEmail} · ${existing.customerPhone}`,
+      location: tour?.location ?? "",
+      date: slot.date,
+      startTime: slot.startTime,
+    });
   }
+  if (newStatus === "cancelled" && existing.status !== "cancelled") {
+    await releaseBookingCapacity(existing.id);
+    if (existing.googleEventId) {
+      await calendar.deleteEvent(existing.googleEventId);
+      googleEventId = null;
+    }
+  }
+
   const [updated] = await db
     .update(bookings)
-    .set({ status: parsed.data.status, updatedAt: new Date() })
+    .set({ status: newStatus, googleEventId, updatedAt: new Date() })
     .where(eq(bookings.id, req.params.id))
     .returning();
-  const [tour] = await db.select().from(tours).where(eq(tours.id, updated.tourId)).limit(1);
-  const [slot] = await db.select().from(tourSlots).where(eq(tourSlots.id, updated.slotId)).limit(1);
   res.json(toBookingDetail(updated, tour, slot));
 });
 
