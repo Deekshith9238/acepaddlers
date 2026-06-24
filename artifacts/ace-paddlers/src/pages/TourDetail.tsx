@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import SmartImage from "@/components/SmartImage";
+import BookingWidget from "@/components/BookingWidget";
 import { useGetTour, useListTours } from "@workspace/api-client-react";
 import { adaptTour } from "@/lib/content";
 import { REVIEWS } from "@/data/reviews";
@@ -421,45 +422,7 @@ export default function TourDetail() {
 
           {/* Right: booking card */}
           <Animate variant="right" className="lg:col-span-1">
-            <div className="sticky top-28 rounded-2xl overflow-hidden border shadow-xl"
-              style={{ borderColor: C.mutedBorder, boxShadow: "0 8px 40px rgba(13,58,94,0.14)" }}>
-              <div className="p-6" style={{ backgroundColor: C.deepOcean }}>
-                <div className="text-white/70 text-sm mb-1">Starting from</div>
-                <div className="text-4xl font-bold text-white mb-1" style={{ fontFamily: "'Fraunces', serif" }}>
-                  {tour.price}
-                </div>
-                <div className="text-white/60 text-sm">per person</div>
-              </div>
-              <div className="p-6 bg-white space-y-4">
-                <a href="tel:+919480987672"
-                  className="flex items-center justify-center gap-2 w-full rounded-full py-4 font-semibold transition-colors no-underline"
-                  style={{ backgroundColor: C.riverTeal, color: "white" }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
-                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
-                  <Phone className="w-4 h-4" /> Call to Book
-                </a>
-                <a href="tel:+916361956068"
-                  className="flex items-center justify-center gap-2 w-full rounded-full py-4 font-semibold border-2 transition-colors no-underline"
-                  style={{ borderColor: C.riverTeal, color: C.riverTeal }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal; (e.currentTarget as HTMLElement).style.color = "white"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}>
-                  <Phone className="w-4 h-4" /> +91 63619 56068
-                </a>
-
-                <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${C.muted}` }}>
-                  {[
-                    { icon: <ShieldCheck className="w-4 h-4" />, text: "NOLS certified guides" },
-                    { icon: <ShieldCheck className="w-4 h-4" />, text: "Zero accidents on record" },
-                    { icon: <Check className="w-4 h-4" />, text: "All safety gear provided" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm" style={{ color: "#2e5a74" }}>
-                      <span style={{ color: C.riverTeal }}>{item.icon}</span>
-                      {item.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <BookingWidget tourSlug={tour.slug} price={tour.price} />
 
             {/* Other tours */}
             <div className="mt-8">

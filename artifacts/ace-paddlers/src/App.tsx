@@ -20,6 +20,7 @@ const Contact = lazy(() => import("@/pages/Contact"));
 const Corporate = lazy(() => import("@/pages/Corporate"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
+const BookingConfirmation = lazy(() => import("@/pages/BookingConfirmation"));
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminList = lazy(() => import("@/pages/admin/AdminList"));
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/corporate-groups" component={Corporate} />
         <Route path="/blog" component={Blog} />
         <Route path="/blog/:slug" component={BlogPost} />
+        <Route path="/booking/:ref" component={BookingConfirmation} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/:resource/new" component={AdminForm} />
