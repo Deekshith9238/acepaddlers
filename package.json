@@ -7,7 +7,7 @@
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "dev": "concurrently \"DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/postgres} PORT=8080 pnpm --filter @workspace/api-server dev\" \"PORT=18764 BASE_PATH=/ pnpm --filter @workspace/ace-paddlers dev\""
+    "dev": "concurrently \"DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5433/postgres} PORT=8080 pnpm --filter @workspace/api-server dev\" \"PORT=18764 BASE_PATH=/ pnpm --filter @workspace/ace-paddlers dev\""
   },
   "private": true,
   "devDependencies": {

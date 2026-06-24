@@ -47,3 +47,12 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local uploaded media (dev)
+.media/
+
+# Raw source media drop (originals; optimized copies live in public/images)
+/images/
+
+# Local editor/agent config
+.claude/
