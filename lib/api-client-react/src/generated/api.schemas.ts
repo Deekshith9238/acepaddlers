@@ -251,6 +251,124 @@ export interface GalleryItemInput {
   published?: boolean;
 }
 
+export type SlotStatus = typeof SlotStatus[keyof typeof SlotStatus];
+
+
+export const SlotStatus = {
+  open: 'open',
+  closed: 'closed',
+  full: 'full',
+} as const;
+
+export interface Slot {
+  id: string;
+  tourId: string;
+  date: string;
+  startTime: string;
+  capacity: number;
+  bookedCount: number;
+  remaining: number;
+  status: SlotStatus;
+}
+
+export interface GuestDetail {
+  name?: string;
+  age?: number;
+  weightKg?: number;
+}
+
+export interface BookingInput {
+  slotId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  numGuests: number;
+  guestDetails?: GuestDetail[];
+  notes?: string | null;
+}
+
+export type BookingDetailStatus = typeof BookingDetailStatus[keyof typeof BookingDetailStatus];
+
+
+export const BookingDetailStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+  completed: 'completed',
+} as const;
+
+export type BookingDetailPaymentStatus = typeof BookingDetailPaymentStatus[keyof typeof BookingDetailPaymentStatus];
+
+
+export const BookingDetailPaymentStatus = {
+  unpaid: 'unpaid',
+  deposit: 'deposit',
+  paid: 'paid',
+  refunded: 'refunded',
+} as const;
+
+export interface BookingDetail {
+  id: string;
+  bookingRef: string;
+  tourId: string;
+  tourSlug?: string | null;
+  tourTitle?: string | null;
+  slotId: string;
+  date?: string | null;
+  startTime?: string | null;
+  location?: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  numGuests: number;
+  totalAmount: number;
+  currency: string;
+  status: BookingDetailStatus;
+  paymentStatus: BookingDetailPaymentStatus;
+  createdAt?: string | null;
+}
+
+export interface GenerateSlotsInput {
+  from: string;
+  to: string;
+  /** 0=Sun … 6=Sat */
+  weekdays: number[];
+  startTime: string;
+  capacity: number;
+}
+
+export interface GenerateResult {
+  created: number;
+}
+
+export type SlotUpdateInputStatus = typeof SlotUpdateInputStatus[keyof typeof SlotUpdateInputStatus];
+
+
+export const SlotUpdateInputStatus = {
+  open: 'open',
+  closed: 'closed',
+  full: 'full',
+} as const;
+
+export interface SlotUpdateInput {
+  capacity?: number;
+  status?: SlotUpdateInputStatus;
+}
+
+export type BookingStatusInputStatus = typeof BookingStatusInputStatus[keyof typeof BookingStatusInputStatus];
+
+
+export const BookingStatusInputStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+  completed: 'completed',
+} as const;
+
+export interface BookingStatusInput {
+  status: BookingStatusInputStatus;
+}
+
 export type ListToursParams = {
 /**
  * Filter by destination slug
@@ -267,5 +385,40 @@ export const ListToursType = {
   camping: 'camping',
   homestay: 'homestay',
   water_sports: 'water_sports',
+} as const;
+
+export type GetAvailabilityParams = {
+/**
+ * Tour slug
+ */
+tour: string;
+/**
+ * YYYY-MM-DD (default today)
+ */
+from?: string;
+/**
+ * YYYY-MM-DD (default +90d)
+ */
+to?: string;
+};
+
+export type ListSlotsParams = {
+tourId: string;
+from?: string;
+to?: string;
+};
+
+export type ListBookingsParams = {
+status?: ListBookingsStatus;
+};
+
+export type ListBookingsStatus = typeof ListBookingsStatus[keyof typeof ListBookingsStatus];
+
+
+export const ListBookingsStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+  completed: 'completed',
 } as const;
 

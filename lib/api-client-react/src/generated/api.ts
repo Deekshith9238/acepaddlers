@@ -25,12 +25,22 @@ import type {
   BlogPost,
   BlogPostInput,
   BlogPostSummary,
+  BookingDetail,
+  BookingInput,
+  BookingStatusInput,
   Destination,
   DestinationInput,
   GalleryItem,
   GalleryItemInput,
+  GenerateResult,
+  GenerateSlotsInput,
+  GetAvailabilityParams,
   HealthStatus,
+  ListBookingsParams,
+  ListSlotsParams,
   ListToursParams,
+  Slot,
+  SlotUpdateInput,
   Tour,
   TourInput
 } from './api.schemas';
@@ -2050,5 +2060,691 @@ export const useDeleteGalleryItem = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteGalleryItemMutationOptions(options));
+    }
+
+export const getGetAvailabilityUrl = (params: GetAvailabilityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/availability?${stringifiedParams}` : `/api/availability`
+}
+
+/**
+ * @summary Open booking slots for a tour
+ */
+export const getAvailability = async (params: GetAvailabilityParams, options?: RequestInit): Promise<Slot[]> => {
+
+  return customFetch<Slot[]>(getGetAvailabilityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvailabilityQueryKey = (params?: GetAvailabilityParams,) => {
+    return [
+    `/api/availability`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof getAvailability>>, TError = ErrorType<void>>(params: GetAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvailabilityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvailability>>> = ({ signal }) => getAvailability(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof getAvailability>>>
+export type GetAvailabilityQueryError = ErrorType<void>
+
+
+/**
+ * @summary Open booking slots for a tour
+ */
+
+export function useGetAvailability<TData = Awaited<ReturnType<typeof getAvailability>>, TError = ErrorType<void>>(
+ params: GetAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvailabilityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateBookingUrl = () => {
+
+
+
+
+  return `/api/bookings`
+}
+
+/**
+ * @summary Request a booking (request-to-book)
+ */
+export const createBooking = async (bookingInput: BookingInput, options?: RequestInit): Promise<BookingDetail> => {
+
+  return customFetch<BookingDetail>(getCreateBookingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bookingInput,)
+  }
+);}
+
+
+
+
+export const getCreateBookingMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingInput>}, TContext> => {
+
+const mutationKey = ['createBooking'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBooking>>, {data: BodyType<BookingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBooking(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBookingMutationResult = NonNullable<Awaited<ReturnType<typeof createBooking>>>
+    export type CreateBookingMutationBody = BodyType<BookingInput>
+    export type CreateBookingMutationError = ErrorType<void>
+
+    /**
+ * @summary Request a booking (request-to-book)
+ */
+export const useCreateBooking = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBooking>>, TError,{data: BodyType<BookingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBooking>>,
+        TError,
+        {data: BodyType<BookingInput>},
+        TContext
+      > => {
+      return useMutation(getCreateBookingMutationOptions(options));
+    }
+
+export const getGetBookingUrl = (ref: string,) => {
+
+
+
+
+  return `/api/bookings/${ref}`
+}
+
+/**
+ * @summary Look up a booking by reference
+ */
+export const getBooking = async (ref: string, options?: RequestInit): Promise<BookingDetail> => {
+
+  return customFetch<BookingDetail>(getGetBookingUrl(ref),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookingQueryKey = (ref: string,) => {
+    return [
+    `/api/bookings/${ref}`
+    ] as const;
+    }
+
+
+export const getGetBookingQueryOptions = <TData = Awaited<ReturnType<typeof getBooking>>, TError = ErrorType<void>>(ref: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookingQueryKey(ref);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBooking>>> = ({ signal }) => getBooking(ref, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(ref), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookingQueryResult = NonNullable<Awaited<ReturnType<typeof getBooking>>>
+export type GetBookingQueryError = ErrorType<void>
+
+
+/**
+ * @summary Look up a booking by reference
+ */
+
+export function useGetBooking<TData = Awaited<ReturnType<typeof getBooking>>, TError = ErrorType<void>>(
+ ref: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBooking>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookingQueryOptions(ref,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListSlotsUrl = (params: ListSlotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/slots?${stringifiedParams}` : `/api/admin/slots`
+}
+
+/**
+ * @summary List slots for a tour
+ */
+export const listSlots = async (params: ListSlotsParams, options?: RequestInit): Promise<Slot[]> => {
+
+  return customFetch<Slot[]>(getListSlotsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSlotsQueryKey = (params?: ListSlotsParams,) => {
+    return [
+    `/api/admin/slots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSlotsQueryOptions = <TData = Awaited<ReturnType<typeof listSlots>>, TError = ErrorType<void>>(params: ListSlotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSlots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSlotsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSlots>>> = ({ signal }) => listSlots(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSlots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSlotsQueryResult = NonNullable<Awaited<ReturnType<typeof listSlots>>>
+export type ListSlotsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List slots for a tour
+ */
+
+export function useListSlots<TData = Awaited<ReturnType<typeof listSlots>>, TError = ErrorType<void>>(
+ params: ListSlotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSlots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSlotsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGenerateSlotsUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/tours/${id}/slots/generate`
+}
+
+/**
+ * @summary Generate slots for a tour from a weekday pattern
+ */
+export const generateSlots = async (id: string,
+    generateSlotsInput: GenerateSlotsInput, options?: RequestInit): Promise<GenerateResult> => {
+
+  return customFetch<GenerateResult>(getGenerateSlotsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateSlotsInput,)
+  }
+);}
+
+
+
+
+export const getGenerateSlotsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSlots>>, TError,{id: string;data: BodyType<GenerateSlotsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateSlots>>, TError,{id: string;data: BodyType<GenerateSlotsInput>}, TContext> => {
+
+const mutationKey = ['generateSlots'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateSlots>>, {id: string;data: BodyType<GenerateSlotsInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  generateSlots(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateSlotsMutationResult = NonNullable<Awaited<ReturnType<typeof generateSlots>>>
+    export type GenerateSlotsMutationBody = BodyType<GenerateSlotsInput>
+    export type GenerateSlotsMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate slots for a tour from a weekday pattern
+ */
+export const useGenerateSlots = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSlots>>, TError,{id: string;data: BodyType<GenerateSlotsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateSlots>>,
+        TError,
+        {id: string;data: BodyType<GenerateSlotsInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateSlotsMutationOptions(options));
+    }
+
+export const getUpdateSlotUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/slots/${id}`
+}
+
+/**
+ * @summary Update a slot
+ */
+export const updateSlot = async (id: string,
+    slotUpdateInput: SlotUpdateInput, options?: RequestInit): Promise<Slot> => {
+
+  return customFetch<Slot>(getUpdateSlotUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      slotUpdateInput,)
+  }
+);}
+
+
+
+
+export const getUpdateSlotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSlot>>, TError,{id: string;data: BodyType<SlotUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSlot>>, TError,{id: string;data: BodyType<SlotUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateSlot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSlot>>, {id: string;data: BodyType<SlotUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSlot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSlotMutationResult = NonNullable<Awaited<ReturnType<typeof updateSlot>>>
+    export type UpdateSlotMutationBody = BodyType<SlotUpdateInput>
+    export type UpdateSlotMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a slot
+ */
+export const useUpdateSlot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSlot>>, TError,{id: string;data: BodyType<SlotUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSlot>>,
+        TError,
+        {id: string;data: BodyType<SlotUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateSlotMutationOptions(options));
+    }
+
+export const getDeleteSlotUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/slots/${id}`
+}
+
+/**
+ * @summary Delete a slot
+ */
+export const deleteSlot = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteSlotUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteSlotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSlot>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSlot>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteSlot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSlot>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSlot(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSlotMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSlot>>>
+
+    export type DeleteSlotMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a slot
+ */
+export const useDeleteSlot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSlot>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSlot>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteSlotMutationOptions(options));
+    }
+
+export const getListBookingsUrl = (params?: ListBookingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/bookings?${stringifiedParams}` : `/api/admin/bookings`
+}
+
+/**
+ * @summary List bookings
+ */
+export const listBookings = async (params?: ListBookingsParams, options?: RequestInit): Promise<BookingDetail[]> => {
+
+  return customFetch<BookingDetail[]>(getListBookingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBookingsQueryKey = (params?: ListBookingsParams,) => {
+    return [
+    `/api/admin/bookings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<void>>(params?: ListBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBookingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookings>>> = ({ signal }) => listBookings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listBookings>>>
+export type ListBookingsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List bookings
+ */
+
+export function useListBookings<TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<void>>(
+ params?: ListBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBookingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateBookingStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/bookings/${id}`
+}
+
+/**
+ * @summary Update a booking's status
+ */
+export const updateBookingStatus = async (id: string,
+    bookingStatusInput: BookingStatusInput, options?: RequestInit): Promise<BookingDetail> => {
+
+  return customFetch<BookingDetail>(getUpdateBookingStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bookingStatusInput,)
+  }
+);}
+
+
+
+
+export const getUpdateBookingStatusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookingStatus>>, TError,{id: string;data: BodyType<BookingStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBookingStatus>>, TError,{id: string;data: BodyType<BookingStatusInput>}, TContext> => {
+
+const mutationKey = ['updateBookingStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBookingStatus>>, {id: string;data: BodyType<BookingStatusInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateBookingStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBookingStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateBookingStatus>>>
+    export type UpdateBookingStatusMutationBody = BodyType<BookingStatusInput>
+    export type UpdateBookingStatusMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a booking's status
+ */
+export const useUpdateBookingStatus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookingStatus>>, TError,{id: string;data: BodyType<BookingStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBookingStatus>>,
+        TError,
+        {id: string;data: BodyType<BookingStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateBookingStatusMutationOptions(options));
     }
 

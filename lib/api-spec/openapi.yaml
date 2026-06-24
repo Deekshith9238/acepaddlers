@@ -14,6 +14,8 @@ tags:
     description: Admin authentication and management
   - name: content
     description: Public content (destinations, tours, blog, gallery)
+  - name: booking
+    description: Booking engine (availability and request-to-book)
 paths:
   /healthz:
     get:
@@ -425,6 +427,150 @@ paths:
       responses:
         "204": { description: Deleted }
         "404": { description: Not found }
+  /availability:
+    get:
+      operationId: getAvailability
+      tags: [content]
+      summary: Open booking slots for a tour
+      parameters:
+        - { name: tour, in: query, required: true, schema: { type: string }, description: "Tour slug" }
+        - { name: from, in: query, required: false, schema: { type: string }, description: "YYYY-MM-DD (default today)" }
+        - { name: to, in: query, required: false, schema: { type: string }, description: "YYYY-MM-DD (default +90d)" }
+      responses:
+        "200":
+          description: Slots
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Slot" } }
+        "404": { description: Tour not found }
+  /bookings:
+    post:
+      operationId: createBooking
+      tags: [booking]
+      summary: Request a booking (request-to-book)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingInput" }
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingDetail" }
+        "404": { description: Slot not found }
+        "409": { description: Slot full / not enough capacity }
+  /bookings/{ref}:
+    get:
+      operationId: getBooking
+      tags: [booking]
+      summary: Look up a booking by reference
+      parameters:
+        - { name: ref, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Booking
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingDetail" }
+        "404": { description: Not found }
+  /admin/slots:
+    get:
+      operationId: listSlots
+      tags: [admin]
+      summary: List slots for a tour
+      parameters:
+        - { name: tourId, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Slots
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Slot" } }
+        "401": { description: Not authenticated }
+  /admin/tours/{id}/slots/generate:
+    post:
+      operationId: generateSlots
+      tags: [admin]
+      summary: Generate slots for a tour from a weekday pattern
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateSlotsInput" }
+      responses:
+        "200":
+          description: Generated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenerateResult" }
+        "404": { description: Tour not found }
+  /admin/slots/{id}:
+    patch:
+      operationId: updateSlot
+      tags: [admin]
+      summary: Update a slot
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SlotUpdateInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Slot" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteSlot
+      tags: [admin]
+      summary: Delete a slot
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/bookings:
+    get:
+      operationId: listBookings
+      tags: [admin]
+      summary: List bookings
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, confirmed, cancelled, completed] } }
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/BookingDetail" } }
+        "401": { description: Not authenticated }
+  /admin/bookings/{id}:
+    patch:
+      operationId: updateBookingStatus
+      tags: [admin]
+      summary: Update a booking's status
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingStatusInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingDetail" }
+        "404": { description: Not found }
 components:
   schemas:
     HealthStatus:
@@ -622,4 +768,79 @@ components:
         sortOrder: { type: integer }
         published: { type: boolean }
       required: [src, category]
+    Slot:
+      type: object
+      properties:
+        id: { type: string }
+        tourId: { type: string }
+        date: { type: string }
+        startTime: { type: string }
+        capacity: { type: integer }
+        bookedCount: { type: integer }
+        remaining: { type: integer }
+        status: { type: string, enum: [open, closed, full] }
+      required: [id, tourId, date, startTime, capacity, bookedCount, remaining, status]
+    GuestDetail:
+      type: object
+      properties:
+        name: { type: string }
+        age: { type: integer }
+        weightKg: { type: integer }
+    BookingInput:
+      type: object
+      properties:
+        slotId: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        numGuests: { type: integer }
+        guestDetails: { type: array, items: { $ref: "#/components/schemas/GuestDetail" } }
+        notes: { type: string, nullable: true }
+      required: [slotId, customerName, customerEmail, customerPhone, numGuests]
+    BookingDetail:
+      type: object
+      properties:
+        id: { type: string }
+        bookingRef: { type: string }
+        tourId: { type: string }
+        tourSlug: { type: string, nullable: true }
+        tourTitle: { type: string, nullable: true }
+        slotId: { type: string }
+        date: { type: string, nullable: true }
+        startTime: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        numGuests: { type: integer }
+        totalAmount: { type: integer }
+        currency: { type: string }
+        status: { type: string, enum: [pending, confirmed, cancelled, completed] }
+        paymentStatus: { type: string, enum: [unpaid, deposit, paid, refunded] }
+        createdAt: { type: string, nullable: true }
+      required: [id, bookingRef, tourId, slotId, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, paymentStatus]
+    GenerateSlotsInput:
+      type: object
+      properties:
+        from: { type: string }
+        to: { type: string }
+        weekdays: { type: array, items: { type: integer }, description: "0=Sun … 6=Sat" }
+        startTime: { type: string }
+        capacity: { type: integer }
+      required: [from, to, weekdays, startTime, capacity]
+    GenerateResult:
+      type: object
+      properties:
+        created: { type: integer }
+      required: [created]
+    SlotUpdateInput:
+      type: object
+      properties:
+        capacity: { type: integer }
+        status: { type: string, enum: [open, closed, full] }
+    BookingStatusInput:
+      type: object
+      properties:
+        status: { type: string, enum: [pending, confirmed, cancelled, completed] }
+      required: [status]
 

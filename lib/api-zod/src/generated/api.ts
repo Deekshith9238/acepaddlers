@@ -630,3 +630,209 @@ export const DeleteGalleryItemParams = zod.object({
 })
 
 
+/**
+ * @summary Open booking slots for a tour
+ */
+export const GetAvailabilityQueryParams = zod.object({
+  "tour": zod.coerce.string().describe('Tour slug'),
+  "from": zod.coerce.string().optional().describe('YYYY-MM-DD (default today)'),
+  "to": zod.coerce.string().optional().describe('YYYY-MM-DD (default +90d)')
+})
+
+export const GetAvailabilityResponseItem = zod.object({
+  "id": zod.string(),
+  "tourId": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "capacity": zod.number(),
+  "bookedCount": zod.number(),
+  "remaining": zod.number(),
+  "status": zod.enum(['open', 'closed', 'full'])
+})
+export const GetAvailabilityResponse = zod.array(GetAvailabilityResponseItem)
+
+
+/**
+ * @summary Request a booking (request-to-book)
+ */
+export const CreateBookingBody = zod.object({
+  "slotId": zod.string(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "guestDetails": zod.array(zod.object({
+  "name": zod.string().optional(),
+  "age": zod.number().optional(),
+  "weightKg": zod.number().optional()
+})).optional(),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Look up a booking by reference
+ */
+export const GetBookingParams = zod.object({
+  "ref": zod.coerce.string()
+})
+
+export const GetBookingResponse = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "createdAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary List slots for a tour
+ */
+export const ListSlotsQueryParams = zod.object({
+  "tourId": zod.coerce.string(),
+  "from": zod.coerce.string().optional(),
+  "to": zod.coerce.string().optional()
+})
+
+export const ListSlotsResponseItem = zod.object({
+  "id": zod.string(),
+  "tourId": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "capacity": zod.number(),
+  "bookedCount": zod.number(),
+  "remaining": zod.number(),
+  "status": zod.enum(['open', 'closed', 'full'])
+})
+export const ListSlotsResponse = zod.array(ListSlotsResponseItem)
+
+
+/**
+ * @summary Generate slots for a tour from a weekday pattern
+ */
+export const GenerateSlotsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GenerateSlotsBody = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "weekdays": zod.array(zod.number()).describe('0=Sun … 6=Sat'),
+  "startTime": zod.string(),
+  "capacity": zod.number()
+})
+
+export const GenerateSlotsResponse = zod.object({
+  "created": zod.number()
+})
+
+
+/**
+ * @summary Update a slot
+ */
+export const UpdateSlotParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateSlotBody = zod.object({
+  "capacity": zod.number().optional(),
+  "status": zod.enum(['open', 'closed', 'full']).optional()
+})
+
+export const UpdateSlotResponse = zod.object({
+  "id": zod.string(),
+  "tourId": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "capacity": zod.number(),
+  "bookedCount": zod.number(),
+  "remaining": zod.number(),
+  "status": zod.enum(['open', 'closed', 'full'])
+})
+
+
+/**
+ * @summary Delete a slot
+ */
+export const DeleteSlotParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary List bookings
+ */
+export const ListBookingsQueryParams = zod.object({
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']).optional()
+})
+
+export const ListBookingsResponseItem = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "createdAt": zod.string().nullish()
+})
+export const ListBookingsResponse = zod.array(ListBookingsResponseItem)
+
+
+/**
+ * @summary Update a booking's status
+ */
+export const UpdateBookingStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateBookingStatusBody = zod.object({
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed'])
+})
+
+export const UpdateBookingStatusResponse = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "createdAt": zod.string().nullish()
+})
+
+
