@@ -25,6 +25,8 @@ const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminList = lazy(() => import("@/pages/admin/AdminList"));
 const AdminForm = lazy(() => import("@/pages/admin/AdminForm"));
+const AdminBookings = lazy(() => import("@/pages/admin/AdminBookings"));
+const AdminAvailability = lazy(() => import("@/pages/admin/AdminAvailability"));
 
 const queryClient = new QueryClient();
 
@@ -56,6 +58,8 @@ function Router() {
         <Route path="/booking/:ref" component={BookingConfirmation} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/bookings" component={AdminBookings} />
+        <Route path="/admin/availability" component={AdminAvailability} />
         <Route path="/admin/:resource/new" component={AdminForm} />
         <Route path="/admin/:resource/:id" component={AdminForm} />
         <Route path="/admin/:resource" component={AdminList} />

@@ -31,6 +31,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           <NavItem href="/admin" label="Dashboard" active={location === "/admin"} />
+          <NavItem href="/admin/bookings" label="Bookings" active={location.startsWith("/admin/bookings")} />
+          <NavItem href="/admin/availability" label="Availability" active={location.startsWith("/admin/availability")} />
           {Object.values(RESOURCES).map((r) => (
             <NavItem key={r.key} href={`/admin/${r.key}`} label={r.label} active={location.startsWith(`/admin/${r.key}`)} />
           ))}
