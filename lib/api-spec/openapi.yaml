@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: admin
+    description: Admin authentication and management
+  - name: content
+    description: Public content (destinations, tours, blog, gallery)
 paths:
   /healthz:
     get:
@@ -24,6 +28,403 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /admin/auth/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      description: Authenticate an admin and start a session (sets an httpOnly cookie).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Invalid credentials
+  /admin/auth/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Admin logout
+      description: End the current admin session and clear the cookie.
+      responses:
+        "204":
+          description: Logged out
+  /admin/auth/me:
+    get:
+      operationId: adminMe
+      tags: [admin]
+      summary: Current admin
+      description: Returns the currently authenticated admin user.
+      responses:
+        "200":
+          description: Current admin user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Not authenticated
+  /destinations:
+    get:
+      operationId: listDestinations
+      tags: [content]
+      summary: List published destinations
+      responses:
+        "200":
+          description: Destinations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Destination"
+  /destinations/{slug}:
+    get:
+      operationId: getDestination
+      tags: [content]
+      summary: Get a destination by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Destination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Destination"
+        "404":
+          description: Not found
+  /tours:
+    get:
+      operationId: listTours
+      tags: [content]
+      summary: List published tours
+      parameters:
+        - name: destination
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by destination slug
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [rafting, camping, homestay, water_sports]
+      responses:
+        "200":
+          description: Tours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tour"
+  /tours/{slug}:
+    get:
+      operationId: getTour
+      tags: [content]
+      summary: Get a tour by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tour"
+        "404":
+          description: Not found
+  /blog:
+    get:
+      operationId: listBlogPosts
+      tags: [content]
+      summary: List published blog posts
+      responses:
+        "200":
+          description: Blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlogPostSummary"
+  /blog/{slug}:
+    get:
+      operationId: getBlogPost
+      tags: [content]
+      summary: Get a blog post by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Blog post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogPost"
+        "404":
+          description: Not found
+  /gallery:
+    get:
+      operationId: listGallery
+      tags: [content]
+      summary: List published gallery items
+      responses:
+        "200":
+          description: Gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryItem"
+  /admin/destinations:
+    get:
+      operationId: listAdminDestinations
+      tags: [admin]
+      summary: List all destinations (incl. drafts)
+      responses:
+        "200":
+          description: Destinations
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Destination" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createDestination
+      tags: [admin]
+      summary: Create a destination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DestinationInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Destination" }
+        "409": { description: Slug already exists }
+  /admin/destinations/{id}:
+    patch:
+      operationId: updateDestination
+      tags: [admin]
+      summary: Update a destination
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DestinationInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Destination" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteDestination
+      tags: [admin]
+      summary: Delete a destination
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/tours:
+    get:
+      operationId: listAdminTours
+      tags: [admin]
+      summary: List all tours (incl. drafts)
+      responses:
+        "200":
+          description: Tours
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Tour" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createTour
+      tags: [admin]
+      summary: Create a tour
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tour" }
+        "409": { description: Slug already exists }
+  /admin/tours/{id}:
+    patch:
+      operationId: updateTour
+      tags: [admin]
+      summary: Update a tour
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tour" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteTour
+      tags: [admin]
+      summary: Delete a tour
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/blog:
+    get:
+      operationId: listAdminBlogPosts
+      tags: [admin]
+      summary: List all blog posts (incl. drafts)
+      responses:
+        "200":
+          description: Blog posts
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/BlogPost" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createBlogPost
+      tags: [admin]
+      summary: Create a blog post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogPostInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+        "409": { description: Slug already exists }
+  /admin/blog/{id}:
+    patch:
+      operationId: updateBlogPost
+      tags: [admin]
+      summary: Update a blog post
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogPostInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteBlogPost
+      tags: [admin]
+      summary: Delete a blog post
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/gallery:
+    get:
+      operationId: listAdminGallery
+      tags: [admin]
+      summary: List all gallery items (incl. unpublished)
+      responses:
+        "200":
+          description: Gallery items
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/GalleryItem" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createGalleryItem
+      tags: [admin]
+      summary: Create a gallery item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GalleryItemInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GalleryItem" }
+  /admin/gallery/{id}:
+    patch:
+      operationId: updateGalleryItem
+      tags: [admin]
+      summary: Update a gallery item
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GalleryItemInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GalleryItem" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteGalleryItem
+      tags: [admin]
+      summary: Delete a gallery item
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
 components:
   schemas:
     HealthStatus:
@@ -33,4 +434,192 @@ components:
           type: string
       required:
         - status
+    AdminLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+      required:
+        - email
+        - password
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, editor]
+      required:
+        - id
+        - email
+        - role
+    Destination:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        fullName: { type: string, nullable: true }
+        tagline: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        heroImage: { type: string, nullable: true }
+        images: { type: array, items: { type: string } }
+        highlights: { type: array, items: { type: string } }
+        bestTime: { type: string, nullable: true }
+        distance: { type: string, nullable: true }
+        mapEmbed: { type: string, nullable: true }
+        seoTitle: { type: string, nullable: true }
+        seoDescription: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        sortOrder: { type: integer }
+      required: [id, slug, name, images, highlights]
+    Tour:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        destinationId: { type: string, nullable: true }
+        type: { type: string, enum: [rafting, camping, homestay, water_sports] }
+        title: { type: string }
+        location: { type: string, nullable: true }
+        tagline: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        heroImage: { type: string, nullable: true }
+        images: { type: array, items: { type: string } }
+        priceValue: { type: integer }
+        currency: { type: string }
+        duration: { type: string, nullable: true }
+        capacityPerSlot: { type: integer }
+        minAge: { type: integer, nullable: true }
+        maxWeightKg: { type: integer, nullable: true }
+        season: { type: string, nullable: true }
+        difficulty: { type: string, nullable: true }
+        highlights: { type: array, items: { type: string } }
+        included: { type: array, items: { type: string } }
+        excluded: { type: array, items: { type: string } }
+        details: { type: object, additionalProperties: true }
+        seoTitle: { type: string, nullable: true }
+        seoDescription: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        sortOrder: { type: integer }
+      required: [id, slug, type, title, images, priceValue, currency, capacityPerSlot, highlights, included, excluded]
+    BlogPostSummary:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        excerpt: { type: string, nullable: true }
+        coverImage: { type: string, nullable: true }
+        author: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        readTime: { type: string, nullable: true }
+        publishedAt: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+      required: [id, slug, title, tags]
+    BlogPost:
+      allOf:
+        - $ref: "#/components/schemas/BlogPostSummary"
+        - type: object
+          properties:
+            body: { type: string, nullable: true }
+            seoTitle: { type: string, nullable: true }
+            seoDescription: { type: string, nullable: true }
+    GalleryItem:
+      type: object
+      properties:
+        id: { type: string }
+        src: { type: string }
+        alt: { type: string, nullable: true }
+        caption: { type: string, nullable: true }
+        category: { type: string }
+        tall: { type: boolean }
+        sortOrder: { type: integer }
+        published: { type: boolean }
+      required: [id, src, category, tall, sortOrder]
+    DestinationInput:
+      type: object
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        fullName: { type: string, nullable: true }
+        tagline: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        heroImage: { type: string, nullable: true }
+        images: { type: array, items: { type: string } }
+        highlights: { type: array, items: { type: string } }
+        bestTime: { type: string, nullable: true }
+        distance: { type: string, nullable: true }
+        mapEmbed: { type: string, nullable: true }
+        seoTitle: { type: string, nullable: true }
+        seoDescription: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        sortOrder: { type: integer }
+      required: [slug, name]
+    TourInput:
+      type: object
+      properties:
+        slug: { type: string }
+        destinationId: { type: string, nullable: true }
+        type: { type: string, enum: [rafting, camping, homestay, water_sports] }
+        title: { type: string }
+        location: { type: string, nullable: true }
+        tagline: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        heroImage: { type: string, nullable: true }
+        images: { type: array, items: { type: string } }
+        priceValue: { type: integer }
+        currency: { type: string }
+        duration: { type: string, nullable: true }
+        capacityPerSlot: { type: integer }
+        minAge: { type: integer, nullable: true }
+        maxWeightKg: { type: integer, nullable: true }
+        season: { type: string, nullable: true }
+        difficulty: { type: string, nullable: true }
+        highlights: { type: array, items: { type: string } }
+        included: { type: array, items: { type: string } }
+        excluded: { type: array, items: { type: string } }
+        details: { type: object, additionalProperties: true }
+        seoTitle: { type: string, nullable: true }
+        seoDescription: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        sortOrder: { type: integer }
+      required: [slug, type, title, priceValue]
+    BlogPostInput:
+      type: object
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        excerpt: { type: string, nullable: true }
+        coverImage: { type: string, nullable: true }
+        body: { type: string, nullable: true }
+        author: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        readTime: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published] }
+        publishedAt: { type: string, nullable: true }
+        seoTitle: { type: string, nullable: true }
+        seoDescription: { type: string, nullable: true }
+      required: [slug, title]
+    GalleryItemInput:
+      type: object
+      properties:
+        src: { type: string }
+        alt: { type: string, nullable: true }
+        caption: { type: string, nullable: true }
+        category: { type: string }
+        tall: { type: boolean }
+        sortOrder: { type: integer }
+        published: { type: boolean }
+      required: [src, category]
 
