@@ -36,6 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {Object.values(RESOURCES).map((r) => (
             <NavItem key={r.key} href={`/admin/${r.key}`} label={r.label} active={location.startsWith(`/admin/${r.key}`)} />
           ))}
+          <NavItem href="/admin/settings" label="Settings" active={location.startsWith("/admin/settings")} />
         </nav>
         <div className="px-5 py-4 border-t border-white/10 text-xs">
           <div className="text-slate-400 mb-2 truncate">{me.email}</div>
