@@ -3,7 +3,10 @@ import { Clock, MapPin, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import PageMeta from "@/components/PageMeta";
-import TOURS, { TourType } from "@/data/tours";
+import SmartImage from "@/components/SmartImage";
+import { useListTours } from "@workspace/api-client-react";
+import { adaptTour } from "@/lib/content";
+import { type TourType } from "@/data/tours";
 import { C } from "@/data/constants";
 
 const FILTERS: { label: string; value: TourType | "All" }[] = [
@@ -15,6 +18,8 @@ const FILTERS: { label: string; value: TourType | "All" }[] = [
 
 export default function Tours() {
   const [active, setActive] = useState<TourType | "All">("All");
+  const { data: apiTours } = useListTours();
+  const TOURS = (apiTours ?? []).map(adaptTour);
   const filtered = active === "All" ? TOURS : TOURS.filter(t => t.type === active);
 
   return (
@@ -72,7 +77,8 @@ export default function Tours() {
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
               <div className="relative h-56 overflow-hidden">
-                <img src={tour.img} alt={tour.title}
+                <SmartImage src={tour.img} alt={tour.title} loading="lazy"
+                  wrapperClassName="absolute inset-0"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{ background: "linear-gradient(to bottom, rgba(13,58,94,0.15), transparent)" }} />

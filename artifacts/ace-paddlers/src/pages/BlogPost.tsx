@@ -3,14 +3,27 @@ import { ArrowLeft, Clock, Calendar, Tag } from "lucide-react";
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
+import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import BLOG_POSTS from "@/data/blog";
+import { useGetBlogPost, useListBlogPosts } from "@workspace/api-client-react";
+import { adaptBlogPost, adaptBlogSummary } from "@/lib/content";
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const post = BLOG_POSTS.find(p => p.slug === slug);
+  const { data: apiPost, isLoading } = useGetBlogPost(slug);
+  const { data: allPosts } = useListBlogPosts();
 
-  if (!post) {
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center pt-20">
+          <div className="w-10 h-10 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!apiPost) {
     return (
       <Layout>
         <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
@@ -21,7 +34,11 @@ export default function BlogPost() {
     );
   }
 
-  const otherPosts = BLOG_POSTS.filter(p => p.slug !== slug).slice(0, 3);
+  const post = adaptBlogPost(apiPost);
+  const otherPosts = (allPosts ?? [])
+    .filter(p => p.slug !== slug)
+    .slice(0, 3)
+    .map(adaptBlogSummary);
 
   return (
     <Layout>
@@ -34,7 +51,8 @@ export default function BlogPost() {
 
       {/* Hero */}
       <section className="relative pt-32 pb-16 flex items-end overflow-hidden min-h-[380px]">
-        <img src={post.coverImg} alt={post.title} className="absolute inset-0 w-full h-full object-cover" />
+        <SmartImage src={post.coverImg} alt={post.title} fetchPriority="high"
+          wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(6,24,32,0.92) 0%, rgba(6,24,32,0.45) 60%, transparent 100%)" }} />
         <Animate immediate variant="up" className="relative z-10 max-w-4xl mx-auto px-6 pb-8 w-full text-white">
           <Link href="/blog"
@@ -131,7 +149,9 @@ export default function BlogPost() {
                         <Link key={p.slug} href={`/blog/${p.slug}`}
                           className="flex items-start gap-3 p-3 rounded-xl hover:bg-white transition-colors no-underline group"
                           style={{ color: C.text }}>
-                          <img src={p.coverImg} alt={p.title} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          <SmartImage src={p.coverImg} alt={p.title} loading="lazy"
+                            wrapperClassName="relative w-14 h-14 rounded-lg shrink-0"
+                            className="w-full h-full object-cover" />
                           <div className="min-w-0">
                             <div className="text-sm font-medium leading-snug line-clamp-2" style={{ color: C.text }}>{p.title}</div>
                             <div className="text-xs mt-1" style={{ color: "#8aabb8" }}>{p.readTime}</div>

@@ -145,9 +145,34 @@
   * {
     @apply border-border;
   }
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+}
+
+/* ── Animated image loading placeholder ── */
+@keyframes aceshimmer {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
+.ace-shimmer {
+  background-color: #0d2d40;
+  background-image: linear-gradient(
+    100deg,
+    rgba(26, 127, 166, 0.08) 30%,
+    rgba(168, 223, 240, 0.30) 50%,
+    rgba(26, 127, 166, 0.08) 70%
+  );
+  background-size: 200% 100%;
+  animation: aceshimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ace-shimmer { animation: none; }
 }
 
 /* ── Keyframe animations ── */

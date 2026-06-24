@@ -3,8 +3,10 @@ import { ArrowRight, Clock, Tag } from "lucide-react";
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
+import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import BLOG_POSTS from "@/data/blog";
+import { useListBlogPosts } from "@workspace/api-client-react";
+import { adaptBlogSummary } from "@/lib/content";
 
 const SCHEMA = {
   "@context": "https://schema.org",
@@ -15,6 +17,8 @@ const SCHEMA = {
 };
 
 export default function Blog() {
+  const { data } = useListBlogPosts();
+  const BLOG_POSTS = (data ?? []).map(adaptBlogSummary);
   return (
     <Layout>
       <PageMeta
@@ -52,7 +56,8 @@ export default function Blog() {
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.14)")}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
                   <div className="relative h-48 overflow-hidden">
-                    <img src={post.coverImg} alt={post.title}
+                    <SmartImage src={post.coverImg} alt={post.title} loading="lazy"
+                      wrapperClassName="absolute inset-0"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(6,24,32,0.55) 0%, transparent 60%)" }} />
                     <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-sm"

@@ -8,25 +8,25 @@ const LEADERS = [
     name: "Manjunatha M R",
     role: "Co-Founder & Director",
     certs: ["NOLS", "WFR", "Rescue 3"],
-    img: "/images/rafting-hero.png",
+    img: "/images/barpole-rafting-1.jpg",
   },
   {
     name: "Sowmya H S",
     role: "Co-Founder & Operations Head",
     certs: ["CPR", "Swift-Water Rescue", "WFR"],
-    img: "/images/western-ghats-sunset.png",
+    img: "/images/harangi-1.jpg",
   },
 ];
 
 const BACKBONE = [
-  { name: "Sharath", role: "Lead Rafting Instructor", img: "/images/rafting.png" },
-  { name: "Kiran Kumar", role: "River Guide — Bhadra", img: "/images/rafting-hero.png" },
-  { name: "Naveen", role: "Water Sports Instructor", img: "/images/camping.png" },
-  { name: "Ravi Bhandari", role: "Safety & Rescue Specialist", img: "/images/homestay.png" },
-  { name: "Deepak Bhandari", role: "River Guide — Barapole", img: "/images/luxury-homestay.png" },
-  { name: "Umesh", role: "Camping & Nature Guide", img: "/images/forest-homestay.png" },
-  { name: "Ramesh Magar", role: "Harangi Water Sports Lead", img: "/images/ghats-valley.png" },
-  { name: "Sunil Kumar", role: "Guest Experience & Homestays", img: "/images/western-ghats-sunset.png" },
+  { name: "Sharath", role: "Lead Rafting Instructor", img: "/images/badra-rafting-1.jpg" },
+  { name: "Kiran Kumar", role: "River Guide — Bhadra", img: "/images/badra-rafting-3.jpg" },
+  { name: "Naveen", role: "Water Sports Instructor", img: "/images/harangi-2.jpg" },
+  { name: "Ravi Bhandari", role: "Safety & Rescue Specialist", img: "/images/barpole-rafting-3.jpg" },
+  { name: "Deepak Bhandari", role: "River Guide — Barapole", img: "/images/barpole-rafting-2.jpg" },
+  { name: "Umesh", role: "Camping & Nature Guide", img: "/images/harangi-3.jpg" },
+  { name: "Ramesh Magar", role: "Harangi Water Sports Lead", img: "/images/harangi-1.jpg" },
+  { name: "Sunil Kumar", role: "Guest Experience & Homestays", img: "/images/luxury-homestay.png" },
 ];
 
 const VALUES = [
@@ -79,7 +79,8 @@ export default function About() {
       />
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <img src="/images/western-ghats-sunset.png" alt="Western Ghats"
+        <img src="/images/badra-rafting-2.jpg" alt="White water rafting in the Western Ghats" fetchPriority="high"
+          width={1800} height={1200}
           className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(to right, rgba(6,24,32,0.92) 0%, rgba(13,58,94,0.65) 60%, rgba(6,24,32,0.40) 100%)" }} />
@@ -104,7 +105,8 @@ export default function About() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-3xl -rotate-1 opacity-40"
               style={{ background: `linear-gradient(135deg, ${C.riverTeal}44, ${C.lightTeal}22)` }} />
-            <img src="/images/rafting.png" alt="Rafting on the Barapole"
+            <img src="/images/barpole-rafting-2.jpg" alt="Rafting on the Barapole" loading="lazy"
+              width={1800} height={1200}
               className="relative z-10 rounded-2xl shadow-xl w-full aspect-[4/3] object-cover" />
             <div className="absolute -bottom-8 -right-8 bg-white rounded-2xl p-6 z-20 border shadow-lg"
               style={{ borderColor: C.mutedBorder }}>
@@ -223,7 +225,7 @@ export default function About() {
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
                   <div className="relative h-56 overflow-hidden">
-                    <img src={member.img} alt={member.name}
+                    <img src={member.img} alt={member.name} loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0"
                       style={{ background: "linear-gradient(to top, rgba(6,24,32,0.75) 0%, transparent 55%)" }} />
@@ -265,7 +267,7 @@ export default function About() {
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 12px 32px rgba(13,58,94,0.14)")}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
                   <div className="relative h-40 overflow-hidden">
-                    <img src={member.img} alt={member.name}
+                    <img src={member.img} alt={member.name} loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0"
                       style={{ background: "linear-gradient(to top, rgba(6,24,32,0.70) 0%, transparent 60%)" }} />

@@ -18,15 +18,25 @@ const PH = {
   forestStay:   "/images/forest-homestay.png",
   valley:       "/images/ghats-valley.png",
   sunset:       "/images/western-ghats-sunset.png",
+  // Real photography
+  barpole1:     "/images/barpole-rafting-1.jpg",
+  barpole2:     "/images/barpole-rafting-2.jpg",
+  barpole3:     "/images/barpole-rafting-3.jpg",
+  badra1:       "/images/badra-rafting-1.jpg",
+  badra2:       "/images/badra-rafting-2.jpg",
+  badra3:       "/images/badra-rafting-3.jpg",
+  harangi1:     "/images/harangi-1.jpg",
+  harangi2:     "/images/harangi-2.jpg",
+  harangi3:     "/images/harangi-3.jpg",
 };
 
 export const GALLERY: GalleryItem[] = [
-  { id: "r01", src: PH.raftingHero,  alt: "Rafting on Barapole River",        caption: "Barapole River — Grade III–IV rapids",   category: "Rafting",      tall: true },
-  { id: "r02", src: PH.rafting,      alt: "Team navigating white water",      caption: "Team run through the narrows",          category: "Rafting" },
-  { id: "r03", src: PH.raftingHero,  alt: "Paddle crew in action",            caption: "Full crew paddle — Bhadra River",       category: "Rafting",      tall: true },
-  { id: "r04", src: PH.rafting,      alt: "Approaching a rapid",              caption: "Scouting the drop ahead",               category: "Rafting" },
-  { id: "r05", src: PH.raftingHero,  alt: "Rafters celebrating after a run",  caption: "Victory smiles after the big run",      category: "Rafting" },
-  { id: "r06", src: PH.rafting,      alt: "Sunset on the river",              caption: "Golden hour on the Barapole",            category: "Rafting",      tall: true },
+  { id: "r01", src: PH.barpole1,     alt: "Rafting on Barapole River",        caption: "Barapole River — Grade III–IV rapids",   category: "Rafting",      tall: true },
+  { id: "r02", src: PH.barpole2,     alt: "Team navigating white water",      caption: "Team run through the narrows",          category: "Rafting" },
+  { id: "r03", src: PH.badra1,       alt: "Paddle crew in action",            caption: "Full crew paddle — Bhadra River",       category: "Rafting",      tall: true },
+  { id: "r04", src: PH.badra2,       alt: "Approaching a rapid",              caption: "Scouting the drop ahead — Bhadra",      category: "Rafting" },
+  { id: "r05", src: PH.badra3,       alt: "Raft dropping through a rapid",    caption: "Punching through the white water",      category: "Rafting" },
+  { id: "r06", src: PH.barpole3,     alt: "Safety kayaker in the rain",       caption: "Safety kayaker on standby",             category: "Rafting",      tall: true },
 
   { id: "c01", src: PH.camping,      alt: "Campfire under the stars",         caption: "Night camp in the Western Ghats",       category: "Camping",      tall: true },
   { id: "c02", src: PH.valley,       alt: "Tent pitched in a forest clearing",caption: "Forest camping — Coorg highlands",      category: "Camping" },
@@ -39,9 +49,9 @@ export const GALLERY: GalleryItem[] = [
   { id: "h03", src: PH.homestay,     alt: "Traditional Coorg breakfast",      caption: "Home-cooked Coorg breakfast spread",    category: "Homestay",     tall: true },
   { id: "h04", src: PH.luxuryStay,   alt: "Veranda with coffee estate view",  caption: "Morning coffee on the estate veranda",  category: "Homestay" },
 
-  { id: "d01", src: PH.valley,       alt: "Harangi Dam panorama",             caption: "Harangi reservoir at dawn",             category: "Destinations", tall: true },
-  { id: "d02", src: PH.sunset,       alt: "Western Ghats horizon",            caption: "Brahmagiri range at sunset",            category: "Destinations" },
-  { id: "d03", src: PH.valley,       alt: "Kodagu coffee estates",            caption: "Kodagu — the Scotland of India",        category: "Destinations", tall: true },
+  { id: "d01", src: PH.harangi1,     alt: "Kayaking on Harangi reservoir",    caption: "Kayaking the Kaveri backwaters — Harangi", category: "Destinations", tall: true },
+  { id: "d02", src: PH.harangi2,     alt: "Kayaker in the rapids",            caption: "Whitewater kayaking — Western Ghats",   category: "Destinations" },
+  { id: "d03", src: PH.harangi3,     alt: "Kayaking under forest canopy",     caption: "Calm waters beneath the canopy",        category: "Destinations", tall: true },
   { id: "d04", src: PH.sunset,       alt: "Waterfalls in the Ghats",          caption: "Monsoon waterfall — Coorg highlands",   category: "Destinations" },
 ];
 

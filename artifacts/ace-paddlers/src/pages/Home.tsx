@@ -6,8 +6,10 @@ import {
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
+import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import TOURS from "@/data/tours";
+import { useListTours } from "@workspace/api-client-react";
+import { adaptTour } from "@/lib/content";
 
 const LOCAL_BUSINESS_SCHEMA = {
   "@context": "https://schema.org",
@@ -38,6 +40,8 @@ const LOCAL_BUSINESS_SCHEMA = {
 };
 
 export default function Home() {
+  const { data: apiTours } = useListTours();
+  const TOURS = (apiTours ?? []).map(adaptTour);
   return (
     <Layout>
       <PageMeta
@@ -50,8 +54,17 @@ export default function Home() {
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src="/images/hero-river.png" alt="White water rafting on the Barapole River, Coorg, Western Ghats"
-            className="w-full h-full object-cover object-center" />
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/images/hero-video-poster.jpg"
+            aria-label="White water rafting on the Bhadra River, Chikmagalur, Western Ghats"
+            className="w-full h-full object-cover object-center">
+            <source src="/videos/ace-hero.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
           <div className="absolute bottom-0 left-0 right-0 h-48"
             style={{ background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
@@ -146,7 +159,7 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { title: "White Water Rafting", price: "₹1,200", desc: "Navigate the thrilling rapids of Barapole and Bhadra rivers under expert guidance.", icon: <Waves className="w-6 h-6" />, img: "/images/rafting.png", href: "/experiences" },
+            { title: "White Water Rafting", price: "₹1,200", desc: "Navigate the thrilling rapids of Barapole and Bhadra rivers under expert guidance.", icon: <Waves className="w-6 h-6" />, img: "/images/barpole-rafting-2.jpg", href: "/experiences" },
             { title: "Eco Homestays", price: "₹1,500", desc: "Traditional Karnataka hospitality surrounded by pristine coffee plantations.", icon: <HomeIcon className="w-6 h-6" />, img: "/images/homestay.png", href: "/experiences" },
             { title: "Wilderness Camping", price: "₹1,500", desc: "Sleep under the stars by the riverbank — bonfires, flowing water, and open skies.", icon: <Tent className="w-6 h-6" />, img: "/images/camping.png", href: "/experiences" },
           ].map((exp, i) => (
@@ -157,7 +170,8 @@ export default function Home() {
                 onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
                 onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
                 <div className="relative h-64 overflow-hidden">
-                  <img src={exp.img} alt={exp.title}
+                  <SmartImage src={exp.img} alt={exp.title} loading="lazy"
+                    wrapperClassName="absolute inset-0"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{ background: "linear-gradient(to bottom, rgba(26,127,166,0.12), transparent)" }} />
@@ -194,8 +208,10 @@ export default function Home() {
             <div className="relative">
               <div className="absolute -inset-4 rounded-3xl rotate-2 opacity-60"
                 style={{ background: `linear-gradient(135deg, ${C.riverTeal}33, ${C.lightTeal}22)` }} />
-              <img src="/images/rafting-hero.png" alt="River rafting in Western Ghats"
-                className="rounded-2xl shadow-xl relative z-10 aspect-[4/5] object-cover w-full" />
+              <SmartImage src="/images/barpole-rafting-3.jpg" alt="River rafting in Western Ghats" loading="lazy"
+                width={1200} height={1800}
+                wrapperClassName="relative z-10 rounded-2xl shadow-xl aspect-[4/5] w-full"
+                className="w-full h-full object-cover" />
               <div className="absolute -bottom-8 -right-8 bg-white p-6 rounded-2xl z-20 border shadow-lg"
                 style={{ borderColor: C.mutedBorder }}>
                 <div className="flex items-center gap-4">
@@ -291,7 +307,8 @@ export default function Home() {
                 onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 16px 40px rgba(13,58,94,0.18)")}
                 onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(13,45,64,0.07)")}>
                 <div className="relative h-48 overflow-hidden">
-                  <img src={tour.img} alt={tour.title}
+                  <SmartImage src={tour.img} alt={tour.title} loading="lazy"
+                    wrapperClassName="absolute inset-0"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{ background: "linear-gradient(to bottom, rgba(13,58,94,0.15), transparent)" }} />
@@ -344,13 +361,14 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              { name: "Coorg", slug: "coorg", img: "/images/western-ghats-sunset.png", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barapole river." },
-              { name: "Chikmagalur", slug: "chikmagalur", img: "/images/ghats-valley.png", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river." },
+              { name: "Coorg", slug: "coorg", img: "/images/barpole-rafting-1.jpg", desc: "The adventure capital of Karnataka — dense forests, coffee plantations, and the exhilarating Barapole river." },
+              { name: "Chikmagalur", slug: "chikmagalur", img: "/images/badra-rafting-3.jpg", desc: "Magnificent hills, cascading waterfalls, and organic farms. Raft the rapids of the Bhadra river." },
             ].map((dest, i) => (
               <Animate key={dest.slug} variant="up" delay={i * 150}>
                 <Link href="/destinations"
                   className="group relative rounded-2xl overflow-hidden block no-underline" style={{ height: "400px" }}>
-                  <img src={dest.img} alt={dest.name}
+                  <SmartImage src={dest.img} alt={dest.name} loading="lazy"
+                    wrapperClassName="absolute inset-0"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0"
                     style={{ background: "linear-gradient(to top, rgba(6,24,32,0.88) 0%, rgba(13,58,94,0.35) 55%, transparent 100%)" }} />

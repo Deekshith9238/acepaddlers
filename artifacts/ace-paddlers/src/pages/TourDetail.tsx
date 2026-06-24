@@ -4,7 +4,9 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
-import TOURS from "@/data/tours";
+import SmartImage from "@/components/SmartImage";
+import { useGetTour, useListTours } from "@workspace/api-client-react";
+import { adaptTour } from "@/lib/content";
 import { REVIEWS } from "@/data/reviews";
 import { C } from "@/data/constants";
 
@@ -45,9 +47,20 @@ function FAQItem({ q, a, i }: { q: string; a: string; i: number }) {
 
 export default function TourDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const tour = TOURS.find(t => t.slug === slug);
+  const { data: apiTour, isLoading } = useGetTour(slug);
+  const { data: apiTours } = useListTours();
 
-  if (!tour) {
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center pt-20">
+          <div className="w-10 h-10 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!apiTour) {
     return (
       <Layout>
         <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
@@ -58,6 +71,8 @@ export default function TourDetail() {
     );
   }
 
+  const tour = adaptTour(apiTour);
+  const allTours = (apiTours ?? []).map(adaptTour);
   const paragraphs = tour.description.split("\n\n");
   const reviews = REVIEWS[tour.slug] ?? [];
 
@@ -122,8 +137,10 @@ export default function TourDetail() {
 
       {/* Hero */}
       <section className="relative h-[60vh] min-h-[420px] flex items-end overflow-hidden">
-        <img src={tour.heroImg} alt={`${tour.title} — white water rafting in ${tour.location.split(",")[0]}`}
-          className="absolute inset-0 w-full h-full object-cover" />
+        <SmartImage src={tour.heroImg} alt={`${tour.title} — white water rafting in ${tour.location.split(",")[0]}`}
+          fetchPriority="high"
+          wrapperClassName="absolute inset-0"
+          className="w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(6,24,32,0.90) 0%, rgba(6,24,32,0.30) 60%, transparent 100%)" }} />
         <Animate immediate variant="up" className="relative z-10 max-w-7xl mx-auto px-6 pb-12 w-full text-white">
@@ -450,11 +467,13 @@ export default function TourDetail() {
                 Other Tours
               </h4>
               <div className="space-y-3">
-                {TOURS.filter(t => t.slug !== tour.slug).slice(0, 3).map(t => (
+                {allTours.filter(t => t.slug !== tour.slug).slice(0, 3).map(t => (
                   <Link key={t.slug} href={`/tours/${t.slug}`}
                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-white transition-colors no-underline group"
                     style={{ color: C.text }}>
-                    <img src={t.img} alt={t.title} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                    <SmartImage src={t.img} alt={t.title} loading="lazy"
+                      wrapperClassName="relative w-14 h-14 rounded-lg shrink-0"
+                      className="w-full h-full object-cover" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{t.title}</div>
                       <div className="text-xs mt-0.5" style={{ color: "#5a8ea8" }}>{t.price} · {t.duration}</div>

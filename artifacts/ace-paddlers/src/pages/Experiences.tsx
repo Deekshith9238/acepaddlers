@@ -2,13 +2,14 @@ import { Link } from "wouter";
 import { Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, ShieldCheck, Star, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import PageMeta from "@/components/PageMeta";
+import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
 
 const EXPERIENCES = [
   {
     title: "White Water Rafting",
     icon: <Waves className="w-8 h-8" />,
-    img: "/images/rafting.png",
+    img: "/images/barpole-rafting-1.jpg",
     tagline: "Navigate the roaring rapids of Karnataka's wildest rivers.",
     description:
       "White water rafting with Acepaddlers is the definitive Western Ghats adventure. We operate on two rivers — the Barapole in South Coorg and the Bhadra in Chikmagalur. Unlike conventional oar rafts where participants sit back while the guide controls the raft, we use paddle rafts and assisted paddle rafts, making every member an active part of the journey. Each raft accommodates up to eight participants along with a professional guide.",
@@ -28,7 +29,7 @@ const EXPERIENCES = [
   {
     title: "Harangi Dam Water Sports",
     icon: <Anchor className="w-8 h-8" />,
-    img: "/images/western-ghats-sunset.png",
+    img: "/images/harangi-1.jpg",
     tagline: "Kayaking, speed boats, banana rides and paddle boating on Coorg's serene Kaveri backwaters.",
     description:
       "Nestled within the cool landscapes of Coorg, the serene backwaters of Harangi Dam offer a perfect blend of adventure, nature, and relaxation. Built across the majestic Kaveri River — the first dam on the river — Harangi is renowned for its shimmering waters, misty hills, and peaceful surroundings. At Acepaddlers, we bring excitement alive with a wide range of water sports available from 9 AM to 6 PM daily. Children above 5 are permitted; infants with adults are welcome on the speed boat.",
@@ -159,8 +160,9 @@ export default function Experiences() {
               <div className={`relative ${i % 2 === 1 ? "lg:col-start-1" : ""}`}>
                 <div className="absolute -inset-4 rounded-3xl rotate-1 opacity-40"
                   style={{ background: `linear-gradient(135deg, ${C.riverTeal}44, ${C.lightTeal}22)` }} />
-                <img src={exp.img} alt={exp.title}
-                  className="relative z-10 rounded-2xl shadow-xl w-full aspect-[4/3] object-cover" />
+                <SmartImage src={exp.img} alt={exp.title} loading="lazy"
+                  wrapperClassName="relative z-10 rounded-2xl shadow-xl w-full aspect-[4/3]"
+                  className="w-full h-full object-cover" />
               </div>
             </div>
           </div>

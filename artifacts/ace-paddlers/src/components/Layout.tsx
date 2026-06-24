@@ -86,9 +86,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.scrollTo({ top: 0 });
   }, [location]);
 
-  const navBg = isHome
-    ? scrolled ? "rgba(6,18,28,0.97)" : "transparent"
-    : "rgba(6,18,28,0.98)";
+  const navBg = (!isHome || menuOpen)
+    ? "rgba(6,18,28,0.98)"
+    : scrolled ? "rgba(6,18,28,0.97)" : "transparent";
 
   const openDropDelayed = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -112,8 +112,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
           backgroundColor: navBg,
-          backdropFilter: scrolled || !isHome ? "blur(14px)" : "none",
-          borderBottom: scrolled || !isHome ? "1px solid rgba(255,255,255,0.07)" : "none",
+          backdropFilter: scrolled || !isHome || menuOpen ? "blur(14px)" : "none",
+          borderBottom: scrolled || !isHome || menuOpen ? "1px solid rgba(255,255,255,0.07)" : "none",
         }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
@@ -196,17 +196,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           transform: menuOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.32s cubic-bezier(0.22,1,0.36,1)",
         }}>
-        <div className="flex justify-between items-center px-6 py-5 border-b"
-          style={{ borderColor: "rgba(26,127,166,0.18)" }}>
-          <div className="flex items-center">
-            <img src="/images/logo.png" alt="Ace Paddlers" className="h-10 w-auto" />
-          </div>
-          <button className="text-white p-1" onClick={() => setMenuOpen(false)}>
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="flex-1 px-6 py-6 space-y-1">
+        <div className="flex-1 px-6 pt-28 pb-6 space-y-1">
           {NAV.map((item) => (
             <div key={item.label}>
               {item.href ? (
@@ -378,7 +368,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </footer>
 
       {/* ── Floating contact buttons ── */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+      <div className={`fixed bottom-6 right-6 z-50 flex-col gap-3 items-end ${menuOpen ? "hidden" : "flex"}`}>
         <a href="https://wa.me/919480987672" target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
           style={{ backgroundColor: "#25D366", color: "white", boxShadow: "0 4px 20px rgba(37,211,102,0.40)" }}

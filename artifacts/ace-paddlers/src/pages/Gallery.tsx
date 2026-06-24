@@ -2,13 +2,17 @@ import { useState } from "react";
 import { X, ZoomIn } from "lucide-react";
 import Layout from "@/components/Layout";
 import PageMeta from "@/components/PageMeta";
+import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import { GALLERY, CATEGORIES, type GalleryCategory, type GalleryItem } from "@/data/gallery";
+import { CATEGORIES, type GalleryCategory } from "@/data/gallery";
+import { useListGallery, type GalleryItem } from "@workspace/api-client-react";
 
 export default function Gallery() {
   const [active, setActive] = useState<GalleryCategory>("All");
   const [lightbox, setLightbox] = useState<GalleryItem | null>(null);
 
+  const { data } = useListGallery();
+  const GALLERY = data ?? [];
   const filtered = active === "All" ? GALLERY : GALLERY.filter(g => g.category === active);
 
   return (
@@ -58,10 +62,12 @@ export default function Gallery() {
               className="group relative mb-4 overflow-hidden rounded-xl cursor-pointer break-inside-avoid"
               style={{ boxShadow: "0 2px 8px rgba(13,45,64,0.10)" }}
               onClick={() => setLightbox(item)}>
-              <img
+              <SmartImage
                 src={item.src}
-                alt={item.alt}
-                className={`w-full object-cover transition-transform duration-700 group-hover:scale-105 ${item.tall ? "h-72 sm:h-80" : "h-52 sm:h-60"}`}
+                alt={item.alt ?? ""}
+                loading="lazy"
+                wrapperClassName={`relative w-full ${item.tall ? "h-72 sm:h-80" : "h-52 sm:h-60"}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               {/* Hover overlay */}
               <div className="absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -104,7 +110,7 @@ export default function Gallery() {
               onClick={() => setLightbox(null)}>
               <X className="w-7 h-7" />
             </button>
-            <img src={lightbox.src} alt={lightbox.alt}
+            <img src={lightbox.src} alt={lightbox.alt ?? ""}
               className="w-full max-h-[80vh] object-contain rounded-xl" />
             <div className="mt-4 text-center">
               <span className="text-xs font-bold uppercase tracking-wider mr-3"

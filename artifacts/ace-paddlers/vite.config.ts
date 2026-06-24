@@ -80,6 +80,10 @@ export default defineConfig(({ command }) => {
               target: "http://localhost:8080",
               changeOrigin: true,
             },
+            "/media": {
+              target: "http://localhost:8080",
+              changeOrigin: true,
+            },
           },
     },
     preview: {
