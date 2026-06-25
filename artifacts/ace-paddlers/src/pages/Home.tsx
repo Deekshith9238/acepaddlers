@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Link } from "wouter";
 import {
   Phone, MapPin, Tent, Home as HomeIcon, ArrowRight,
@@ -8,8 +9,10 @@ import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import { useListTours } from "@workspace/api-client-react";
+import { useListTours, useGetPage } from "@workspace/api-client-react";
 import { adaptTour } from "@/lib/content";
+
+const BuilderRender = lazy(() => import("@/builder/BuilderRender"));
 
 const LOCAL_BUSINESS_SCHEMA = {
   "@context": "https://schema.org",
@@ -41,7 +44,21 @@ const LOCAL_BUSINESS_SCHEMA = {
 
 export default function Home() {
   const { data: apiTours } = useListTours();
+  const { data: page } = useGetPage("home", { query: { retry: false } } as never);
   const TOURS = (apiTours ?? []).map(adaptTour);
+
+  // If an admin has published a builder layout for Home, render that instead.
+  const builderData = page?.data as { content?: unknown[] } | undefined;
+  if (builderData?.content && builderData.content.length > 0) {
+    return (
+      <Layout>
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <BuilderRender data={builderData} />
+        </Suspense>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <PageMeta
