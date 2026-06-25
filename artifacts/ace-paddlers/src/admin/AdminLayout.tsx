@@ -23,13 +23,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800">
-      <aside className="w-60 shrink-0 bg-slate-900 text-slate-200 flex flex-col">
-        <div className="px-5 py-5 border-b border-white/10">
+    <div className="h-screen flex overflow-hidden bg-slate-50 text-slate-800">
+      <aside className="w-60 shrink-0 bg-slate-900 text-slate-200 flex flex-col h-screen">
+        <div className="px-5 py-5 border-b border-white/10 shrink-0">
           <Link href="/admin" className="text-lg font-semibold no-underline text-white">Ace Paddlers</Link>
           <div className="text-xs text-slate-400 mt-0.5">Admin</div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           <NavItem href="/admin" label="Dashboard" active={location === "/admin"} />
           <NavItem href="/admin/bookings" label="Bookings" active={location.startsWith("/admin/bookings")} />
           <NavItem href="/admin/availability" label="Availability" active={location.startsWith("/admin/availability")} />
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
           <NavItem href="/admin/settings" label="Settings" active={location.startsWith("/admin/settings")} />
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 text-xs">
+        <div className="px-5 py-4 border-t border-white/10 text-xs shrink-0">
           <div className="text-slate-400 mb-2 truncate">{me.email}</div>
           <button
             onClick={() => logout.mutate(undefined as never, { onSuccess: () => navigate("/admin/login") })}
@@ -47,8 +47,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-x-hidden">
-        <div className="max-w-5xl mx-auto px-8 py-8">{children}</div>
+      <main className="flex-1 h-screen overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-8 py-8">{children}</div>
       </main>
     </div>
   );
