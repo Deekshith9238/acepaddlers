@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+.git
+.media
+/images
+artifacts/ace-paddlers/public/videos
+**/*.log
+.DS_Store
+infra
+docs

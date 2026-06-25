@@ -56,3 +56,10 @@ Thumbs.db
 
 # Local editor/agent config
 .claude/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+infra/terraform/terraform.tfvars

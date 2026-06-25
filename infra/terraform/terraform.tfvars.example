@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and fill in. NEVER commit terraform.tfvars.
+aws_region = "ap-south-1"
+
+# Admin bootstrap (first admin user created on API start)
+admin_email    = "admin@acepaddlers.com"
+admin_password = "use-a-strong-password"
+admin_name     = "Ace Admin"
+
+# Notifications (comma-separated)
+notify_emails = "ops@acepaddlers.com"
+notify_phones = "+919480987672"
+
+# SES (leave ses_domain empty to skip; verify DNS after apply)
+ses_domain     = "acepaddlers.com"
+ses_from_email = "bookings@acepaddlers.com"
+
+# Google Calendar OAuth (from Google Cloud console)
+google_client_id     = ""
+google_client_secret = ""
+google_redirect_uri  = "https://YOUR_CLOUDFRONT_DOMAIN/api/admin/integrations/google/callback"
+
+# WhatsApp Cloud API (Meta)
+whatsapp_token           = ""
+whatsapp_phone_number_id = ""
+
+# Set after the first image push (defaults to "latest")
+api_image_tag = "latest"
