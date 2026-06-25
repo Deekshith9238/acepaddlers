@@ -89,6 +89,11 @@ function toGalleryItem(r: typeof galleryItems.$inferSelect): GalleryItem {
     category: r.category,
     tall: r.tall,
     sortOrder: r.sortOrder,
+    published: r.published,
+    layoutX: r.layoutX,
+    layoutY: r.layoutY,
+    layoutW: r.layoutW,
+    layoutH: r.layoutH,
   };
 }
 

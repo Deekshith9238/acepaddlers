@@ -710,6 +710,10 @@ components:
         tall: { type: boolean }
         sortOrder: { type: integer }
         published: { type: boolean }
+        layoutX: { type: integer, nullable: true }
+        layoutY: { type: integer, nullable: true }
+        layoutW: { type: integer, nullable: true }
+        layoutH: { type: integer, nullable: true }
       required: [id, src, category, tall, sortOrder]
     DestinationInput:
       type: object
@@ -785,6 +789,10 @@ components:
         tall: { type: boolean }
         sortOrder: { type: integer }
         published: { type: boolean }
+        layoutX: { type: integer, nullable: true }
+        layoutY: { type: integer, nullable: true }
+        layoutW: { type: integer, nullable: true }
+        layoutH: { type: integer, nullable: true }
       required: [src, category]
     Slot:
       type: object

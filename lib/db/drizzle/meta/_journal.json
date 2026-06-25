@@ -15,6 +15,13 @@
       "when": 1782297436789,
       "tag": "0001_elite_ultragirl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782367750839,
+      "tag": "0002_flippant_lilith",
+      "breakpoints": true
     }
   ]
 }

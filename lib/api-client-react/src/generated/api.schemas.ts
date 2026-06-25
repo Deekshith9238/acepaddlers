@@ -142,6 +142,10 @@ export interface GalleryItem {
   tall: boolean;
   sortOrder: number;
   published?: boolean;
+  layoutX?: number | null;
+  layoutY?: number | null;
+  layoutW?: number | null;
+  layoutH?: number | null;
 }
 
 export type DestinationInputStatus = typeof DestinationInputStatus[keyof typeof DestinationInputStatus];
@@ -249,6 +253,10 @@ export interface GalleryItemInput {
   tall?: boolean;
   sortOrder?: number;
   published?: boolean;
+  layoutX?: number | null;
+  layoutY?: number | null;
+  layoutW?: number | null;
+  layoutH?: number | null;
 }
 
 export type SlotStatus = typeof SlotStatus[keyof typeof SlotStatus];

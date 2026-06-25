@@ -9,6 +9,12 @@ export const galleryItems = pgTable("gallery_items", {
   tall: boolean("tall").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   published: boolean("published").default(true).notNull(),
+  // Canvas layout (grid units): position + size. Null until arranged in the
+  // admin layout editor; the public gallery falls back to masonry when unset.
+  layoutX: integer("layout_x"),
+  layoutY: integer("layout_y"),
+  layoutW: integer("layout_w"),
+  layoutH: integer("layout_h"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

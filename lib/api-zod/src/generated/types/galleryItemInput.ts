@@ -14,4 +14,8 @@ export interface GalleryItemInput {
   tall?: boolean;
   sortOrder?: number;
   published?: boolean;
+  layoutX?: number | null;
+  layoutY?: number | null;
+  layoutW?: number | null;
+  layoutH?: number | null;
 }

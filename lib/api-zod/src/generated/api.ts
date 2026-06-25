@@ -231,7 +231,11 @@ export const ListGalleryResponseItem = zod.object({
   "category": zod.string(),
   "tall": zod.boolean(),
   "sortOrder": zod.number(),
-  "published": zod.boolean().optional()
+  "published": zod.boolean().optional(),
+  "layoutX": zod.number().nullish(),
+  "layoutY": zod.number().nullish(),
+  "layoutW": zod.number().nullish(),
+  "layoutH": zod.number().nullish()
 })
 export const ListGalleryResponse = zod.array(ListGalleryResponseItem)
 
@@ -574,7 +578,11 @@ export const ListAdminGalleryResponseItem = zod.object({
   "category": zod.string(),
   "tall": zod.boolean(),
   "sortOrder": zod.number(),
-  "published": zod.boolean().optional()
+  "published": zod.boolean().optional(),
+  "layoutX": zod.number().nullish(),
+  "layoutY": zod.number().nullish(),
+  "layoutW": zod.number().nullish(),
+  "layoutH": zod.number().nullish()
 })
 export const ListAdminGalleryResponse = zod.array(ListAdminGalleryResponseItem)
 
@@ -589,7 +597,11 @@ export const CreateGalleryItemBody = zod.object({
   "category": zod.string(),
   "tall": zod.boolean().optional(),
   "sortOrder": zod.number().optional(),
-  "published": zod.boolean().optional()
+  "published": zod.boolean().optional(),
+  "layoutX": zod.number().nullish(),
+  "layoutY": zod.number().nullish(),
+  "layoutW": zod.number().nullish(),
+  "layoutH": zod.number().nullish()
 })
 
 
@@ -607,7 +619,11 @@ export const UpdateGalleryItemBody = zod.object({
   "category": zod.string(),
   "tall": zod.boolean().optional(),
   "sortOrder": zod.number().optional(),
-  "published": zod.boolean().optional()
+  "published": zod.boolean().optional(),
+  "layoutX": zod.number().nullish(),
+  "layoutY": zod.number().nullish(),
+  "layoutW": zod.number().nullish(),
+  "layoutH": zod.number().nullish()
 })
 
 export const UpdateGalleryItemResponse = zod.object({
@@ -618,7 +634,11 @@ export const UpdateGalleryItemResponse = zod.object({
   "category": zod.string(),
   "tall": zod.boolean(),
   "sortOrder": zod.number(),
-  "published": zod.boolean().optional()
+  "published": zod.boolean().optional(),
+  "layoutX": zod.number().nullish(),
+  "layoutY": zod.number().nullish(),
+  "layoutW": zod.number().nullish(),
+  "layoutH": zod.number().nullish()
 })
 
 
