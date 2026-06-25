@@ -1,16 +1,52 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import type { Config } from "@measured/puck";
+import type { Config, Field } from "@measured/puck";
 import SmartImage from "@/components/SmartImage";
+import { uploadMedia } from "@/admin/upload";
 import { C } from "@/data/constants";
 import { useListTours, useListDestinations, useListGallery } from "@workspace/api-client-react";
 import { adaptTour } from "@/lib/content";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// Custom Puck field: text URL + an upload button (uses the media uploader).
+function ImageInput({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={value ?? ""}
+          placeholder="Image URL or upload"
+          onChange={(e) => onChange(e.target.value)}
+          style={{ flex: 1, padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13 }}
+        />
+        <label style={{ cursor: "pointer", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13, whiteSpace: "nowrap" }}>
+          {busy ? "…" : "Upload"}
+          <input type="file" accept="image/*" style={{ display: "none" }} disabled={busy}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setBusy(true);
+              try { const m = await uploadMedia(f); onChange(m.url ?? ""); } finally { setBusy(false); e.target.value = ""; }
+            }} />
+        </label>
+      </div>
+      {value && <img src={value} alt="" style={{ marginTop: 8, height: 72, borderRadius: 8, objectFit: "cover" }} />}
+    </div>
+  );
+}
+
+const imageField = (label: string): Field<string> => ({
+  type: "custom",
+  label,
+  render: ({ value, onChange }: any) => <ImageInput value={value} onChange={onChange} />,
+});
+
 // ── Shared block prop types ──
 type HeroProps = {
   eyebrow: string; title: string; accent: string; subtitle: string; description: string;
-  image: string; primaryLabel: string; primaryHref: string; secondaryLabel: string; secondaryHref: string;
+  image: string; videoUrl?: string; primaryLabel: string; primaryHref: string; secondaryLabel: string; secondaryHref: string;
 };
 type HeadingProps = { eyebrow: string; title: string; accent: string; subtitle: string; align: "left" | "center"; theme: "light" | "dark" };
 type CardItem = { image: string; title: string; text: string; tag: string; href: string };
@@ -45,7 +81,8 @@ export const builderConfig: Config<BuilderComponents> = {
         accent: { type: "text", label: "Title (accent)" },
         subtitle: { type: "text", label: "Subtitle" },
         description: { type: "textarea", label: "Description" },
-        image: { type: "text", label: "Background image URL" },
+        image: imageField("Background image"),
+        videoUrl: { type: "text", label: "Background video URL (optional, overrides image)" },
         primaryLabel: { type: "text", label: "Primary button" },
         primaryHref: { type: "text", label: "Primary link" },
         secondaryLabel: { type: "text", label: "Secondary button" },
@@ -54,13 +91,15 @@ export const builderConfig: Config<BuilderComponents> = {
       defaultProps: {
         eyebrow: "Western Ghats, Karnataka", title: "White Water Rafting in", accent: "Coorg & Chikmagalur",
         subtitle: "Find Your Flow.", description: "South India's most experienced rafting team.",
-        image: "/images/badra-rafting-1.jpg", primaryLabel: "Start Exploring", primaryHref: "/tours",
+        image: "/images/badra-rafting-1.jpg", videoUrl: "", primaryLabel: "Start Exploring", primaryHref: "/tours",
         secondaryLabel: "Call Local Guide", secondaryHref: "tel:+919480987672",
       },
-      render: ({ eyebrow, title, accent, subtitle, description, image, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: HeroProps) => (
+      render: ({ eyebrow, title, accent, subtitle, description, image, videoUrl, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: HeroProps) => (
         <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 z-0">
-            <img src={image} alt="" className="w-full h-full object-cover object-center" />
+            {videoUrl
+              ? <video autoPlay muted loop playsInline poster={image} className="w-full h-full object-cover object-center"><source src={videoUrl} /></video>
+              : <img src={image} alt="" className="w-full h-full object-cover object-center" />}
             <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.40)" }} />
             <div className="absolute bottom-0 left-0 right-0 h-48" style={{ background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
           </div>
@@ -112,7 +151,7 @@ export const builderConfig: Config<BuilderComponents> = {
           type: "array", label: "Cards",
           getItemSummary: (i: CardItem) => i.title || "Card",
           arrayFields: {
-            image: { type: "text", label: "Image URL" },
+            image: imageField("Image"),
             title: { type: "text", label: "Title" },
             text: { type: "textarea", label: "Text" },
             tag: { type: "text", label: "Tag / price" },

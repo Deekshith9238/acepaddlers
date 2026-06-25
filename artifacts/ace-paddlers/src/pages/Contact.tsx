@@ -1,5 +1,6 @@
 import { Phone, MapPin, Clock, Mail } from "lucide-react";
 import Layout from "@/components/Layout";
+import EditablePage from "@/builder/EditablePage";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
@@ -22,6 +23,10 @@ const SCHEMA = {
 };
 
 export default function Contact() {
+  return <EditablePage slug="contact"><ContactContent /></EditablePage>;
+}
+
+function ContactContent() {
   return (
     <Layout>
       <PageMeta

@@ -1,5 +1,6 @@
 import { ShieldCheck, Award, Heart, Users, Anchor, CheckCircle, AlertTriangle } from "lucide-react";
 import Layout from "@/components/Layout";
+import EditablePage from "@/builder/EditablePage";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
@@ -74,6 +75,10 @@ const SCHEMA = {
 };
 
 export default function Safety() {
+  return <EditablePage slug="safety"><SafetyContent /></EditablePage>;
+}
+
+function SafetyContent() {
   return (
     <Layout>
       <PageMeta

@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, ShieldCheck, Star, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
+import EditablePage from "@/builder/EditablePage";
 import PageMeta from "@/components/PageMeta";
 import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
@@ -88,6 +89,10 @@ const EXPERIENCES = [
 ];
 
 export default function Experiences() {
+  return <EditablePage slug="experiences"><ExperiencesContent /></EditablePage>;
+}
+
+function ExperiencesContent() {
   return (
     <Layout>
       <PageMeta

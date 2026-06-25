@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Users, CheckCircle, ArrowRight, Star, Briefcase, Mountain, Waves } from "lucide-react";
 import Layout from "@/components/Layout";
+import EditablePage from "@/builder/EditablePage";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
@@ -52,6 +53,10 @@ const SCHEMA = {
 };
 
 export default function Corporate() {
+  return <EditablePage slug="corporate"><CorporateContent /></EditablePage>;
+}
+
+function CorporateContent() {
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", groupSize: "", date: "", activity: "Rafting Day Outing", message: "" });
   const [submitted, setSubmitted] = useState(false);
 

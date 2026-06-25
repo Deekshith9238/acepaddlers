@@ -1,15 +1,13 @@
 import { Link } from "wouter";
 import AdminLayout from "@/admin/AdminLayout";
 import { useListAdminPages } from "@workspace/api-client-react";
+import { EDITABLE_PAGES } from "@/builder/pages";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Inner() {
   const { data } = useListAdminPages();
-  const apiPages: any[] = Array.isArray(data) ? data : [];
-  // Always offer Home even before it's been saved once.
-  const known = new Map(apiPages.map((p) => [p.slug, p]));
-  if (!known.has("home")) known.set("home", { slug: "home", title: "Home", status: "draft" });
-  const pages = [...known.values()];
+  const saved = new Map((Array.isArray(data) ? data : []).map((p: any) => [p.slug, p]));
+  const pages = EDITABLE_PAGES.map((ep) => ({ ...ep, status: saved.get(ep.slug)?.status ?? "draft" }));
 
   return (
     <>
@@ -29,7 +27,7 @@ function Inner() {
             {pages.map((p) => (
               <tr key={p.slug} className="border-t border-slate-100">
                 <td className="px-4 py-3 font-medium text-slate-700">{p.title}</td>
-                <td className="px-4 py-3 text-slate-500">/{p.slug === "home" ? "" : p.slug}</td>
+                <td className="px-4 py-3 text-slate-500">{p.path}</td>
                 <td className="px-4 py-3">
                   <span className="text-xs font-bold uppercase" style={{ color: p.status === "published" ? "#047857" : "#b45309" }}>{p.status}</span>
                 </td>

@@ -1,5 +1,6 @@
 import { ShieldCheck, Users, Anchor, Star, Heart, Award, Quote } from "lucide-react";
 import Layout from "@/components/Layout";
+import EditablePage from "@/builder/EditablePage";
 import PageMeta from "@/components/PageMeta";
 import { C } from "@/data/constants";
 
@@ -70,6 +71,10 @@ const CERTS = [
 ];
 
 export default function About() {
+  return <EditablePage slug="about"><AboutContent /></EditablePage>;
+}
+
+function AboutContent() {
   return (
     <Layout>
       <PageMeta

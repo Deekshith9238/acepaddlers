@@ -3,6 +3,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { Puck, type Data } from "@measured/puck";
 import "@measured/puck/puck.css";
 import { builderConfig } from "@/builder/config";
+import { EDITABLE_PAGES } from "@/builder/pages";
 import { useAdminMe, useGetAdminPage, useSavePage } from "@workspace/api-client-react";
 
 const EMPTY: Data = { content: [], root: {} } as Data;
@@ -20,7 +21,9 @@ function Editor({ slug }: { slug: string }) {
   const initial: Data = (page.data?.data && (page.data.data as Data).content)
     ? (page.data.data as Data)
     : EMPTY;
-  const title = page.data?.title ?? "Home";
+  const meta = EDITABLE_PAGES.find((p) => p.slug === slug);
+  const title = page.data?.title ?? meta?.title ?? slug;
+  const livePath = meta?.path ?? "/";
 
   const onPublish = (data: Data) => {
     save.mutate(
@@ -35,7 +38,7 @@ function Editor({ slug }: { slug: string }) {
         <Link href="/admin/pages" className="text-cyan-300 no-underline hover:text-cyan-200">← Back to admin</Link>
         <span className="text-slate-300">Editing: <strong className="text-white">{title}</strong></span>
         {savedAt && <span className="text-emerald-400 ml-auto">Published ✓</span>}
-        <a href={`/${slug === "home" ? "" : slug}`} target="_blank" rel="noreferrer" className={`text-slate-300 no-underline hover:text-white ${savedAt ? "" : "ml-auto"}`}>View live ↗</a>
+        <a href={livePath} target="_blank" rel="noreferrer" className={`text-slate-300 no-underline hover:text-white ${savedAt ? "" : "ml-auto"}`}>View live ↗</a>
       </div>
       <div className="flex-1 min-h-0">
         <Puck config={builderConfig} data={initial} onPublish={onPublish} />
