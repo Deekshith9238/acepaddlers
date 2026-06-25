@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown, Trash2, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import GridLayout, { WidthProvider, type Layout } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { Trash2, X } from "lucide-react";
 import AdminLayout from "@/admin/AdminLayout";
 import { uploadMedia } from "@/admin/upload";
 import {
@@ -11,17 +14,25 @@ import {
 } from "@workspace/api-client-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+const RGL = WidthProvider(GridLayout);
+const COLS = 12;
+const ROW_H = 40;
 const CATEGORIES = ["Rafting", "Camping", "Homestay", "Destinations"];
 
-function toInput(it: GalleryItem) {
+function toInput(it: GalleryItem, over: Partial<GalleryItem> = {}) {
+  const m = { ...it, ...over };
   return {
-    src: it.src,
-    alt: it.alt ?? null,
-    caption: it.caption ?? null,
-    category: it.category,
-    tall: it.tall,
-    sortOrder: it.sortOrder,
-    published: it.published ?? true,
+    src: m.src,
+    alt: m.alt ?? null,
+    caption: m.caption ?? null,
+    category: m.category,
+    tall: m.tall,
+    sortOrder: m.sortOrder,
+    published: m.published ?? true,
+    layoutX: m.layoutX ?? null,
+    layoutY: m.layoutY ?? null,
+    layoutW: m.layoutW ?? null,
+    layoutH: m.layoutH ?? null,
   };
 }
 
@@ -32,29 +43,42 @@ function Inner() {
   const del = useDeleteGalleryItem();
 
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentLayout, setCurrentLayout] = useState<Layout[]>([]);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   useEffect(() => { if (Array.isArray(data)) setItems(data); }, [data]);
 
-  const save = (it: GalleryItem) => update.mutate({ id: it.id, data: toInput(it) });
+  // Build the grid layout; auto-place any item that hasn't been arranged yet.
+  const layout: Layout[] = useMemo(() => {
+    let x = 0, y = 0;
+    return items.map((it) => {
+      if (it.layoutX != null && it.layoutY != null && it.layoutW != null && it.layoutH != null) {
+        return { i: it.id, x: it.layoutX, y: it.layoutY, w: it.layoutW, h: it.layoutH };
+      }
+      const w = it.tall ? 3 : 4;
+      const h = it.tall ? 7 : 5;
+      if (x + w > COLS) { x = 0; y += 5; }
+      const node = { i: it.id, x, y, w, h };
+      x += w;
+      return node;
+    });
+  }, [items]);
+
+  const onStop = (_l: Layout[], _old: Layout, n: Layout) => {
+    const it = items.find((x) => x.id === n.i);
+    if (!it) return;
+    setItems((prev) => prev.map((x) => (x.id === n.i ? { ...x, layoutX: n.x, layoutY: n.y, layoutW: n.w, layoutH: n.h } : x)));
+    update.mutate({ id: it.id, data: toInput(it, { layoutX: n.x, layoutY: n.y, layoutW: n.w, layoutH: n.h }) });
+  };
 
   const patch = (id: string, changes: Partial<GalleryItem>) => {
     setItems((prev) => {
       const next = prev.map((x) => (x.id === id ? { ...x, ...changes } : x));
-      const changed = next.find((x) => x.id === id);
-      if (changed) save(changed);
+      const it = next.find((x) => x.id === id);
+      if (it) update.mutate({ id, data: toInput(it) });
       return next;
     });
-  };
-
-  const move = async (index: number, dir: -1 | 1) => {
-    const j = index + dir;
-    if (j < 0 || j >= items.length) return;
-    const a = items[index], b = items[j];
-    await Promise.all([
-      update.mutateAsync({ id: a.id, data: { ...toInput(a), sortOrder: b.sortOrder } }),
-      update.mutateAsync({ id: b.id, data: { ...toInput(b), sortOrder: a.sortOrder } }),
-    ]);
-    refetch();
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +88,10 @@ function Inner() {
     try {
       const m = await uploadMedia(file);
       const maxSort = items.reduce((mx, x) => Math.max(mx, x.sortOrder), -1);
-      await create.mutateAsync({ data: { src: m.url ?? "", category: "Rafting", tall: false, sortOrder: maxSort + 1, published: true } });
+      const maxY = layout.reduce((mx, l) => Math.max(mx, l.y + l.h), 0);
+      await create.mutateAsync({
+        data: { src: m.url ?? "", category: "Rafting", tall: false, sortOrder: maxSort + 1, published: true, layoutX: 0, layoutY: maxY, layoutW: 4, layoutH: 5 },
+      });
       refetch();
     } finally {
       setUploading(false);
@@ -74,73 +101,126 @@ function Inner() {
 
   const remove = (id: string) => {
     if (!confirm("Delete this image?")) return;
-    del.mutate({ id }, { onSuccess: () => refetch() });
+    del.mutate({ id }, { onSuccess: () => { setSelected(null); refetch(); } });
   };
+
+  // Persist the whole arrangement (incl. untouched tiles) so the public
+  // gallery switches to the custom layout.
+  const saveAll = async () => {
+    const map = new Map(currentLayout.map((l) => [l.i, l]));
+    await Promise.all(items.map((it) => {
+      const l = map.get(it.id) ?? layout.find((x) => x.i === it.id);
+      if (!l) return Promise.resolve();
+      return update.mutateAsync({ id: it.id, data: toInput(it, { layoutX: l.x, layoutY: l.y, layoutW: l.w, layoutH: l.h }) });
+    }));
+    setSavedAt(Date.now());
+    refetch();
+  };
+
+  const sel = items.find((x) => x.id === selected) ?? null;
 
   return (
     <>
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-semibold text-slate-800">Gallery</h1>
-        <label className="cursor-pointer rounded-lg bg-cyan-600 text-white px-4 py-2 text-sm font-semibold hover:bg-cyan-700">
-          {uploading ? "Uploading…" : "+ Add image"}
-          <input type="file" accept="image/*" className="hidden" onChange={onUpload} disabled={uploading} />
-        </label>
+        <h1 className="text-2xl font-semibold text-slate-800">Gallery layout</h1>
+        <div className="flex items-center gap-3">
+          {savedAt && <span className="text-xs text-emerald-600">Layout saved</span>}
+          <button onClick={saveAll} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-400 hover:text-cyan-700">
+            Save layout
+          </button>
+          <label className="cursor-pointer rounded-lg bg-cyan-600 text-white px-4 py-2 text-sm font-semibold hover:bg-cyan-700">
+            {uploading ? "Uploading…" : "+ Add image"}
+            <input type="file" accept="image/*" className="hidden" onChange={onUpload} disabled={uploading} />
+          </label>
+        </div>
       </div>
-      <p className="text-sm text-slate-500 mb-6">
-        Drag order with the arrows to set the layout. Mark an image <span className="font-medium">Large</span> to make it a tall feature tile.
+      <p className="text-sm text-slate-500 mb-5">
+        Drag tiles to move them and pull the bottom-right corner to resize. Click a tile to edit its details. Changes save automatically.
       </p>
 
-      {items.length === 0 ? (
-        <p className="text-slate-400 text-sm">No images yet. Upload one to get started.</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((it, i) => (
-            <div key={it.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className={`relative bg-slate-100 ${it.tall ? "h-56" : "h-36"}`}>
-                <img src={it.src} alt={it.alt ?? ""} className="w-full h-full object-cover" />
-                <div className="absolute top-2 left-2 flex gap-1">
-                  <button onClick={() => move(i, -1)} disabled={i === 0}
-                    className="w-7 h-7 rounded-md bg-black/55 text-white flex items-center justify-center disabled:opacity-30" title="Move up">
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => move(i, 1)} disabled={i === items.length - 1}
-                    className="w-7 h-7 rounded-md bg-black/55 text-white flex items-center justify-center disabled:opacity-30" title="Move down">
-                    <ArrowDown className="w-4 h-4" />
+      <div className="grid lg:grid-cols-[1fr_260px] gap-6 items-start">
+        {/* Canvas */}
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
+          {items.length === 0 ? (
+            <p className="text-slate-400 text-sm p-6">No images yet. Upload one to start arranging.</p>
+          ) : (
+            <RGL
+              className="layout"
+              layout={layout}
+              cols={COLS}
+              rowHeight={ROW_H}
+              margin={[10, 10]}
+              draggableCancel=".no-drag"
+              compactType={null}
+              preventCollision
+              onLayoutChange={setCurrentLayout}
+              onDragStop={onStop}
+              onResizeStop={onStop}
+            >
+              {items.map((it) => (
+                <div key={it.id}
+                  onClick={() => setSelected(it.id)}
+                  className={`group relative overflow-hidden rounded-lg border-2 cursor-move ${selected === it.id ? "border-cyan-500" : "border-transparent"}`}>
+                  <img src={it.src} alt={it.alt ?? ""} className="w-full h-full object-cover pointer-events-none" />
+                  {it.caption && (
+                    <div className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[11px] px-2 py-1 truncate">{it.caption}</div>
+                  )}
+                  {it.published === false && (
+                    <div className="absolute top-1 left-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">HIDDEN</div>
+                  )}
+                  <button
+                    className="no-drag absolute top-1 right-1 w-6 h-6 rounded bg-black/55 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-red-600"
+                    onClick={(e) => { e.stopPropagation(); remove(it.id); }} title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <button onClick={() => patch(it.id, { tall: !it.tall })}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-md flex items-center justify-center"
-                  style={{ backgroundColor: it.tall ? "#0891b2" : "rgba(0,0,0,0.55)", color: "white" }}
-                  title={it.tall ? "Large tile (featured)" : "Make large"}>
-                  <Star className="w-4 h-4" fill={it.tall ? "currentColor" : "none"} />
-                </button>
-                <button onClick={() => remove(it.id)}
-                  className="absolute bottom-2 right-2 w-7 h-7 rounded-md bg-black/55 text-white flex items-center justify-center hover:bg-red-600" title="Delete">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="p-3 space-y-2">
-                <input
-                  className="w-full text-sm rounded border border-slate-200 px-2 py-1.5"
-                  placeholder="Caption"
-                  defaultValue={it.caption ?? ""}
-                  onBlur={(e) => { if (e.target.value !== (it.caption ?? "")) patch(it.id, { caption: e.target.value }); }}
-                />
-                <div className="flex items-center justify-between gap-2">
-                  <select className="text-sm rounded border border-slate-200 px-2 py-1.5 flex-1"
-                    value={it.category} onChange={(e) => patch(it.id, { category: e.target.value })}>
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0">
-                    <input type="checkbox" checked={it.published ?? true} onChange={(e) => patch(it.id, { published: e.target.checked })} />
-                    Published
-                  </label>
-                </div>
-              </div>
-            </div>
-          ))}
+              ))}
+            </RGL>
+          )}
         </div>
-      )}
+
+        {/* Edit panel */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sticky top-0">
+          {!sel ? (
+            <p className="text-sm text-slate-400">Select a tile to edit its caption, category and visibility.</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-slate-700">Edit tile</h3>
+                <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+              </div>
+              <img src={sel.src} alt="" className="w-full h-28 object-cover rounded-lg" />
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Caption</label>
+                <input className="w-full text-sm rounded border border-slate-300 px-2 py-1.5"
+                  defaultValue={sel.caption ?? ""} key={`cap-${sel.id}`}
+                  onBlur={(e) => { if (e.target.value !== (sel.caption ?? "")) patch(sel.id, { caption: e.target.value }); }} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Alt text</label>
+                <input className="w-full text-sm rounded border border-slate-300 px-2 py-1.5"
+                  defaultValue={sel.alt ?? ""} key={`alt-${sel.id}`}
+                  onBlur={(e) => { if (e.target.value !== (sel.alt ?? "")) patch(sel.id, { alt: e.target.value }); }} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Category</label>
+                <select className="w-full text-sm rounded border border-slate-300 px-2 py-1.5"
+                  value={sel.category} onChange={(e) => patch(sel.id, { category: e.target.value })}>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" checked={sel.published ?? true} onChange={(e) => patch(sel.id, { published: e.target.checked })} />
+                Published (visible on the site)
+              </label>
+              <button onClick={() => remove(sel.id)}
+                className="w-full mt-2 rounded-lg border border-red-300 text-red-600 px-3 py-2 text-sm font-semibold hover:bg-red-50">
+                Delete image
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
