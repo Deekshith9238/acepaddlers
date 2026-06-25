@@ -18,7 +18,7 @@ const devBanner = (process.env.NODE_ENV !== "production" && process.env.REPL_ID 
     )
   : null;
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   const isBuild = command === "build";
   const rawPort = process.env.PORT;
 
@@ -46,6 +46,11 @@ export default defineConfig(({ command }) => {
 
   return {
     base: finalBasePath,
+    // Some deps (react-grid-layout → react-draggable) reference
+    // process.env.NODE_ENV at runtime; the browser has no `process`.
+    define: {
+      "process.env.NODE_ENV": JSON.stringify(mode),
+    },
     plugins: [
       react(),
       tailwindcss(),

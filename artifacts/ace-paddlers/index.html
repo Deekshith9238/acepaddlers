@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Shim: some browser deps (react-grid-layout/react-draggable) read
+         process.env.NODE_ENV at runtime; the browser has no `process`. -->
+    <script>window.process = window.process || { env: { NODE_ENV: "production" } };</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Ace Paddlers — River Rafting, Homestays & Camping in Western Ghats</title>
     <meta name="robots" content="index, follow" />
