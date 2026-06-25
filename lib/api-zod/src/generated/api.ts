@@ -867,3 +867,68 @@ export const UpdateBookingStatusResponse = zod.object({
 })
 
 
+/**
+ * @summary Get a published page's builder document
+ */
+export const GetPageParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetPageResponse = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "data": zod.record(zod.string(), zod.unknown()),
+  "status": zod.enum(['draft', 'published']).optional(),
+  "updatedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary List editable pages
+ */
+export const ListAdminPagesResponseItem = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['draft', 'published']).optional()
+})
+export const ListAdminPagesResponse = zod.array(ListAdminPagesResponseItem)
+
+
+/**
+ * @summary Get a page (incl. draft) for editing
+ */
+export const GetAdminPageParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetAdminPageResponse = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "data": zod.record(zod.string(), zod.unknown()),
+  "status": zod.enum(['draft', 'published']).optional(),
+  "updatedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Create or update a page's builder document
+ */
+export const SavePageParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const SavePageBody = zod.object({
+  "title": zod.string().optional(),
+  "data": zod.record(zod.string(), zod.unknown()),
+  "status": zod.enum(['draft', 'published']).optional()
+})
+
+export const SavePageResponse = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "data": zod.record(zod.string(), zod.unknown()),
+  "status": zod.enum(['draft', 'published']).optional(),
+  "updatedAt": zod.string().nullish()
+})
+
+

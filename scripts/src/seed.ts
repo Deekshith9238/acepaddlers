@@ -12,6 +12,7 @@ import {
   tours,
   blogPosts,
   galleryItems,
+  pages,
 } from "@workspace/db";
 import TOURS from "../../artifacts/ace-paddlers/src/data/tours";
 import { GALLERY } from "../../artifacts/ace-paddlers/src/data/gallery";
@@ -107,6 +108,18 @@ const DESTINATIONS = [
   },
 ];
 
+const HOME_PAGE_DATA = {
+  root: { props: {} },
+  content: [
+    { type: "Hero", props: { id: "hero-1", eyebrow: "Western Ghats, Karnataka", title: "White Water Rafting in", accent: "Coorg & Chikmagalur", subtitle: "Find Your Flow.", description: "South India's most experienced rafting team — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents on the Barapole & Bhadra rivers.", image: "/images/badra-rafting-1.jpg", primaryLabel: "Start Exploring", primaryHref: "/tours", secondaryLabel: "Call Local Guide", secondaryHref: "tel:+919480987672" } },
+    { type: "ToursStrip", props: { id: "tours-1", heading: "Featured Tours", subtitle: "Pick the adventure that calls to you", limit: 3 } },
+    { type: "DestinationsStrip", props: { id: "dest-1", heading: "Our Destinations", subtitle: "Western Ghats, Karnataka", limit: 3 } },
+    { type: "Stats", props: { id: "stats-1", items: [{ value: "20+", label: "Years of Service" }, { value: "87,000+", label: "Happy Guests" }, { value: "0", label: "Accidents" }, { value: "2", label: "Rivers" }] } },
+    { type: "GalleryStrip", props: { id: "gal-1", heading: "From the River", subtitle: "", limit: 8 } },
+    { type: "CTABanner", props: { id: "cta-1", title: "Ready to", accent: "explore?", text: "Our guides know every rapid and hidden viewpoint. Call us to plan your perfect itinerary.", ctaLabel: "Browse All Tours", ctaHref: "/tours" } },
+  ],
+} as Record<string, unknown>;
+
 async function main() {
   console.log("Clearing content tables…");
   await db.delete(galleryItems);
@@ -199,6 +212,12 @@ async function main() {
       published: true,
     });
   }
+
+  console.log("Seeding Home page (builder)…");
+  await db
+    .insert(pages)
+    .values({ slug: "home", title: "Home", status: "draft", data: HOME_PAGE_DATA })
+    .onConflictDoNothing();
 
   const counts = {
     destinations: DESTINATIONS.length,

@@ -589,6 +589,63 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/BookingDetail" }
         "404": { description: Not found }
+  /pages/{slug}:
+    get:
+      operationId: getPage
+      tags: [content]
+      summary: Get a published page's builder document
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Page" }
+        "404": { description: Not found }
+  /admin/pages:
+    get:
+      operationId: listAdminPages
+      tags: [admin]
+      summary: List editable pages
+      responses:
+        "200":
+          description: Pages
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PageSummary" } }
+        "401": { description: Not authenticated }
+  /admin/pages/{slug}:
+    get:
+      operationId: getAdminPage
+      tags: [admin]
+      summary: Get a page (incl. draft) for editing
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Page" }
+        "404": { description: Not found }
+    put:
+      operationId: savePage
+      tags: [admin]
+      summary: Create or update a page's builder document
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PageInput" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Page" }
 components:
   schemas:
     HealthStatus:
@@ -877,4 +934,27 @@ components:
         calendarId: { type: string, nullable: true }
         connectedAt: { type: string, nullable: true }
       required: [configured, connected]
+    Page:
+      type: object
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        data: { type: object, additionalProperties: true }
+        status: { type: string, enum: [draft, published] }
+        updatedAt: { type: string, nullable: true }
+      required: [slug, title, data]
+    PageSummary:
+      type: object
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        status: { type: string, enum: [draft, published] }
+      required: [slug, title]
+    PageInput:
+      type: object
+      properties:
+        title: { type: string }
+        data: { type: object, additionalProperties: true }
+        status: { type: string, enum: [draft, published] }
+      required: [data]
 

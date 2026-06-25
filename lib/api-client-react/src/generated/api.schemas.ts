@@ -384,6 +384,54 @@ export interface GoogleStatus {
   connectedAt?: string | null;
 }
 
+export type PageData = { [key: string]: unknown };
+
+export type PageStatus = typeof PageStatus[keyof typeof PageStatus];
+
+
+export const PageStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;
+
+export interface Page {
+  slug: string;
+  title: string;
+  data: PageData;
+  status?: PageStatus;
+  updatedAt?: string | null;
+}
+
+export type PageSummaryStatus = typeof PageSummaryStatus[keyof typeof PageSummaryStatus];
+
+
+export const PageSummaryStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;
+
+export interface PageSummary {
+  slug: string;
+  title: string;
+  status?: PageSummaryStatus;
+}
+
+export type PageInputData = { [key: string]: unknown };
+
+export type PageInputStatus = typeof PageInputStatus[keyof typeof PageInputStatus];
+
+
+export const PageInputStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;
+
+export interface PageInput {
+  title?: string;
+  data: PageInputData;
+  status?: PageInputStatus;
+}
+
 export type ListToursParams = {
 /**
  * Filter by destination slug

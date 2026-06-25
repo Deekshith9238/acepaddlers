@@ -7,6 +7,7 @@ import adminContentRouter from "./admin/content";
 import adminMediaRouter from "./admin/media";
 import adminBookingRouter from "./admin/booking";
 import adminIntegrationsRouter from "./admin/integrations";
+import adminPagesRouter from "./admin/pages";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use("/admin", adminContentRouter);
 router.use("/admin", adminMediaRouter);
 router.use("/admin", adminBookingRouter);
 router.use("/admin", adminIntegrationsRouter);
+router.use("/admin", adminPagesRouter);
 
 export default router;

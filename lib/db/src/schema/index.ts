@@ -8,3 +8,4 @@ export * from "./gallery";
 export * from "./media";
 export * from "./admin";
 export * from "./settings";
+export * from "./pages";

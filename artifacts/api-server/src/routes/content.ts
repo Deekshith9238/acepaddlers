@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq } from "drizzle-orm";
-import { db, destinations, tours, blogPosts, galleryItems } from "@workspace/db";
+import { db, destinations, tours, blogPosts, galleryItems, pages } from "@workspace/db";
 import type {
   Destination,
   Tour,
@@ -189,6 +189,26 @@ router.get("/blog/:slug", async (req, res) => {
     return;
   }
   res.json(toBlogPost(row));
+});
+
+// ── Pages (visual builder) ──
+router.get("/pages/:slug", async (req, res) => {
+  const [row] = await db
+    .select()
+    .from(pages)
+    .where(and(eq(pages.slug, req.params.slug), eq(pages.status, "published")))
+    .limit(1);
+  if (!row) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  res.json({
+    slug: row.slug,
+    title: row.title,
+    data: row.data,
+    status: row.status,
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
+  });
 });
 
 // ── Gallery ──

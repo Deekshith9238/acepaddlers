@@ -40,6 +40,9 @@ import type {
   ListBookingsParams,
   ListSlotsParams,
   ListToursParams,
+  Page,
+  PageInput,
+  PageSummary,
   Slot,
   SlotUpdateInput,
   Tour,
@@ -2894,5 +2897,308 @@ export const useUpdateBookingStatus = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateBookingStatusMutationOptions(options));
+    }
+
+export const getGetPageUrl = (slug: string,) => {
+
+
+
+
+  return `/api/pages/${slug}`
+}
+
+/**
+ * @summary Get a published page's builder document
+ */
+export const getPage = async (slug: string, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getGetPageUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPageQueryKey = (slug: string,) => {
+    return [
+    `/api/pages/${slug}`
+    ] as const;
+    }
+
+
+export const getGetPageQueryOptions = <TData = Awaited<ReturnType<typeof getPage>>, TError = ErrorType<void>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPageQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPage>>> = ({ signal }) => getPage(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPageQueryResult = NonNullable<Awaited<ReturnType<typeof getPage>>>
+export type GetPageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a published page's builder document
+ */
+
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = ErrorType<void>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPageQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAdminPagesUrl = () => {
+
+
+
+
+  return `/api/admin/pages`
+}
+
+/**
+ * @summary List editable pages
+ */
+export const listAdminPages = async ( options?: RequestInit): Promise<PageSummary[]> => {
+
+  return customFetch<PageSummary[]>(getListAdminPagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminPagesQueryKey = () => {
+    return [
+    `/api/admin/pages`
+    ] as const;
+    }
+
+
+export const getListAdminPagesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminPages>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminPages>>> = ({ signal }) => listAdminPages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminPages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminPages>>>
+export type ListAdminPagesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List editable pages
+ */
+
+export function useListAdminPages<TData = Awaited<ReturnType<typeof listAdminPages>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminPagesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminPageUrl = (slug: string,) => {
+
+
+
+
+  return `/api/admin/pages/${slug}`
+}
+
+/**
+ * @summary Get a page (incl. draft) for editing
+ */
+export const getAdminPage = async (slug: string, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getGetAdminPageUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminPageQueryKey = (slug: string,) => {
+    return [
+    `/api/admin/pages/${slug}`
+    ] as const;
+    }
+
+
+export const getGetAdminPageQueryOptions = <TData = Awaited<ReturnType<typeof getAdminPage>>, TError = ErrorType<void>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminPageQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminPage>>> = ({ signal }) => getAdminPage(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminPage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminPageQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminPage>>>
+export type GetAdminPageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a page (incl. draft) for editing
+ */
+
+export function useGetAdminPage<TData = Awaited<ReturnType<typeof getAdminPage>>, TError = ErrorType<void>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminPageQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSavePageUrl = (slug: string,) => {
+
+
+
+
+  return `/api/admin/pages/${slug}`
+}
+
+/**
+ * @summary Create or update a page's builder document
+ */
+export const savePage = async (slug: string,
+    pageInput: PageInput, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getSavePageUrl(slug),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pageInput,)
+  }
+);}
+
+
+
+
+export const getSavePageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePage>>, TError,{slug: string;data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof savePage>>, TError,{slug: string;data: BodyType<PageInput>}, TContext> => {
+
+const mutationKey = ['savePage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof savePage>>, {slug: string;data: BodyType<PageInput>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  savePage(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SavePageMutationResult = NonNullable<Awaited<ReturnType<typeof savePage>>>
+    export type SavePageMutationBody = BodyType<PageInput>
+    export type SavePageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update a page's builder document
+ */
+export const useSavePage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePage>>, TError,{slug: string;data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof savePage>>,
+        TError,
+        {slug: string;data: BodyType<PageInput>},
+        TContext
+      > => {
+      return useMutation(getSavePageMutationOptions(options));
     }
 
