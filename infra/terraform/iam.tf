@@ -1,37 +1,53 @@
-# ── App Runner: role to pull the image from ECR ──
-resource "aws_iam_role" "apprunner_ecr" {
-  name = "${local.name}-apprunner-ecr"
+# ── ECS: Execution role (to pull from ECR and read secrets) ──
+resource "aws_iam_role" "ecs_execution" {
+  name = "${local.name}-ecs-execution"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "build.apprunner.amazonaws.com" }
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
       Action    = "sts:AssumeRole"
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_ecr" {
-  role       = aws_iam_role.apprunner_ecr.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+resource "aws_iam_role_policy_attachment" "ecs_execution" {
+  role       = aws_iam_role.ecs_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# ── App Runner: instance (runtime) role — what the API can do on AWS ──
-resource "aws_iam_role" "apprunner_instance" {
-  name = "${local.name}-apprunner-instance"
+resource "aws_iam_role_policy" "ecs_execution_secrets" {
+  name = "ecs-secrets"
+  role = aws_iam_role.ecs_execution.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "Secrets"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [for s in aws_secretsmanager_secret.app : s.arn]
+      }
+    ]
+  })
+}
+
+# ── ECS: Task role (what the API container can do on AWS) ──
+resource "aws_iam_role" "ecs_task" {
+  name = "${local.name}-ecs-task"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "tasks.apprunner.amazonaws.com" }
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
       Action    = "sts:AssumeRole"
     }]
   })
 }
 
-resource "aws_iam_role_policy" "apprunner_instance" {
+resource "aws_iam_role_policy" "ecs_task" {
   name = "app-permissions"
-  role = aws_iam_role.apprunner_instance.id
+  role = aws_iam_role.ecs_task.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -58,13 +74,7 @@ resource "aws_iam_role_policy" "apprunner_instance" {
         Effect   = "Allow"
         Action   = ["iam:PassRole"]
         Resource = aws_iam_role.mediaconvert.arn
-      },
-      {
-        Sid      = "Secrets"
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        Resource = [for s in aws_secretsmanager_secret.app : s.arn]
-      },
+      }
     ]
   })
 }

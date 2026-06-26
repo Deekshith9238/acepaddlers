@@ -16,5 +16,5 @@ resource "aws_secretsmanager_secret" "app" {
 resource "aws_secretsmanager_secret_version" "app" {
   for_each      = local.app_secrets
   secret_id     = aws_secretsmanager_secret.app[each.key].id
-  secret_string = each.value
+  secret_string = each.value != "" ? each.value : "UNSET"
 }

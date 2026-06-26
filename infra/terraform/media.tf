@@ -7,9 +7,9 @@ resource "aws_s3_bucket" "media" {
 
 resource "aws_s3_bucket_public_access_block" "media" {
   bucket                  = aws_s3_bucket.media.id
-  block_public_acls       = true
+  block_public_acls       = false
   block_public_policy     = false
-  ignore_public_acls      = true
+  ignore_public_acls      = false
   restrict_public_buckets = false
 }
 
@@ -23,54 +23,19 @@ resource "aws_s3_bucket_cors_configuration" "media" {
   }
 }
 
-resource "aws_cloudfront_origin_access_control" "media" {
-  name                              = "${local.name}-media"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-resource "aws_cloudfront_distribution" "media" {
-  enabled = true
-  comment = "${local.name} media"
-
-  origin {
-    domain_name              = aws_s3_bucket.media.bucket_regional_domain_name
-    origin_id                = "media"
-    origin_access_control_id = aws_cloudfront_origin_access_control.media.id
-  }
-
-  default_cache_behavior {
-    target_origin_id       = "media"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
-  }
-
-  restrictions {
-    geo_restriction { restriction_type = "none" }
-  }
-  viewer_certificate { cloudfront_default_certificate = true }
-}
-
 resource "aws_s3_bucket_policy" "media" {
   bucket = aws_s3_bucket.media.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid       = "AllowCloudFront"
+      Sid       = "PublicReadGetObject"
       Effect    = "Allow"
-      Principal = { Service = "cloudfront.amazonaws.com" }
+      Principal = "*"
       Action    = "s3:GetObject"
       Resource  = "${aws_s3_bucket.media.arn}/*"
-      Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.media.arn } }
     }]
   })
-}
-
-data "aws_cloudfront_cache_policy" "optimized" {
-  name = "Managed-CachingOptimized"
+  depends_on = [aws_s3_bucket_public_access_block.media]
 }
 
 # ── MediaConvert queue (default on-demand) ──

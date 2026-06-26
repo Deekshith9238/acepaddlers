@@ -1,11 +1,11 @@
 output "api_url" {
-  description = "App Runner API URL"
-  value       = aws_apprunner_service.api.service_url
+  description = "ALB API URL"
+  value       = "http://${aws_lb.api.dns_name}"
 }
 
 output "web_url" {
-  description = "Public site (CloudFront)"
-  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+  description = "Public site (S3 Website Endpoint)"
+  value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
 }
 
 output "web_bucket" {
@@ -13,17 +13,12 @@ output "web_bucket" {
   value       = aws_s3_bucket.frontend.bucket
 }
 
-output "web_cloudfront_id" {
-  description = "CloudFront distribution id (for cache invalidation)"
-  value       = aws_cloudfront_distribution.frontend.id
-}
-
 output "media_bucket" {
   value = aws_s3_bucket.media.bucket
 }
 
 output "media_cdn_url" {
-  value = "https://${aws_cloudfront_distribution.media.domain_name}"
+  value = "https://${aws_s3_bucket.media.bucket_regional_domain_name}"
 }
 
 output "ecr_repository_url" {

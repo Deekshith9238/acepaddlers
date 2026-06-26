@@ -80,30 +80,68 @@ resource "aws_route_table_association" "private" {
 }
 
 # ── Security groups ──
-resource "aws_security_group" "apprunner" {
-  name_prefix = "${local.name}-apprunner-"
+resource "aws_security_group" "alb" {
+  name_prefix = "${local.name}-alb-"
   vpc_id      = aws_vpc.main.id
-  description = "App Runner VPC connector ENIs"
+  description = "Application Load Balancer"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Egress rules managed by standalone aws_security_group_rule
+
+  lifecycle { create_before_destroy = true }
+  tags = { Name = "${local.name}-alb" }
+}
+
+resource "aws_security_group" "ecs_tasks" {
+  name_prefix = "${local.name}-ecs-tasks-"
+  vpc_id      = aws_vpc.main.id
+  description = "ECS Fargate tasks"
+
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   lifecycle { create_before_destroy = true }
-  tags = { Name = "${local.name}-apprunner" }
+  tags = { Name = "${local.name}-ecs-tasks" }
+}
+
+resource "aws_security_group_rule" "alb_to_ecs" {
+  type                     = "egress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ecs_tasks.id
+  security_group_id        = aws_security_group.alb.id
 }
 
 resource "aws_security_group" "rds" {
   name_prefix = "${local.name}-rds-"
   vpc_id      = aws_vpc.main.id
-  description = "Postgres — only from App Runner"
+  description = "Postgres - only from ECS tasks"
+
   ingress {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.apprunner.id]
+    security_groups = [aws_security_group.ecs_tasks.id]
   }
+
   lifecycle { create_before_destroy = true }
   tags = { Name = "${local.name}-rds" }
 }

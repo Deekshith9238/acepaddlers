@@ -33,5 +33,5 @@ resource "aws_db_instance" "main" {
 }
 
 locals {
-  database_url = "postgresql://${var.db_username}:${random_password.db.result}@${aws_db_instance.main.address}:5432/${var.db_name}"
+  database_url = "postgresql://${var.db_username}:${random_password.db.result}@${aws_db_instance.main.address}:5432/${var.db_name}?sslmode=no-verify"
 }
