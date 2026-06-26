@@ -29,6 +29,7 @@ resource "aws_apprunner_service" "api" {
           GOOGLE_CLIENT_ID         = var.google_client_id
           GOOGLE_REDIRECT_URI      = var.google_redirect_uri
           WHATSAPP_PHONE_NUMBER_ID = var.whatsapp_phone_number_id
+          WHATSAPP_VERIFY_TOKEN    = var.whatsapp_verify_token
           # Media providers (consumed by the AWS storage/transcoder impls)
           MEDIA_BUCKET          = aws_s3_bucket.media.bucket
           MEDIA_CDN_URL         = "https://${aws_cloudfront_distribution.media.domain_name}"

@@ -111,3 +111,8 @@ variable "whatsapp_phone_number_id" {
   type    = string
   default = ""
 }
+variable "whatsapp_verify_token" {
+  type        = string
+  default     = ""
+  description = "Arbitrary string you also enter in Meta's webhook config."
+}

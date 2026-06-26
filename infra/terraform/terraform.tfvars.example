@@ -22,6 +22,7 @@ google_redirect_uri  = "https://YOUR_CLOUDFRONT_DOMAIN/api/admin/integrations/go
 # WhatsApp Cloud API (Meta)
 whatsapp_token           = ""
 whatsapp_phone_number_id = ""
+whatsapp_verify_token    = "pick-any-long-random-string" # also entered in Meta's webhook setup
 
 # Set after the first image push (defaults to "latest")
 api_image_tag = "latest"
