@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { db, tours, destinations, blogPosts, pages } from "@workspace/db";
+import { getSiteConfig } from "./site-config";
 
 /**
  * Server-side SEO for the client-rendered SPA. The React app only sets
@@ -186,6 +187,25 @@ const LOCAL_BUSINESS = {
   },
 };
 
+/**
+ * The home page's business schema with its social profiles.
+ *
+ * `sameAs` tells Google which Instagram, Facebook, YouTube and TripAdvisor
+ * pages belong to this business. It comes from Settings → Business details,
+ * and lists only what is filled in: a guessed profile URL in structured data
+ * is worse than none, because it attaches someone else's page to the business.
+ */
+async function localBusinessSchema(): Promise<Record<string, unknown>> {
+  const { business } = await getSiteConfig();
+  const sameAs = [business.instagram, business.facebook, business.youtube, business.tripadvisor].filter(Boolean);
+  return {
+    ...LOCAL_BUSINESS,
+    name: business.name || LOCAL_BUSINESS.name,
+    ...(business.phones[0] ? { telephone: business.phones[0] } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  };
+}
+
 const inr = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
 const contentBlock = (inner: string) =>
@@ -218,7 +238,7 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
       title: s.title,
       description: s.description,
       canonicalPath: p,
-      jsonLd: p === "/" ? LOCAL_BUSINESS : undefined,
+      jsonLd: p === "/" ? await localBusinessSchema() : undefined,
       noindex: s.noindex,
       status: 200,
       content: contentBlock(`<h1>${esc(s.h1)}</h1><p>${esc(s.text)}</p>${linkList(links)}`),

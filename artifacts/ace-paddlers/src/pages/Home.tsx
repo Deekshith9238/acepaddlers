@@ -39,10 +39,6 @@ const LOCAL_BUSINESS_SCHEMA = {
     longitude: "75.868",
   },
   openingHours: "Mo-Su 07:00-18:00",
-  sameAs: [
-    "https://www.instagram.com/acepaddlers",
-    "https://www.facebook.com/acepaddlers",
-  ],
 };
 
 export default function Home() {
@@ -69,7 +65,19 @@ export default function Home() {
           title="White Water Rafting in Coorg & Chikmagalur | Ace Paddlers"
           description="Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur."
           url="/"
-          schema={{ ...LOCAL_BUSINESS_SCHEMA, name: biz.name, telephone: biz.phones[0] ?? LOCAL_BUSINESS_SCHEMA.telephone }}
+          schema={{
+            ...LOCAL_BUSINESS_SCHEMA,
+            name: biz.name,
+            telephone: biz.phones[0] ?? LOCAL_BUSINESS_SCHEMA.telephone,
+            // The profiles Google should tie to this business — only the ones
+            // set under Settings → Business details. These were hardcoded to
+            // instagram.com/acepaddlers and facebook.com/acepaddlers, which
+            // nobody had checked belonged to the business.
+            ...(() => {
+              const sameAs = [biz.instagram, biz.facebook, biz.youtube, biz.tripadvisor].filter(Boolean);
+              return sameAs.length ? { sameAs } : {};
+            })(),
+          }}
         />
 
         {/* ── Hero ── */}
