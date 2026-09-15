@@ -148,3 +148,12 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+
+allowBuilds:
+  # We import only firebase/app and firebase/auth. Neither needs a postinstall:
+  # the SDK ships prebuilt, and protobufjs is only reached through Firestore,
+  # which we do not use. Left off to keep the build-script surface small.
+  '@firebase/util': false
+  esbuild: false
+  protobufjs: false
+  sharp: false

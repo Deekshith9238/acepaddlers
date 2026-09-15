@@ -77,10 +77,15 @@ resource "aws_ecs_task_definition" "api" {
         { name = "NOTIFY_EMAILS", value = var.notify_emails },
         { name = "NOTIFY_PHONES", value = var.notify_phones },
         { name = "SES_FROM_EMAIL", value = var.ses_from_email },
+        { name = "RESEND_FROM_EMAIL", value = var.resend_from_email },
         { name = "GOOGLE_CLIENT_ID", value = var.google_client_id },
         { name = "GOOGLE_REDIRECT_URI", value = var.google_redirect_uri },
         { name = "WHATSAPP_PHONE_NUMBER_ID", value = var.whatsapp_phone_number_id },
         { name = "WHATSAPP_VERIFY_TOKEN", value = var.whatsapp_verify_token },
+        { name = "RAZORPAY_KEY_ID", value = var.razorpay_key_id },
+        { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
+        { name = "FIREBASE_API_KEY", value = var.firebase_api_key },
+        { name = "FIREBASE_AUTH_DOMAIN", value = var.firebase_auth_domain },
         { name = "MEDIA_BUCKET", value = aws_s3_bucket.media.bucket },
         { name = "MEDIA_PUBLIC_BASE_URL", value = "https://${aws_s3_bucket.media.bucket_regional_domain_name}" }
       ]
@@ -110,9 +115,12 @@ resource "aws_ecs_service" "api" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = aws_subnet.private[*].id
+    # A public subnet plus a public IP replaces the NAT gateway as this task's
+    # route out (Razorpay, Meta, Resend, ECR pulls). Inbound is unchanged and
+    # still closed: ecs_tasks only accepts port 8080 from the ALB's group.
+    subnets          = aws_subnet.public[*].id
     security_groups  = [aws_security_group.ecs_tasks.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {

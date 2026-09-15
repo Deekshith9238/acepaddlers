@@ -5,14 +5,22 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ItineraryDay } from './itineraryDay';
+import type { TourInputBookingMode } from './tourInputBookingMode';
+import type { TourInputDepartureDisplay } from './tourInputDepartureDisplay';
 import type { TourInputDetails } from './tourInputDetails';
+import type { TourInputLabels } from './tourInputLabels';
+import type { TourInputPriceLabelPosition } from './tourInputPriceLabelPosition';
+import type { TourInputSeatSharing } from './tourInputSeatSharing';
 import type { TourInputStatus } from './tourInputStatus';
-import type { TourInputType } from './tourInputType';
 
 export interface TourInput {
   slug: string;
   destinationId?: string | null;
-  type: TourInputType;
+  /** Slug of a tour type (see /tour-types) */
+  type: string;
+  /** Slug of a tour category (see /tour-categories) */
+  category?: string;
   title: string;
   location?: string | null;
   tagline?: string | null;
@@ -23,6 +31,8 @@ export interface TourInput {
   currency?: string;
   duration?: string | null;
   capacityPerSlot?: number;
+  /** direct = pay online now; enquiry = no payment, team confirms manually */
+  bookingMode?: TourInputBookingMode;
   minAge?: number | null;
   maxWeightKg?: number | null;
   season?: string | null;
@@ -35,4 +45,41 @@ export interface TourInput {
   seoDescription?: string | null;
   status?: TourInputStatus;
   sortOrder?: number;
+  /** Operator-facing trip code, e.g. ACE-CampKarle */
+  code?: string | null;
+  /** false = a private departure not pooled with other customers */
+  sharedTrip?: boolean;
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  /** Terms for this trip only */
+  terms?: string | null;
+  /** Headline price for display; the rate card does the maths */
+  advertisedPrice?: number | null;
+  priceLabelPosition?: TourInputPriceLabelPosition;
+  showAdvertisedPrice?: boolean;
+  allowPartialDeposit?: boolean;
+  /** Percent of the total accepted as a deposit */
+  depositPercent?: number;
+  seatSharing?: TourInputSeatSharing;
+  departureDisplay?: TourInputDepartureDisplay;
+  showSeatsAvailable?: boolean;
+  showSeatsBooked?: boolean;
+  showGuaranteedDeparture?: boolean;
+  showSeatsToGuarantee?: boolean;
+  bookingLeadTimeHours?: number;
+  paymentDeadlineDays?: number | null;
+  itinerary?: ItineraryDay[];
+  itineraryText?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  shortAddress?: string | null;
+  detailedAddress?: string | null;
+  directions?: string | null;
+  confirmationEmailIntro?: string | null;
+  /** Custom nouns: trip, departure, participant, room */
+  labels?: TourInputLabels;
+  relatedTourIds?: string[];
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
 }

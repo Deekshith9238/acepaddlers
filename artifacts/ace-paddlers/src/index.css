@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+html {
+  scroll-behavior: smooth;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -205,3 +209,186 @@
 .ace-anim-fadeleft  { animation: acefadeleft  1.0s cubic-bezier(0.22,1,0.36,1) both; }
 .ace-anim-faderight { animation: acefaderight 1.0s cubic-bezier(0.22,1,0.36,1) both; }
 .ace-anim-scaleup   { animation: acescaleup   0.95s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* Image download protection: block drag-to-save and long-press save on the
+   public site. A deterrent for casual copying, not DRM. */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Rich text block (builder RichText): base typography for admin-authored
+   HTML content, including floated inline images. */
+.ace-richtext p { margin-bottom: 1rem; }
+.ace-richtext h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; font-family: var(--app-font-serif); }
+.ace-richtext h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: var(--app-font-serif); }
+.ace-richtext ul, .ace-richtext ol { margin: 0 0 1rem 1.25rem; }
+.ace-richtext ul { list-style: disc; }
+.ace-richtext ol { list-style: decimal; }
+.ace-richtext li { margin-bottom: 0.25rem; }
+.ace-richtext a { color: var(--brand-riverTeal, #1a7fa6); text-decoration: underline; }
+.ace-richtext img { height: auto; }
+.ace-richtext strong { font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Theme styles.
+ *
+ * `applyTheme` puts the admin's choices on <html> as data-* attributes and a
+ * couple of variables; everything below is what those choices mean. Keeping it
+ * here rather than in components is the point — a theme change re-skins the
+ * site without any component knowing a theme exists, which is how Vacation
+ * Labs' theme editor behaves and why swapping a style there is instant.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --brand-headingWeight: 700;
+  --brand-bodyWeight: 400;
+  /* Corner radius for buttons, set by the button-style choice below. */
+  --ap-btn-radius: 9999px;
+}
+
+h1, h2, h3, h4, h5, h6 { font-weight: var(--brand-headingWeight, 700); }
+body { font-weight: var(--brand-bodyWeight, 400); }
+
+/* ── Button style: fill vs hollow, and how round the corners are ──
+   `.ap-btn` is the opt-in hook. Buttons that carry their own explicit styling
+   are left alone: a theme should restyle the site, not fight every component. */
+[data-button-style$="-box"]      { --ap-btn-radius: 4px; }
+[data-button-style$="-curved"]   { --ap-btn-radius: 10px; }
+[data-button-style$="-rounded"]  { --ap-btn-radius: 9999px; }
+
+.ap-btn {
+  border-radius: var(--ap-btn-radius);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+[data-button-style^="fill"] .ap-btn {
+  background-color: var(--brand-riverTeal, #1a7fa6);
+  color: #fff;
+  border: 2px solid transparent;
+}
+[data-button-style^="hollow"] .ap-btn {
+  background-color: transparent;
+  color: var(--brand-riverTeal, #1a7fa6);
+  border: 2px solid currentColor;
+}
+[data-button-style^="hollow"] .ap-btn:hover {
+  background-color: var(--brand-riverTeal, #1a7fa6);
+  color: #fff;
+}
+
+/* ── Section heading style ──
+   `.ap-section-heading` marks a heading that introduces a section. */
+.ap-section-heading { position: relative; }
+[data-section-heading-style="default"] .ap-section-heading { text-align: center; }
+[data-section-heading-style="left"] .ap-section-heading { text-align: left; }
+
+[data-section-heading-style="star"] .ap-section-heading { text-align: center; }
+[data-section-heading-style="star"] .ap-section-heading::after {
+  content: "★";
+  display: block;
+  font-size: 0.6em;
+  line-height: 1;
+  margin-top: 0.4em;
+  color: var(--brand-riverTeal, #1a7fa6);
+}
+
+[data-section-heading-style="side-lines"] .ap-section-heading {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+[data-section-heading-style="side-lines"] .ap-section-heading::before,
+[data-section-heading-style="side-lines"] .ap-section-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--brand-mutedBorder, #b8d9e8);
+}
+
+/* ── Header style ── */
+[data-header-style="transparent"] .ap-header { background: transparent !important; box-shadow: none !important; }
+[data-header-style="center"] .ap-header-inner { justify-content: center; }
+[data-header-style="reversed"] .ap-header-inner { flex-direction: row-reverse; }
+
+/* ── Footer style ── */
+[data-footer-style="concise"] .ap-footer-columns { display: none; }
+[data-footer-style="concise"] .ap-footer { padding-top: 2rem; padding-bottom: 2rem; }
+
+/* ── Trip card style ──
+   `TripCard` always renders every element; the chosen style decides which of
+   them show and how tall the image stands. One card component, five looks. */
+.ap-card-media { aspect-ratio: 4 / 3; }
+
+/* Default — image, title, price, meta, and a View Details footer. */
+[data-tour-card-style="default"] .ap-card-description { display: none; }
+
+/* Default + description — the same, plus the tagline. */
+[data-tour-card-style="default-description"] .ap-card-media { aspect-ratio: 4 / 3; }
+
+/* Modular — a square tile. Title and price only, so a grid of them reads as
+   a set of tiles rather than a list of paragraphs. */
+[data-tour-card-style="modular"] .ap-card-media { aspect-ratio: 1 / 1; }
+[data-tour-card-style="modular"] .ap-card-meta,
+[data-tour-card-style="modular"] .ap-card-description,
+[data-tour-card-style="modular"] .ap-card-cta { display: none; }
+[data-tour-card-style="modular"] .ap-card-body { padding: 1rem 1.25rem; }
+
+/* Concise — the shortest card there is: a wide strip of image and one line. */
+[data-tour-card-style="concise"] .ap-card-media { aspect-ratio: 16 / 9; }
+[data-tour-card-style="concise"] .ap-card-meta,
+[data-tour-card-style="concise"] .ap-card-description,
+[data-tour-card-style="concise"] .ap-card-cta { display: none; }
+[data-tour-card-style="concise"] .ap-card-body { padding: 0.85rem 1.25rem; }
+
+/* Detailed — everything, on a taller image. */
+[data-tour-card-style="detailed"] .ap-card-media { aspect-ratio: 3 / 2; }
+[data-tour-card-style="detailed"] .ap-card-description { -webkit-line-clamp: 4; line-clamp: 4; }
+
+/* ── Collection card style ──
+   The caption sits over the image by default; the variants change how much of
+   the image it covers, or lift it out from over the image entirely. */
+[data-collection-card-style="semi-overlay"] .ap-collection-overlay {
+  background: linear-gradient(to top, rgba(6, 24, 32, 0.55) 0%, transparent 45%) !important;
+}
+
+[data-collection-card-style="circular"] .ap-collection-media {
+  border-radius: 9999px;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+}
+[data-collection-card-style="circular"] .ap-collection-overlay { display: none; }
+[data-collection-card-style="circular"] .ap-collection-caption {
+  position: static;
+  padding: 1rem 0 0;
+  text-align: center;
+}
+[data-collection-card-style="circular"] .ap-collection-caption h3,
+[data-collection-card-style="circular"] .ap-collection-caption p { color: var(--brand-text, #0d2d40); }
+
+[data-collection-card-style="no-overlay"] .ap-collection-overlay { display: none; }
+[data-collection-card-style="no-overlay"] .ap-collection-media { height: 300px !important; }
+[data-collection-card-style="no-overlay"] .ap-collection-caption {
+  position: static;
+  padding: 1rem 0 0;
+}
+[data-collection-card-style="no-overlay"] .ap-collection-caption h3,
+[data-collection-card-style="no-overlay"] .ap-collection-caption p { color: var(--brand-text, #0d2d40); }
+
+/* ── Coupon strip style ── */
+[data-coupon-strip-style="without-image"] .ap-coupon-media { display: none; }
+[data-coupon-strip-style="without-image"] .ap-coupon-body { padding: 1.75rem; }
+
+/* ── Team members style ──
+   Both layouts are in the DOM; the theme picks one. */
+.ap-team-accordion { display: none; }
+[data-team-members-style="accordion"] .ap-team-grid { display: none; }
+[data-team-members-style="accordion"] .ap-team-accordion { display: block; }

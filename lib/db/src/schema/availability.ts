@@ -10,6 +10,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { tours } from "./tours";
+import { tourVariants } from "./tour-variants";
 import { slotStatusEnum } from "./enums";
 
 /**
@@ -21,6 +22,8 @@ export const availabilityRules = pgTable("availability_rules", {
   tourId: uuid("tour_id")
     .references(() => tours.id, { onDelete: "cascade" })
     .notNull(),
+  /** Null = the rule generates one shared slot for the whole tour. */
+  variantId: uuid("variant_id").references(() => tourVariants.id, { onDelete: "cascade" }),
   weekdayMask: smallint("weekday_mask").notNull(),
   startTime: text("start_time").notNull(), // "HH:MM" local time
   capacity: integer("capacity").notNull(),
@@ -38,6 +41,11 @@ export const tourSlots = pgTable(
     tourId: uuid("tour_id")
       .references(() => tours.id, { onDelete: "cascade" })
       .notNull(),
+    /**
+     * Which variant this inventory belongs to. Null is the tour-wide slot every
+     * existing tour already has, so nothing about the old behaviour changes.
+     */
+    variantId: uuid("variant_id").references(() => tourVariants.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
     startTime: text("start_time").notNull(),
     capacity: integer("capacity").notNull(),
@@ -45,7 +53,12 @@ export const tourSlots = pgTable(
     status: slotStatusEnum("status").default("open").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique("tour_slots_unique").on(t.tourId, t.date, t.startTime)],
+  (t) => [
+    // NULLS NOT DISTINCT so the tour-wide slot (variantId null) still collides
+    // with itself. Without it Postgres treats every null as unique and the same
+    // date/time could be generated twice.
+    unique("tour_slots_unique").on(t.tourId, t.variantId, t.date, t.startTime).nullsNotDistinct(),
+  ],
 );
 
 /** Closed days. tourId null = global blackout. */

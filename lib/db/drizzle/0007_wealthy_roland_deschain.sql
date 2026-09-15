@@ -1,0 +1,1 @@
+ALTER TABLE "bookings" ADD COLUMN "charges_breakdown" jsonb DEFAULT '[]'::jsonb NOT NULL;

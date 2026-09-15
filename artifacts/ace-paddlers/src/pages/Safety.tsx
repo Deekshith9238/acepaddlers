@@ -1,8 +1,11 @@
+import { useState, useEffect } from "react";
+import { useBusiness } from "@/lib/useBusiness";
 import { ShieldCheck, Award, Heart, Users, Anchor, CheckCircle, AlertTriangle } from "lucide-react";
-import Layout from "@/components/Layout";
 import EditablePage from "@/builder/EditablePage";
+import { fetchSiteConfig, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
+import PageHero from "@/components/PageHero";
 import { C } from "@/data/constants";
 
 const CERTS = [
@@ -79,127 +82,129 @@ export default function Safety() {
 }
 
 function SafetyContent() {
+  const biz = useBusiness();
+
   return (
-    <Layout>
+    <>
       <PageMeta
-        title="Safety & Certifications | Ace Paddlers White Water Rafting"
-        description="NOLS, WFR, CPR & Rescue 3 certified guides. 20+ years of white water rafting with zero serious incidents. Learn about Ace Paddlers' safety standards and protocols."
-        url="/safety"
-        schema={SCHEMA}
-      />
+          title="Safety & Certifications | Ace Paddlers White Water Rafting"
+          description="NOLS, WFR, CPR & Rescue 3 certified guides. 20+ years of white water rafting with zero serious incidents. Learn about Ace Paddlers' safety standards and protocols."
+          url="/safety"
+          schema={SCHEMA}
+        />
 
-      {/* Hero */}
-      <section className="pt-40 pb-20 px-6 text-center" style={{ backgroundColor: C.deepOcean }}>
-        <Animate immediate variant="up">
-          <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.lightTeal }}>
-            Our Commitment
-          </span>
-          <h1 className="text-5xl md:text-6xl text-white mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
-            Safety Is the{" "}
-            <span className="italic" style={{ color: C.lightTeal }}>Foundation</span>
-          </h1>
-          <p className="max-w-2xl mx-auto text-white/70 text-lg mb-8">
-            Over two decades. 87,000+ guests. Zero serious incidents. Safety at Acepaddlers is not a checkbox — it is the culture that runs through everything we do.
-          </p>
-          <div className="flex flex-wrap justify-center gap-6">
-            {[
-              { val: "20+", label: "Years on the water" },
-              { val: "87,000+", label: "Guests guided safely" },
-              { val: "Zero", label: "Serious incidents" },
-              { val: "4", label: "International certifications" },
-            ].map((s, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl font-bold" style={{ fontFamily: "'Fraunces', serif", color: C.lightTeal }}>{s.val}</div>
-                <div className="text-xs uppercase tracking-wider mt-1" style={{ color: "rgba(168,223,240,0.60)" }}>{s.label}</div>
+        {/* Hero */}
+        <PageHero page="safety" fallbackImage="/images/badra-rafting-1.jpg">
+          <Animate immediate variant="up" className="text-center">
+            <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.lightTeal }}>
+              Our Commitment
+            </span>
+            <h1 className="text-5xl md:text-6xl text-white mb-6" style={{ fontFamily: "var(--app-font-serif)" }}>
+              Safety Is the{" "}
+              <span className="italic" style={{ color: C.lightTeal }}>Foundation</span>
+            </h1>
+            <p className="max-w-2xl mx-auto text-white/70 text-lg mb-8">
+              Over two decades. 87,000+ guests. Zero serious incidents. Safety at Acepaddlers is not a checkbox — it is the culture that runs through everything we do.
+            </p>
+            <div className="flex flex-wrap justify-center gap-6">
+              {[
+                { val: "20+", label: "Years on the water" },
+                { val: "87,000+", label: "Guests guided safely" },
+                { val: "Zero", label: "Serious incidents" },
+                { val: "4", label: "International certifications" },
+              ].map((s, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-3xl font-bold" style={{ fontFamily: "var(--app-font-serif)", color: C.lightTeal }}>{s.val}</div>
+                  <div className="text-xs uppercase tracking-wider mt-1" style={{ color: "rgba(168,223,240,0.60)" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </Animate>
+        </PageHero>
+
+        {/* Certifications */}
+        <section className="py-24 px-6" style={{ backgroundColor: C.bg }}>
+          <div className="max-w-7xl mx-auto">
+            <Animate variant="up">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                  Our <span className="italic" style={{ color: C.riverTeal }}>Certifications</span>
+                </h2>
+                <p className="max-w-2xl mx-auto text-lg" style={{ color: "#2e5a74" }}>
+                  Every guide on our team holds internationally recognised certifications — making us among the most qualified adventure operators in South India.
+                </p>
               </div>
-            ))}
-          </div>
-        </Animate>
-      </section>
+            </Animate>
 
-      {/* Certifications */}
-      <section className="py-24 px-6" style={{ backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8">
+              {CERTS.map((cert, i) => (
+                <Animate key={i} variant="up" delay={i * 100}>
+                  <div className="bg-white rounded-2xl p-8 border h-full" style={{ borderColor: C.mutedBorder, boxShadow: "0 2px 12px rgba(13,45,64,0.08)" }}>
+                    <div className="flex items-start gap-5 mb-6">
+                      <div className="p-4 rounded-2xl shrink-0" style={{ backgroundColor: cert.color + "18", color: cert.color }}>
+                        {cert.icon}
+                      </div>
+                      <div>
+                        <div className="text-3xl font-bold mb-1" style={{ fontFamily: "var(--app-font-serif)", color: cert.color }}>{cert.name}</div>
+                        <div className="text-sm font-semibold" style={{ color: "#5a8ea8" }}>{cert.full}</div>
+                      </div>
+                    </div>
+                    <p className="text-base mb-4 leading-relaxed" style={{ color: "#2e5a74" }}>{cert.desc}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{cert.detail}</p>
+                  </div>
+                </Animate>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Safety Protocols */}
+        <section className="py-24 px-6" style={{ backgroundColor: C.muted }}>
+          <div className="max-w-7xl mx-auto">
+            <Animate variant="up">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                  Safety <span className="italic" style={{ color: C.riverTeal }}>Protocols</span>
+                </h2>
+                <p className="max-w-2xl mx-auto" style={{ color: "#2e5a74" }}>
+                  Certifications are the foundation. These protocols are how we apply them, every single day.
+                </p>
+              </div>
+            </Animate>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {PROTOCOLS.map((p, i) => (
+                <Animate key={i} variant="up" delay={i * 80}>
+                  <div className="bg-white rounded-2xl p-6 border h-full" style={{ borderColor: C.mutedBorder }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <CheckCircle className="w-5 h-5 shrink-0" style={{ color: C.riverTeal }} />
+                      <h3 className="font-semibold" style={{ color: C.text }}>{p.title}</h3>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{p.desc}</p>
+                  </div>
+                </Animate>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Track record */}
+        <section className="py-20 px-6 text-center" style={{ backgroundColor: C.deepOcean }}>
           <Animate variant="up">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                Our <span className="italic" style={{ color: C.riverTeal }}>Certifications</span>
+            <div className="max-w-3xl mx-auto">
+              <AlertTriangle className="w-10 h-10 mx-auto mb-6" style={{ color: C.lightTeal }} />
+              <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "var(--app-font-serif)" }}>
+                20+ Years. 87,000+ Guests. Zero Serious Incidents.
               </h2>
-              <p className="max-w-2xl mx-auto text-lg" style={{ color: "#2e5a74" }}>
-                Every guide on our team holds internationally recognised certifications — making us among the most qualified adventure operators in South India.
+              <p className="text-white/70 text-lg mb-8">
+                This record is not luck. It is the result of never compromising on certification, equipment, protocols, or guide quality — even when doing so would be cheaper or more convenient.
+              </p>
+              <p className="text-white/50 text-sm">
+                {biz.name}{biz.addressLine ? ` | ${biz.addressLine}` : ""}{biz.phones[0] ? ` | ${biz.phones[0]}` : ""}
               </p>
             </div>
           </Animate>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {CERTS.map((cert, i) => (
-              <Animate key={i} variant="up" delay={i * 100}>
-                <div className="bg-white rounded-2xl p-8 border h-full" style={{ borderColor: C.mutedBorder, boxShadow: "0 2px 12px rgba(13,45,64,0.08)" }}>
-                  <div className="flex items-start gap-5 mb-6">
-                    <div className="p-4 rounded-2xl shrink-0" style={{ backgroundColor: cert.color + "18", color: cert.color }}>
-                      {cert.icon}
-                    </div>
-                    <div>
-                      <div className="text-3xl font-bold mb-1" style={{ fontFamily: "'Fraunces', serif", color: cert.color }}>{cert.name}</div>
-                      <div className="text-sm font-semibold" style={{ color: "#5a8ea8" }}>{cert.full}</div>
-                    </div>
-                  </div>
-                  <p className="text-base mb-4 leading-relaxed" style={{ color: "#2e5a74" }}>{cert.desc}</p>
-                  <p className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{cert.detail}</p>
-                </div>
-              </Animate>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Safety Protocols */}
-      <section className="py-24 px-6" style={{ backgroundColor: C.muted }}>
-        <div className="max-w-7xl mx-auto">
-          <Animate variant="up">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
-                Safety <span className="italic" style={{ color: C.riverTeal }}>Protocols</span>
-              </h2>
-              <p className="max-w-2xl mx-auto" style={{ color: "#2e5a74" }}>
-                Certifications are the foundation. These protocols are how we apply them, every single day.
-              </p>
-            </div>
-          </Animate>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {PROTOCOLS.map((p, i) => (
-              <Animate key={i} variant="up" delay={i * 80}>
-                <div className="bg-white rounded-2xl p-6 border h-full" style={{ borderColor: C.mutedBorder }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <CheckCircle className="w-5 h-5 shrink-0" style={{ color: C.riverTeal }} />
-                    <h3 className="font-semibold" style={{ color: C.text }}>{p.title}</h3>
-                  </div>
-                  <p className="text-sm leading-relaxed" style={{ color: "#5a8ea8" }}>{p.desc}</p>
-                </div>
-              </Animate>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Track record */}
-      <section className="py-20 px-6 text-center" style={{ backgroundColor: C.deepOcean }}>
-        <Animate variant="up">
-          <div className="max-w-3xl mx-auto">
-            <AlertTriangle className="w-10 h-10 mx-auto mb-6" style={{ color: C.lightTeal }} />
-            <h2 className="text-3xl md:text-4xl text-white mb-6" style={{ fontFamily: "'Fraunces', serif" }}>
-              20+ Years. 87,000+ Guests. Zero Serious Incidents.
-            </h2>
-            <p className="text-white/70 text-lg mb-8">
-              This record is not luck. It is the result of never compromising on certification, equipment, protocols, or guide quality — even when doing so would be cheaper or more convenient.
-            </p>
-            <p className="text-white/50 text-sm">
-              Ace Paddlers | T. Shettigeri, Virajpet, Kodagu — 571218 | +91 94809 87672
-            </p>
-          </div>
-        </Animate>
-      </section>
-    </Layout>
+        </section>
+    </>
   );
 }

@@ -42,6 +42,10 @@ router.post("/auth/login", async (req, res) => {
     tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + SESSION_TTL_MS),
   });
+
+  // Surfaces dormant accounts on the users screen — the previous platform had
+  // an account with finance rights that hadn't signed in for nine years.
+  await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, user.id));
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions(SESSION_TTL_MS));
   res.json(
     AdminLoginResponse.parse({
@@ -49,6 +53,7 @@ router.post("/auth/login", async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      token,
     }),
   );
 });

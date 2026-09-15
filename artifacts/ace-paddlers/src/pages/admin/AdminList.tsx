@@ -1,5 +1,4 @@
 import { Link, useParams } from "wouter";
-import AdminLayout from "@/admin/AdminLayout";
 import { RESOURCES, type ResourceConfig } from "@/admin/resources";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -41,6 +40,12 @@ function ListInner({ cfg }: { cfg: ResourceConfig }) {
                   ))}
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Link href={`/admin/${cfg.key}/${row.id}`} className="text-cyan-600 no-underline hover:underline">Edit</Link>
+                    {/* Straight into the trip editor's Prices & rates tab. */}
+                    {cfg.key === "tours" && (
+                      <Link href={`/admin/tours/${row.id}/prices`} className="ml-4 text-cyan-600 no-underline hover:underline">
+                        Rates
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
                         if (confirm("Delete this item?")) del.mutate({ id: row.id });
@@ -69,8 +74,6 @@ export default function AdminList() {
   const { resource } = useParams<{ resource: string }>();
   const cfg = RESOURCES[resource];
   return (
-    <AdminLayout>
-      {cfg ? <ListInner key={resource} cfg={cfg} /> : <p>Unknown resource.</p>}
-    </AdminLayout>
+    cfg ? <ListInner key={resource} cfg={cfg} /> : <p>Unknown resource.</p>
   );
 }

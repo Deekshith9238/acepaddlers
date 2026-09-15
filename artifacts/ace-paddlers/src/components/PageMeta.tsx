@@ -6,9 +6,12 @@ interface PageMetaProps {
   schema?: object;
   image?: string;
   url?: string;
+  /** Keeps a page out of search results — for anything with no durable
+   *  content of its own, like a search results page. */
+  noindex?: boolean;
 }
 
-export default function PageMeta({ title, description, schema, image, url }: PageMetaProps) {
+export default function PageMeta({ title, description, schema, image, url, noindex }: PageMetaProps) {
   const siteUrl = "https://acepaddlers.com";
   const canonical = url ? `${siteUrl}${url}` : siteUrl;
   const ogImage = image || `${siteUrl}/images/rafting-hero.png`;
@@ -17,6 +20,7 @@ export default function PageMeta({ title, description, schema, image, url }: Pag
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={canonical} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />

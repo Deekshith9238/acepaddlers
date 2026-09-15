@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { Mountain, Waves, Home as HomeIcon, Tent, Anchor, ArrowRight, MapPin, Clock } from "lucide-react";
+import { Mountain, Waves, Home as HomeIcon, Tent, Anchor, Compass, ArrowRight, MapPin, Clock } from "lucide-react";
 import SmartImage from "@/components/SmartImage";
+import LocationModal from "@/components/LocationModal";
 import { C } from "@/data/constants";
 
 export type DestTour = { slug: string; title: string; price: string; type: string };
@@ -24,6 +26,8 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   Camping: <Tent className="w-4 h-4" />,
   "Water Sports": <Anchor className="w-4 h-4" />,
 };
+// Generic icon for any admin-added activity type not in the map above.
+const DEFAULT_TYPE_ICON = <Compass className="w-4 h-4" />;
 
 export default function DestinationSection({
   dest,
@@ -34,6 +38,7 @@ export default function DestinationSection({
   index: number;
   showLink?: boolean;
 }) {
+  const [showLocation, setShowLocation] = useState(false);
   return (
     <section className="py-24 px-6" style={{ backgroundColor: index % 2 === 0 ? C.bg : C.muted }}>
       <div className="max-w-7xl mx-auto">
@@ -45,8 +50,10 @@ export default function DestinationSection({
             <SmartImage src={dest.img} alt={`${dest.name} — ${dest.tagline ?? ""}`} loading="lazy"
               wrapperClassName="relative z-10 rounded-2xl shadow-xl w-full aspect-video"
               className="w-full h-full object-cover" />
-            <div className="absolute bottom-4 left-4 right-4 z-20 flex gap-3 p-4 rounded-xl backdrop-blur-sm"
-              style={{ backgroundColor: "rgba(6,24,32,0.82)" }}>
+            <button type="button" onClick={() => setShowLocation(true)}
+              className="absolute bottom-4 left-4 right-4 z-20 flex gap-3 p-4 rounded-xl backdrop-blur-sm text-left transition-transform hover:-translate-y-0.5 cursor-pointer"
+              style={{ backgroundColor: "rgba(6,24,32,0.82)" }}
+              aria-label={`Show ${dest.name} on the map`}>
               <div className="flex items-center gap-2 text-sm flex-1">
                 <MapPin className="w-4 h-4 shrink-0" style={{ color: "#a8dff0" }} />
                 <span style={{ color: "rgba(168,223,240,0.85)" }}>{dest.distance}</span>
@@ -55,7 +62,14 @@ export default function DestinationSection({
                 <Clock className="w-4 h-4 shrink-0" style={{ color: "#a8dff0" }} />
                 <span style={{ color: "rgba(168,223,240,0.85)" }} className="text-xs">{(dest.bestTime ?? "").split(",")[0]}</span>
               </div>
-            </div>
+            </button>
+            {showLocation && (
+              <LocationModal
+                label={dest.fullName ?? dest.name}
+                query={`${dest.fullName ?? dest.name}, Karnataka, India`}
+                onClose={() => setShowLocation(false)}
+              />
+            )}
           </div>
 
           {/* Content */}
@@ -66,7 +80,7 @@ export default function DestinationSection({
                 Destination
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl mb-2" style={{ fontFamily: "'Fraunces', serif", color: C.text }}>
+            <h2 className="text-4xl md:text-5xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
               {dest.name}
             </h2>
             <div className="text-sm mb-6" style={{ color: "#5a8ea8" }}>{dest.fullName}</div>
@@ -103,7 +117,7 @@ export default function DestinationSection({
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: C.muted, color: C.riverTeal }}>
-                      {TYPE_ICON[t.type]}
+                      {TYPE_ICON[t.type] ?? DEFAULT_TYPE_ICON}
                     </span>
                     <div>
                       <div className="font-medium text-sm" style={{ color: C.text }}>{t.title}</div>

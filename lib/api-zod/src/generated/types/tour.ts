@@ -5,15 +5,23 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ItineraryDay } from './itineraryDay';
+import type { TourBookingMode } from './tourBookingMode';
+import type { TourDepartureDisplay } from './tourDepartureDisplay';
 import type { TourDetails } from './tourDetails';
+import type { TourLabels } from './tourLabels';
+import type { TourPriceLabelPosition } from './tourPriceLabelPosition';
+import type { TourSeatSharing } from './tourSeatSharing';
 import type { TourStatus } from './tourStatus';
-import type { TourType } from './tourType';
 
 export interface Tour {
   id: string;
   slug: string;
   destinationId?: string | null;
-  type: TourType;
+  /** Slug of a tour type (see /tour-types) */
+  type: string;
+  /** Slug of a tour category (see /tour-categories) */
+  category?: string;
   title: string;
   location?: string | null;
   tagline?: string | null;
@@ -24,6 +32,8 @@ export interface Tour {
   currency: string;
   duration?: string | null;
   capacityPerSlot: number;
+  /** direct = pay online now; enquiry = no payment, team confirms manually */
+  bookingMode?: TourBookingMode;
   minAge?: number | null;
   maxWeightKg?: number | null;
   season?: string | null;
@@ -36,4 +46,41 @@ export interface Tour {
   seoDescription?: string | null;
   status?: TourStatus;
   sortOrder?: number;
+  /** Operator-facing trip code, e.g. ACE-CampKarle */
+  code?: string | null;
+  /** false = a private departure not pooled with other customers */
+  sharedTrip?: boolean;
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  /** Terms for this trip only */
+  terms?: string | null;
+  /** Headline price for display; the rate card does the maths */
+  advertisedPrice?: number | null;
+  priceLabelPosition?: TourPriceLabelPosition;
+  showAdvertisedPrice?: boolean;
+  allowPartialDeposit?: boolean;
+  /** Percent of the total accepted as a deposit */
+  depositPercent?: number;
+  seatSharing?: TourSeatSharing;
+  departureDisplay?: TourDepartureDisplay;
+  showSeatsAvailable?: boolean;
+  showSeatsBooked?: boolean;
+  showGuaranteedDeparture?: boolean;
+  showSeatsToGuarantee?: boolean;
+  bookingLeadTimeHours?: number;
+  paymentDeadlineDays?: number | null;
+  itinerary?: ItineraryDay[];
+  itineraryText?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  shortAddress?: string | null;
+  detailedAddress?: string | null;
+  directions?: string | null;
+  confirmationEmailIntro?: string | null;
+  /** Custom nouns: trip, departure, participant, room */
+  labels?: TourLabels;
+  relatedTourIds?: string[];
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
 }

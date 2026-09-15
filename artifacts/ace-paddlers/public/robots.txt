@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
 
+# Credential-gated areas. Every page under these also sends its own
+# noindex tag, but keeping crawlers out of them entirely is cheaper.
+Disallow: /admin
+Disallow: /agent
+
 Sitemap: https://acepaddlers.com/sitemap.xml

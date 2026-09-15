@@ -34,7 +34,9 @@ export const AdminLoginResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string().nullish(),
-  "role": zod.enum(['admin', 'editor'])
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "capabilities": zod.array(zod.string()).optional().describe('What this role may change — the UI hides anything absent here'),
+  "token": zod.string().nullish()
 })
 
 
@@ -46,7 +48,9 @@ export const AdminMeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string().nullish(),
-  "role": zod.enum(['admin', 'editor'])
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "capabilities": zod.array(zod.string()).optional().describe('What this role may change — the UI hides anything absent here'),
+  "token": zod.string().nullish()
 })
 
 
@@ -106,14 +110,16 @@ export const GetDestinationResponse = zod.object({
  */
 export const ListToursQueryParams = zod.object({
   "destination": zod.coerce.string().optional().describe('Filter by destination slug'),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']).optional()
+  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']).optional(),
+  "category": zod.enum(['activity', 'accommodation', 'package']).optional().describe('Filter by destination section')
 })
 
 export const ListToursResponseItem = zod.object({
   "id": zod.string(),
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -124,6 +130,7 @@ export const ListToursResponseItem = zod.object({
   "currency": zod.string(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -135,7 +142,46 @@ export const ListToursResponseItem = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 export const ListToursResponse = zod.array(ListToursResponseItem)
 
@@ -151,7 +197,8 @@ export const GetTourResponse = zod.object({
   "id": zod.string(),
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -162,6 +209,7 @@ export const GetTourResponse = zod.object({
   "currency": zod.string(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -173,7 +221,46 @@ export const GetTourResponse = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 
 
@@ -238,6 +325,132 @@ export const ListGalleryResponseItem = zod.object({
   "layoutH": zod.number().nullish()
 })
 export const ListGalleryResponse = zod.array(ListGalleryResponseItem)
+
+
+/**
+ * @summary List tour types (activity categories like Rafting, Camping)
+ */
+export const ListTourTypesResponseItem = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+export const ListTourTypesResponse = zod.array(ListTourTypesResponseItem)
+
+
+/**
+ * @summary List tour categories (activity / accommodation / package)
+ */
+export const ListTourCategoriesResponseItem = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+export const ListTourCategoriesResponse = zod.array(ListTourCategoriesResponseItem)
+
+
+/**
+ * @summary List all tour types
+ */
+export const ListAdminTourTypesResponseItem = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+export const ListAdminTourTypesResponse = zod.array(ListAdminTourTypesResponseItem)
+
+
+/**
+ * @summary Create a tour type
+ */
+export const CreateTourTypeBody = zod.object({
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a tour type
+ */
+export const UpdateTourTypeParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateTourTypeBody = zod.object({
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateTourTypeResponse = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a tour type
+ */
+export const DeleteTourTypeParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary List all tour categories
+ */
+export const ListAdminTourCategoriesResponseItem = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+export const ListAdminTourCategoriesResponse = zod.array(ListAdminTourCategoriesResponseItem)
+
+
+/**
+ * @summary Create a tour category
+ */
+export const CreateTourCategoryBody = zod.object({
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a tour category
+ */
+export const UpdateTourCategoryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateTourCategoryBody = zod.object({
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateTourCategoryResponse = zod.object({
+  "id": zod.string(),
+  "slug": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a tour category
+ */
+export const DeleteTourCategoryParams = zod.object({
+  "id": zod.coerce.string()
+})
 
 
 /**
@@ -346,7 +559,8 @@ export const ListAdminToursResponseItem = zod.object({
   "id": zod.string(),
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -357,6 +571,7 @@ export const ListAdminToursResponseItem = zod.object({
   "currency": zod.string(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -368,7 +583,46 @@ export const ListAdminToursResponseItem = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 export const ListAdminToursResponse = zod.array(ListAdminToursResponseItem)
 
@@ -379,7 +633,8 @@ export const ListAdminToursResponse = zod.array(ListAdminToursResponseItem)
 export const CreateTourBody = zod.object({
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -390,6 +645,7 @@ export const CreateTourBody = zod.object({
   "currency": zod.string().optional(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number().optional(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -401,7 +657,46 @@ export const CreateTourBody = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 
 
@@ -415,7 +710,8 @@ export const UpdateTourParams = zod.object({
 export const UpdateTourBody = zod.object({
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -426,6 +722,7 @@ export const UpdateTourBody = zod.object({
   "currency": zod.string().optional(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number().optional(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -437,14 +734,54 @@ export const UpdateTourBody = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 
 export const UpdateTourResponse = zod.object({
   "id": zod.string(),
   "slug": zod.string(),
   "destinationId": zod.string().nullish(),
-  "type": zod.enum(['rafting', 'camping', 'homestay', 'water_sports']),
+  "type": zod.string().describe('Slug of a tour type (see \/tour-types)'),
+  "category": zod.string().optional().describe('Slug of a tour category (see \/tour-categories)'),
   "title": zod.string(),
   "location": zod.string().nullish(),
   "tagline": zod.string().nullish(),
@@ -455,6 +792,7 @@ export const UpdateTourResponse = zod.object({
   "currency": zod.string(),
   "duration": zod.string().nullish(),
   "capacityPerSlot": zod.number(),
+  "bookingMode": zod.enum(['direct', 'enquiry']).optional().describe('direct = pay online now; enquiry = no payment, team confirms manually'),
   "minAge": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "season": zod.string().nullish(),
@@ -466,7 +804,46 @@ export const UpdateTourResponse = zod.object({
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
   "status": zod.enum(['draft', 'published']).optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "code": zod.string().nullish().describe('Operator-facing trip code, e.g. ACE-CampKarle'),
+  "sharedTrip": zod.boolean().optional().describe('false = a private departure not pooled with other customers'),
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "terms": zod.string().nullish().describe('Terms for this trip only'),
+  "advertisedPrice": zod.number().nullish().describe('Headline price for display; the rate card does the maths'),
+  "priceLabelPosition": zod.enum(['before', 'after', 'none']).optional(),
+  "showAdvertisedPrice": zod.boolean().optional(),
+  "allowPartialDeposit": zod.boolean().optional(),
+  "depositPercent": zod.number().optional().describe('Percent of the total accepted as a deposit'),
+  "seatSharing": zod.enum(['independent', 'reduces', 'closes']).optional(),
+  "departureDisplay": zod.enum(['calendar', 'list']).optional(),
+  "showSeatsAvailable": zod.boolean().optional(),
+  "showSeatsBooked": zod.boolean().optional(),
+  "showGuaranteedDeparture": zod.boolean().optional(),
+  "showSeatsToGuarantee": zod.boolean().optional(),
+  "bookingLeadTimeHours": zod.number().optional(),
+  "paymentDeadlineDays": zod.number().nullish(),
+  "itinerary": zod.array(zod.object({
+  "title": zod.string().describe('e.g. Day 1 or Day Visit'),
+  "items": zod.array(zod.object({
+  "time": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "text": zod.string().nullish()
+}))
+})).optional(),
+  "itineraryText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
+  "shortAddress": zod.string().nullish(),
+  "detailedAddress": zod.string().nullish(),
+  "directions": zod.string().nullish(),
+  "confirmationEmailIntro": zod.string().nullish(),
+  "labels": zod.record(zod.string(), zod.string()).optional().describe('Custom nouns: trip, departure, participant, room'),
+  "relatedTourIds": zod.array(zod.string()).optional(),
+  "ogTitle": zod.string().nullish(),
+  "ogDescription": zod.string().nullish(),
+  "ogImage": zod.string().nullish()
 })
 
 
@@ -662,6 +1039,7 @@ export const GetAvailabilityQueryParams = zod.object({
 export const GetAvailabilityResponseItem = zod.object({
   "id": zod.string(),
   "tourId": zod.string(),
+  "variantId": zod.string().nullish().describe('Which trip variant this departure belongs to'),
   "date": zod.string(),
   "startTime": zod.string(),
   "capacity": zod.number(),
@@ -676,7 +1054,7 @@ export const GetAvailabilityResponse = zod.array(GetAvailabilityResponseItem)
  * @summary Request a booking (request-to-book)
  */
 export const CreateBookingBody = zod.object({
-  "slotId": zod.string(),
+  "slotId": zod.string().uuid(),
   "customerName": zod.string(),
   "customerEmail": zod.string(),
   "customerPhone": zod.string(),
@@ -686,7 +1064,18 @@ export const CreateBookingBody = zod.object({
   "age": zod.number().optional(),
   "weightKg": zod.number().optional()
 })).optional(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Discount code; ignored if it fails validation'),
+  "participants": zod.array(zod.object({
+  "typeId": zod.string(),
+  "count": zod.number()
+})).optional().describe('Per-type counts; when given, numGuests is derived from these'),
+  "analyticsSessionId": zod.string().nullish().describe('Anonymous session id, so the booking joins up with the visitor\'s pageviews'),
+  "addons": zod.array(zod.object({
+  "addonId": zod.string(),
+  "qty": zod.number()
+})).optional(),
+  "paymentMethod": zod.string().nullish().describe('How the customer intends to pay; decides which method-scoped charges apply')
 })
 
 
@@ -703,6 +1092,10 @@ export const GetBookingResponse = zod.object({
   "tourId": zod.string(),
   "tourSlug": zod.string().nullish(),
   "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
   "slotId": zod.string(),
   "date": zod.string().nullish(),
   "startTime": zod.string().nullish(),
@@ -713,8 +1106,117 @@ export const GetBookingResponse = zod.object({
   "numGuests": zod.number(),
   "totalAmount": zod.number(),
   "currency": zod.string(),
-  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
   "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "createdAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Verify a Standard Checkout payment signature and mark the booking paid/confirmed
+ */
+export const VerifyBookingPaymentParams = zod.object({
+  "ref": zod.coerce.string()
+})
+
+export const VerifyBookingPaymentBody = zod.object({
+  "razorpayPaymentId": zod.string(),
+  "razorpayOrderId": zod.string(),
+  "razorpaySignature": zod.string()
+})
+
+export const VerifyBookingPaymentResponse = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
   "createdAt": zod.string().nullish()
 })
 
@@ -731,6 +1233,7 @@ export const ListSlotsQueryParams = zod.object({
 export const ListSlotsResponseItem = zod.object({
   "id": zod.string(),
   "tourId": zod.string(),
+  "variantId": zod.string().nullish().describe('Which trip variant this departure belongs to'),
   "date": zod.string(),
   "startTime": zod.string(),
   "capacity": zod.number(),
@@ -749,6 +1252,7 @@ export const GenerateSlotsParams = zod.object({
 })
 
 export const GenerateSlotsBody = zod.object({
+  "variantId": zod.string().nullish().describe('Which variant to open. Omit on a trip with variants and one departure is opened for each of them.'),
   "from": zod.string(),
   "to": zod.string(),
   "weekdays": zod.array(zod.number()).describe('0=Sun … 6=Sat'),
@@ -776,6 +1280,7 @@ export const UpdateSlotBody = zod.object({
 export const UpdateSlotResponse = zod.object({
   "id": zod.string(),
   "tourId": zod.string(),
+  "variantId": zod.string().nullish().describe('Which trip variant this departure belongs to'),
   "date": zod.string(),
   "startTime": zod.string(),
   "capacity": zod.number(),
@@ -794,10 +1299,39 @@ export const DeleteSlotParams = zod.object({
 
 
 /**
+ * @summary Delete many slots at once (by ids, or by tour + date range). Skips booked slots.
+ */
+export const BulkDeleteSlotsBody = zod.object({
+  "ids": zod.array(zod.string()).optional(),
+  "tourId": zod.string().optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional()
+}).describe('Provide ids, OR tourId with optional from\/to range.')
+
+export const BulkDeleteSlotsResponse = zod.object({
+  "deleted": zod.number(),
+  "skipped": zod.number().describe('Slots left in place because they have bookings')
+})
+
+
+/**
  * @summary List bookings
  */
 export const ListBookingsQueryParams = zod.object({
-  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']).optional()
+  "status": zod.coerce.string().optional().describe('Booking status, or \'open\' for pending+confirmed'),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']).optional(),
+  "source": zod.coerce.string().optional(),
+  "tourId": zod.coerce.string().optional(),
+  "bookedFrom": zod.coerce.string().optional().describe('Booking created on\/after (YYYY-MM-DD)'),
+  "bookedTo": zod.coerce.string().optional(),
+  "departsFrom": zod.coerce.string().optional().describe('Departure date on\/after (YYYY-MM-DD)'),
+  "departsTo": zod.coerce.string().optional(),
+  "balanceDue": zod.coerce.boolean().optional().describe('Only bookings still owing money'),
+  "category": zod.coerce.string().optional().describe('Tour category slug — VL\'s \"collections\"'),
+  "variantId": zod.coerce.string().optional(),
+  "paymentMethod": zod.coerce.string().optional(),
+  "agentId": zod.coerce.string().optional().describe('An agent id, or \"none\" for direct bookings'),
+  "q": zod.coerce.string().optional().describe('Search ref, name, e-mail or phone')
 })
 
 export const ListBookingsResponseItem = zod.object({
@@ -806,6 +1340,10 @@ export const ListBookingsResponseItem = zod.object({
   "tourId": zod.string(),
   "tourSlug": zod.string().nullish(),
   "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
   "slotId": zod.string(),
   "date": zod.string().nullish(),
   "startTime": zod.string().nullish(),
@@ -816,8 +1354,43 @@ export const ListBookingsResponseItem = zod.object({
   "numGuests": zod.number(),
   "totalAmount": zod.number(),
   "currency": zod.string(),
-  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
   "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
   "createdAt": zod.string().nullish()
 })
 export const ListBookingsResponse = zod.array(ListBookingsResponseItem)
@@ -835,6 +1408,44 @@ export const GetGoogleIntegrationResponse = zod.object({
 
 
 /**
+ * @summary Razorpay configuration status (never exposes the secret key)
+ */
+export const GetRazorpayIntegrationResponse = zod.object({
+  "configured": zod.boolean(),
+  "keyId": zod.string().nullish().describe('Public key id only — never the secret')
+})
+
+
+/**
+ * @summary WhatsApp Cloud API configuration status
+ */
+export const GetWhatsAppIntegrationResponse = zod.object({
+  "configured": zod.boolean()
+})
+
+
+/**
+ * @summary List every payment attempt across every booking (provider-side audit trail)
+ */
+export const ListPaymentsResponseItem = zod.object({
+  "id": zod.string(),
+  "bookingId": zod.string(),
+  "bookingRef": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "provider": zod.string().describe('razorpay | razorpay_order'),
+  "providerLinkId": zod.string().nullish(),
+  "providerPaymentId": zod.string().nullish(),
+  "shortUrl": zod.string().nullish(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string().describe('created | paid | expired | cancelled | failed'),
+  "createdAt": zod.string()
+})
+export const ListPaymentsResponse = zod.array(ListPaymentsResponseItem)
+
+
+/**
  * @summary Update a booking's status
  */
 export const UpdateBookingStatusParams = zod.object({
@@ -842,7 +1453,17 @@ export const UpdateBookingStatusParams = zod.object({
 })
 
 export const UpdateBookingStatusBody = zod.object({
-  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed'])
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']).optional(),
+  "customerName": zod.string().optional(),
+  "customerEmail": zod.string().optional(),
+  "customerPhone": zod.string().optional(),
+  "numGuests": zod.number().optional().describe('Re-checks and adjusts slot capacity'),
+  "slotId": zod.string().optional().describe('Move the booking to a different departure'),
+  "notes": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional(),
+  "source": zod.string().optional(),
+  "agentId": zod.string().nullish().describe('Credit the booking to an agent, or null to clear it')
 })
 
 export const UpdateBookingStatusResponse = zod.object({
@@ -851,6 +1472,10 @@ export const UpdateBookingStatusResponse = zod.object({
   "tourId": zod.string(),
   "tourSlug": zod.string().nullish(),
   "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
   "slotId": zod.string(),
   "date": zod.string().nullish(),
   "startTime": zod.string().nullish(),
@@ -861,8 +1486,121 @@ export const UpdateBookingStatusResponse = zod.object({
   "numGuests": zod.number(),
   "totalAmount": zod.number(),
   "currency": zod.string(),
-  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
   "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "createdAt": zod.string().nullish()
+})
+
+
+/**
+ * Releases slot capacity, cancels any calendar event and open payment link, then removes the booking. Irreversible.
+ * @summary Permanently delete a booking
+ */
+export const DeleteBookingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * Creates a Razorpay Payment Link for the booking's total amount and emails/WhatsApps it to the customer.
+ * @summary Create and send a Razorpay payment link for a booking
+ */
+export const SendPaymentLinkParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SendPaymentLinkResponse = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
   "createdAt": zod.string().nullish()
 })
 
@@ -929,6 +1667,2167 @@ export const SavePageResponse = zod.object({
   "data": zod.record(zod.string(), zod.unknown()),
   "status": zod.enum(['draft', 'published']).optional(),
   "updatedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Submit an enquiry from a public form
+ */
+export const CreateEnquiryBody = zod.object({
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourSlug": zod.string().nullish(),
+  "destinationSlug": zod.string().nullish(),
+  "preferredDate": zod.string().nullish().describe('YYYY-MM-DD'),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "source": zod.string().nullish().describe('website | corporate | whatsapp | phone | manual'),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "analyticsSessionId": zod.string().nullish().describe('Anonymous session id, so the enquiry joins up with the visitor\'s pageviews')
+})
+
+
+/**
+ * @summary List enquiries in the pipeline
+ */
+export const ListEnquiriesQueryParams = zod.object({
+  "status": zod.coerce.string().optional().describe('new | active | won | lost | archived | spam | open (new+active)'),
+  "source": zod.coerce.string().optional(),
+  "assigneeId": zod.coerce.string().optional().describe('A staff id, or \"unassigned\" for leads nobody owns'),
+  "tourId": zod.coerce.string().optional(),
+  "q": zod.coerce.string().optional().describe('Free-text search across name, e-mail, phone, ref, company and message')
+})
+
+export const ListEnquiriesResponseItem = zod.object({
+  "id": zod.string(),
+  "enquiryRef": zod.string(),
+  "customerId": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourId": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "destinationId": zod.string().nullish(),
+  "destinationName": zod.string().nullish(),
+  "preferredDate": zod.string().nullish(),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "source": zod.string(),
+  "status": zod.enum(['new', 'active', 'won', 'lost', 'archived', 'spam']),
+  "assigneeId": zod.string().nullish(),
+  "assigneeName": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "convertedBookingId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListEnquiriesResponse = zod.array(ListEnquiriesResponseItem)
+
+
+/**
+ * @summary Log an enquiry taken over the phone or in person
+ */
+export const CreateAdminEnquiryBody = zod.object({
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourSlug": zod.string().nullish(),
+  "destinationSlug": zod.string().nullish(),
+  "preferredDate": zod.string().nullish().describe('YYYY-MM-DD'),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "source": zod.string().nullish().describe('website | corporate | whatsapp | phone | manual'),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "analyticsSessionId": zod.string().nullish().describe('Anonymous session id, so the enquiry joins up with the visitor\'s pageviews')
+})
+
+
+/**
+ * @summary Enquiry counts per pipeline stage
+ */
+export const GetEnquiryCountsResponse = zod.record(zod.string(), zod.number())
+
+
+/**
+ * @summary One enquiry
+ */
+export const GetEnquiryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetEnquiryResponse = zod.object({
+  "id": zod.string(),
+  "enquiryRef": zod.string(),
+  "customerId": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourId": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "destinationId": zod.string().nullish(),
+  "destinationName": zod.string().nullish(),
+  "preferredDate": zod.string().nullish(),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "source": zod.string(),
+  "status": zod.enum(['new', 'active', 'won', 'lost', 'archived', 'spam']),
+  "assigneeId": zod.string().nullish(),
+  "assigneeName": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "convertedBookingId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Update an enquiry (stage, assignee, notes, tags, details)
+ */
+export const UpdateEnquiryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateEnquiryBody = zod.object({
+  "status": zod.enum(['new', 'active', 'won', 'lost', 'archived', 'spam']).optional(),
+  "assigneeId": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional(),
+  "customerName": zod.string().optional(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "preferredDate": zod.string().nullish(),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish()
+})
+
+export const UpdateEnquiryResponse = zod.object({
+  "id": zod.string(),
+  "enquiryRef": zod.string(),
+  "customerId": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourId": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "destinationId": zod.string().nullish(),
+  "destinationName": zod.string().nullish(),
+  "preferredDate": zod.string().nullish(),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "source": zod.string(),
+  "status": zod.enum(['new', 'active', 'won', 'lost', 'archived', 'spam']),
+  "assigneeId": zod.string().nullish(),
+  "assigneeName": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "convertedBookingId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete an enquiry permanently
+ */
+export const DeleteEnquiryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary List customer records
+ */
+export const ListCustomersQueryParams = zod.object({
+  "q": zod.coerce.string().optional().describe('Search name, e-mail, phone or reference'),
+  "tag": zod.coerce.string().optional(),
+  "minBookings": zod.coerce.number().optional()
+})
+
+export const ListCustomersResponseItem = zod.object({
+  "id": zod.string(),
+  "customerRef": zod.string(),
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number(),
+  "totalEnquiries": zod.number(),
+  "lastBookingDate": zod.string().nullish(),
+  "lifetimeValue": zod.number(),
+  "createdAt": zod.string()
+})
+export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
+
+
+/**
+ * @summary Add a customer manually
+ */
+export const CreateCustomerBody = zod.object({
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional(),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Candidate duplicate customer records, grouped by e-mail
+ */
+export const ListDuplicateCustomersResponseItem = zod.object({
+  "email": zod.string(),
+  "ids": zod.array(zod.string())
+})
+export const ListDuplicateCustomersResponse = zod.array(ListDuplicateCustomersResponseItem)
+
+
+/**
+ * @summary Merge one customer record into another
+ */
+export const MergeCustomersBody = zod.object({
+  "winnerId": zod.string().describe('The record that survives'),
+  "loserId": zod.string().describe('The record folded into the winner')
+})
+
+export const MergeCustomersResponse = zod.object({
+  "id": zod.string(),
+  "customerRef": zod.string(),
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number(),
+  "totalEnquiries": zod.number(),
+  "lastBookingDate": zod.string().nullish(),
+  "lifetimeValue": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary One customer with their booking and enquiry history
+ */
+export const GetCustomerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCustomerResponse = zod.object({
+  "customer": zod.object({
+  "id": zod.string(),
+  "customerRef": zod.string(),
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number(),
+  "totalEnquiries": zod.number(),
+  "lastBookingDate": zod.string().nullish(),
+  "lifetimeValue": zod.number(),
+  "createdAt": zod.string()
+}),
+  "bookings": zod.array(zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "createdAt": zod.string().nullish()
+})),
+  "enquiries": zod.array(zod.object({
+  "id": zod.string(),
+  "enquiryRef": zod.string(),
+  "customerId": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "tourId": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "destinationId": zod.string().nullish(),
+  "destinationName": zod.string().nullish(),
+  "preferredDate": zod.string().nullish(),
+  "numGuests": zod.number().nullish(),
+  "message": zod.string().nullish(),
+  "extra": zod.record(zod.string(), zod.unknown()).optional(),
+  "source": zod.string(),
+  "status": zod.enum(['new', 'active', 'won', 'lost', 'archived', 'spam']),
+  "assigneeId": zod.string().nullish(),
+  "assigneeName": zod.string().nullish(),
+  "internalNotes": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "convertedBookingId": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update a customer record
+ */
+export const UpdateCustomerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateCustomerBody = zod.object({
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateCustomerResponse = zod.object({
+  "id": zod.string(),
+  "customerRef": zod.string(),
+  "salutation": zod.string().nullish(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number(),
+  "totalEnquiries": zod.number(),
+  "lastBookingDate": zod.string().nullish(),
+  "lifetimeValue": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a customer record (bookings and enquiries are kept, unlinked)
+ */
+export const DeleteCustomerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Export the filtered booking list as CSV
+ */
+export const ExportBookingsCsvQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "paymentStatus": zod.coerce.string().optional(),
+  "source": zod.coerce.string().optional(),
+  "tourId": zod.coerce.string().optional(),
+  "bookedFrom": zod.coerce.string().optional(),
+  "bookedTo": zod.coerce.string().optional(),
+  "departsFrom": zod.coerce.string().optional(),
+  "departsTo": zod.coerce.string().optional(),
+  "balanceDue": zod.coerce.boolean().optional(),
+  "category": zod.coerce.string().optional().describe('Tour category slug — VL\'s \"collections\"'),
+  "variantId": zod.coerce.string().optional(),
+  "paymentMethod": zod.coerce.string().optional(),
+  "agentId": zod.coerce.string().optional().describe('An agent id, or \"none\" for direct bookings'),
+  "q": zod.coerce.string().optional()
+})
+
+
+/**
+ * @summary Every payment and refund recorded against one booking
+ */
+export const GetBookingLedgerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetBookingLedgerResponse = zod.object({
+  "bookingId": zod.string(),
+  "currency": zod.string(),
+  "total": zod.number(),
+  "paid": zod.number(),
+  "refunded": zod.number(),
+  "net": zod.number(),
+  "due": zod.number(),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['payment', 'refund']),
+  "method": zod.string(),
+  "methodLabel": zod.string(),
+  "provider": zod.string().describe('razorpay | razorpay_order | manual'),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "shortUrl": zod.string().nullish(),
+  "providerPaymentId": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().nullish(),
+  "receivedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Record a payment or refund taken outside the gateway
+ */
+export const RecordBookingPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RecordBookingPaymentBody = zod.object({
+  "kind": zod.enum(['payment', 'refund']),
+  "amount": zod.number().describe('Whole rupees, always positive'),
+  "method": zod.enum(['cash', 'cheque', 'bank_transfer', 'upi', 'card_machine', 'other', 'razorpay']),
+  "reference": zod.string().nullish().describe('Cheque number, UTR, receipt number'),
+  "receivedAt": zod.string().nullish().describe('When the money actually moved (YYYY-MM-DD)'),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Ask Razorpay for the real state of this booking's orders and payment links, and update the ledger to match
+ */
+export const SyncBookingWithRazorpayParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SyncBookingWithRazorpayResponse = zod.object({
+  "checkedAt": zod.string(),
+  "results": zod.array(zod.object({
+  "paymentId": zod.string(),
+  "providerLinkId": zod.string(),
+  "provider": zod.string(),
+  "before": zod.string(),
+  "after": zod.string(),
+  "razorpayStatus": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish(),
+  "amount": zod.number().nullish(),
+  "method": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "outcome": zod.enum(['marked_paid', 'status_updated', 'unchanged', 'already_paid', 'error']),
+  "message": zod.string()
+})),
+  "ledger": zod.object({
+  "bookingId": zod.string(),
+  "currency": zod.string(),
+  "total": zod.number(),
+  "paid": zod.number(),
+  "refunded": zod.number(),
+  "net": zod.number(),
+  "due": zod.number(),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['payment', 'refund']),
+  "method": zod.string(),
+  "methodLabel": zod.string(),
+  "provider": zod.string().describe('razorpay | razorpay_order | manual'),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "shortUrl": zod.string().nullish(),
+  "providerPaymentId": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().nullish(),
+  "receivedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+})
+
+
+/**
+ * @summary Remove a manually recorded ledger entry (gateway rows cannot be deleted)
+ */
+export const DeleteBookingPaymentParams = zod.object({
+  "id": zod.coerce.string(),
+  "paymentId": zod.coerce.string()
+})
+
+export const DeleteBookingPaymentResponse = zod.object({
+  "bookingId": zod.string(),
+  "currency": zod.string(),
+  "total": zod.number(),
+  "paid": zod.number(),
+  "refunded": zod.number(),
+  "net": zod.number(),
+  "due": zod.number(),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['payment', 'refund']),
+  "method": zod.string(),
+  "methodLabel": zod.string(),
+  "provider": zod.string().describe('razorpay | razorpay_order | manual'),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "shortUrl": zod.string().nullish(),
+  "providerPaymentId": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().nullish(),
+  "receivedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Preview a discount code against a prospective booking
+ */
+export const ValidateCouponBody = zod.object({
+  "code": zod.string(),
+  "slotId": zod.string().uuid(),
+  "numGuests": zod.number()
+})
+
+export const ValidateCouponResponse = zod.object({
+  "ok": zod.boolean(),
+  "reason": zod.string().nullish().describe('not_found | inactive | not_yet_valid | expired | usage_limit_reached | customer_limit_reached | tour_not_eligible | weekday_not_eligible | too_late | below_minimum'),
+  "code": zod.string().nullish(),
+  "label": zod.string().nullish(),
+  "discount": zod.number(),
+  "baseAmount": zod.number(),
+  "newTotal": zod.number().describe('What the booking would cost with the code applied'),
+  "currency": zod.string()
+})
+
+
+/**
+ * @summary List discount codes
+ */
+export const ListCouponsQueryParams = zod.object({
+  "active": zod.coerce.boolean().optional(),
+  "batchId": zod.coerce.string().optional(),
+  "q": zod.coerce.string().optional()
+})
+
+export const ListCouponsResponseItem = zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "discountType": zod.enum(['percent', 'flat']),
+  "discountValue": zod.number(),
+  "maxDiscount": zod.number().nullish(),
+  "minBookingAmount": zod.number().nullish(),
+  "tourIds": zod.array(zod.string()),
+  "weekdayMask": zod.number().nullish(),
+  "minDaysInAdvance": zod.number().nullish(),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "usageLimit": zod.number().nullish(),
+  "usageLimitPerCustomer": zod.number().nullish(),
+  "usedCount": zod.number(),
+  "active": zod.boolean(),
+  "batchId": zod.string().nullish(),
+  "batchLabel": zod.string().nullish(),
+  "summary": zod.string().describe('Human-readable conditions'),
+  "totalDiscounted": zod.number().describe('Rupees given away by this code so far'),
+  "createdAt": zod.string()
+})
+export const ListCouponsResponse = zod.array(ListCouponsResponseItem)
+
+
+/**
+ * @summary Create a discount code
+ */
+export const CreateCouponBody = zod.object({
+  "code": zod.string().optional(),
+  "label": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "discountType": zod.enum(['percent', 'flat']).optional(),
+  "discountValue": zod.number().optional(),
+  "maxDiscount": zod.number().nullish(),
+  "minBookingAmount": zod.number().nullish(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "weekdayMask": zod.number().nullish(),
+  "minDaysInAdvance": zod.number().nullish(),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "usageLimit": zod.number().nullish(),
+  "usageLimitPerCustomer": zod.number().nullish(),
+  "active": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Generate a series of unique single-use codes for a partner
+ */
+export const GenerateCouponBatchBody = zod.object({
+  "count": zod.number().describe('How many codes to generate (1–1000)'),
+  "prefix": zod.string().nullish().describe('Leading text on every code, e.g. GROUPON'),
+  "batchLabel": zod.string().nullish(),
+  "discountType": zod.enum(['percent', 'flat']),
+  "discountValue": zod.number(),
+  "maxDiscount": zod.number().nullish(),
+  "minBookingAmount": zod.number().nullish(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "weekdayMask": zod.number().nullish(),
+  "minDaysInAdvance": zod.number().nullish(),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "usageLimit": zod.number().nullish().describe('Per generated code; defaults to 1')
+})
+
+
+/**
+ * @summary Update a discount code
+ */
+export const UpdateCouponParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateCouponBody = zod.object({
+  "code": zod.string().optional(),
+  "label": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "discountType": zod.enum(['percent', 'flat']).optional(),
+  "discountValue": zod.number().optional(),
+  "maxDiscount": zod.number().nullish(),
+  "minBookingAmount": zod.number().nullish(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "weekdayMask": zod.number().nullish(),
+  "minDaysInAdvance": zod.number().nullish(),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "usageLimit": zod.number().nullish(),
+  "usageLimitPerCustomer": zod.number().nullish(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateCouponResponse = zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "discountType": zod.enum(['percent', 'flat']),
+  "discountValue": zod.number(),
+  "maxDiscount": zod.number().nullish(),
+  "minBookingAmount": zod.number().nullish(),
+  "tourIds": zod.array(zod.string()),
+  "weekdayMask": zod.number().nullish(),
+  "minDaysInAdvance": zod.number().nullish(),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "usageLimit": zod.number().nullish(),
+  "usageLimitPerCustomer": zod.number().nullish(),
+  "usedCount": zod.number(),
+  "active": zod.boolean(),
+  "batchId": zod.string().nullish(),
+  "batchLabel": zod.string().nullish(),
+  "summary": zod.string().describe('Human-readable conditions'),
+  "totalDiscounted": zod.number().describe('Rupees given away by this code so far'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a discount code and its redemption history
+ */
+export const DeleteCouponParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Every booking that used this code
+ */
+export const ListCouponRedemptionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ListCouponRedemptionsResponseItem = zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "discountAmount": zod.number(),
+  "bookingId": zod.string().nullish(),
+  "bookingRef": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListCouponRedemptionsResponse = zod.array(ListCouponRedemptionsResponseItem)
+
+
+/**
+ * @summary Participant types, volume tiers and add-ons for a tour
+ */
+export const GetTourRateCardParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetTourRateCardResponse = zod.object({
+  "currency": zod.string(),
+  "basePrice": zod.number().describe('tours.priceValue — used when no participant types are configured'),
+  "participantTypes": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = applies to every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "minAge": zod.number().nullish(),
+  "maxAge": zod.number().nullish(),
+  "occupiesSeat": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "tiers": zod.array(zod.object({
+  "id": zod.string(),
+  "participantTypeId": zod.string().nullish(),
+  "minGuests": zod.number(),
+  "maxGuests": zod.number().nullish(),
+  "price": zod.number()
+})),
+  "addons": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = offered on every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "priceType": zod.enum(['per_unit', 'per_person', 'per_booking']),
+  "minQty": zod.number(),
+  "maxQty": zod.number().nullish(),
+  "required": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})).optional().describe('Empty when the trip is sold one way only')
+})
+
+
+/**
+ * @summary Price a prospective booking without creating it
+ */
+export const QuoteBookingBody = zod.object({
+  "slotId": zod.string().uuid(),
+  "numGuests": zod.number().optional(),
+  "participants": zod.array(zod.object({
+  "typeId": zod.string(),
+  "count": zod.number()
+})).optional(),
+  "addons": zod.array(zod.object({
+  "addonId": zod.string(),
+  "qty": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish()
+})
+
+export const QuoteBookingResponse = zod.object({
+  "participantLines": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})),
+  "addonLines": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})),
+  "baseAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "couponReason": zod.string().nullish().describe('Why a supplied code did not apply'),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "numGuests": zod.number(),
+  "seatsUsed": zod.number()
+})
+
+
+/**
+ * @summary Rate card for editing, including inactive rows
+ */
+export const GetAdminTourRateCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAdminTourRateCardResponse = zod.object({
+  "currency": zod.string(),
+  "basePrice": zod.number().describe('tours.priceValue — used when no participant types are configured'),
+  "participantTypes": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = applies to every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "minAge": zod.number().nullish(),
+  "maxAge": zod.number().nullish(),
+  "occupiesSeat": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "tiers": zod.array(zod.object({
+  "id": zod.string(),
+  "participantTypeId": zod.string().nullish(),
+  "minGuests": zod.number(),
+  "maxGuests": zod.number().nullish(),
+  "price": zod.number()
+})),
+  "addons": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = offered on every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "priceType": zod.enum(['per_unit', 'per_person', 'per_booking']),
+  "minQty": zod.number(),
+  "maxQty": zod.number().nullish(),
+  "required": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})).optional().describe('Empty when the trip is sold one way only')
+})
+
+
+/**
+ * @summary Replace a tour's participant types, tiers and add-ons
+ */
+export const SaveTourRateCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SaveTourRateCardBody = zod.object({
+  "participantTypes": zod.array(zod.object({
+  "id": zod.string().nullish().describe('Omit to create'),
+  "variantId": zod.string().nullish(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "minAge": zod.number().nullish(),
+  "maxAge": zod.number().nullish(),
+  "occupiesSeat": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "active": zod.boolean().optional()
+})).optional(),
+  "tiers": zod.array(zod.object({
+  "id": zod.string().nullish(),
+  "participantTypeId": zod.string().nullish(),
+  "minGuests": zod.number(),
+  "maxGuests": zod.number().nullish(),
+  "price": zod.number()
+})).optional(),
+  "addons": zod.array(zod.object({
+  "id": zod.string().nullish(),
+  "variantId": zod.string().nullish(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "priceType": zod.enum(['per_unit', 'per_person', 'per_booking']).optional(),
+  "minQty": zod.number().optional(),
+  "maxQty": zod.number().nullish(),
+  "required": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "active": zod.boolean().optional()
+})).optional()
+})
+
+export const SaveTourRateCardResponse = zod.object({
+  "currency": zod.string(),
+  "basePrice": zod.number().describe('tours.priceValue — used when no participant types are configured'),
+  "participantTypes": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = applies to every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "minAge": zod.number().nullish(),
+  "maxAge": zod.number().nullish(),
+  "occupiesSeat": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "tiers": zod.array(zod.object({
+  "id": zod.string(),
+  "participantTypeId": zod.string().nullish(),
+  "minGuests": zod.number(),
+  "maxGuests": zod.number().nullish(),
+  "price": zod.number()
+})),
+  "addons": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish().describe('null = offered on every variant'),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "priceType": zod.enum(['per_unit', 'per_person', 'per_booking']),
+  "minQty": zod.number(),
+  "maxQty": zod.number().nullish(),
+  "required": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})).optional().describe('Empty when the trip is sold one way only')
+})
+
+
+/**
+ * Served at runtime rather than baked into the bundle, so the same build works across environments. These values identify the project; they authorise nothing.
+ * @summary Public Firebase web config, or null when not configured
+ */
+export const GetFirebaseConfigResponse = zod.object({
+  "enabled": zod.boolean(),
+  "apiKey": zod.string().nullish(),
+  "authDomain": zod.string().nullish(),
+  "projectId": zod.string().nullish()
+})
+
+
+/**
+ * The email must already belong to an active staff account. Signing in with Firebase never creates one.
+ * @summary Exchange a Firebase ID token for an admin session
+ */
+export const AdminFirebaseLoginBody = zod.object({
+  "idToken": zod.string().describe('The JWT from the Firebase client SDK')
+})
+
+export const AdminFirebaseLoginResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string().nullish(),
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "capabilities": zod.array(zod.string()).optional().describe('What this role may change — the UI hides anything absent here'),
+  "token": zod.string().nullish()
+})
+
+
+/**
+ * The email must already belong to an active agent. Signing in with Firebase never creates one.
+ * @summary Exchange a Firebase ID token for an agent session
+ */
+export const AgentFirebaseLoginBody = zod.object({
+  "idToken": zod.string().describe('The JWT from the Firebase client SDK')
+})
+
+export const AgentFirebaseLoginResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "commissionPercent": zod.number(),
+  "status": zod.string()
+}).and(zod.object({
+  "token": zod.string().describe('Bearer token; also set as an httpOnly cookie')
+}))
+
+
+/**
+ * A separate credential realm from the admin console. An agent token never authenticates an admin request, and vice versa.
+ * @summary Sign in to the agent portal
+ */
+export const AgentLoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const AgentLoginResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "commissionPercent": zod.number(),
+  "status": zod.string()
+}).and(zod.object({
+  "token": zod.string().describe('Bearer token; also set as an httpOnly cookie')
+}))
+
+
+/**
+ * @summary The signed-in agent
+ */
+export const AgentMeResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "commissionPercent": zod.number(),
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Set a password from an invitation link
+ */
+export const AgentAcceptInviteBody = zod.object({
+  "token": zod.string(),
+  "password": zod.string().describe('At least 10 characters')
+})
+
+export const AgentAcceptInviteResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "commissionPercent": zod.number(),
+  "status": zod.string()
+}).and(zod.object({
+  "token": zod.string().describe('Bearer token; also set as an httpOnly cookie')
+}))
+
+
+/**
+ * @summary Check an invitation before showing the password form
+ */
+export const AgentInviteStatusQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const AgentInviteStatusResponse = zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "company": zod.string().nullish()
+})
+
+
+/**
+ * @summary Change the signed-in agent's password
+ */
+export const AgentChangePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string()
+})
+
+
+/**
+ * @summary The agent's own totals
+ */
+export const AgentSummaryResponse = zod.object({
+  "totalBookings": zod.number(),
+  "totalValue": zod.number(),
+  "commissionPercent": zod.number(),
+  "commissionValue": zod.number(),
+  "upcomingDepartures": zod.number(),
+  "lastBookingDate": zod.string().nullish()
+})
+
+
+/**
+ * Always scoped to the caller. There is no parameter for choosing an agent.
+ * @summary Bookings credited to the signed-in agent
+ */
+export const AgentBookingsQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "q": zod.coerce.string().optional()
+})
+
+export const AgentBookingsResponseItem = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish(),
+  "variantLabel": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "commissionValue": zod.number(),
+  "createdAt": zod.string()
+}).describe('Deliberately narrower than the admin\'s BookingDetail — an agent sees what they sent, not the ledger behind it.')
+export const AgentBookingsResponse = zod.array(AgentBookingsResponseItem)
+
+
+/**
+ * @summary Travel agents and resellers, with what they have sent you
+ */
+export const ListAgentsQueryParams = zod.object({
+  "status": zod.coerce.string().optional().describe('invited | active | inactive'),
+  "q": zod.coerce.string().optional().describe('Name, company, email, phone or city')
+})
+
+export const ListAgentsResponseItem = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "status": zod.enum(['invited', 'active', 'inactive']),
+  "commissionPercent": zod.number(),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number().describe('Bookings credited to this agent, excluding cancelled'),
+  "totalValue": zod.number().describe('Value of those bookings'),
+  "commissionValue": zod.number().describe('totalValue x commissionPercent'),
+  "lastBookingDate": zod.string().nullish(),
+  "hasPassword": zod.boolean().optional().describe('True once the agent has accepted an invitation'),
+  "inviteExpiresAt": zod.string().nullish().describe('An outstanding invitation, if any'),
+  "lastLoginAt": zod.string().nullish(),
+  "invitedAt": zod.string().nullish(),
+  "activatedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
+
+
+/**
+ * @summary Invite an agent by email
+ */
+export const CreateAgentBody = zod.object({
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "commissionPercent": zod.number().optional(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['invited', 'active', 'inactive']).optional()
+})
+
+
+/**
+ * @summary One agent, with every booking credited to them
+ */
+export const GetAgentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetAgentResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "status": zod.enum(['invited', 'active', 'inactive']),
+  "commissionPercent": zod.number(),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number().describe('Bookings credited to this agent, excluding cancelled'),
+  "totalValue": zod.number().describe('Value of those bookings'),
+  "commissionValue": zod.number().describe('totalValue x commissionPercent'),
+  "lastBookingDate": zod.string().nullish(),
+  "hasPassword": zod.boolean().optional().describe('True once the agent has accepted an invitation'),
+  "inviteExpiresAt": zod.string().nullish().describe('An outstanding invitation, if any'),
+  "lastLoginAt": zod.string().nullish(),
+  "invitedAt": zod.string().nullish(),
+  "activatedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "bookings": zod.array(zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "tourId": zod.string(),
+  "tourSlug": zod.string().nullish(),
+  "tourTitle": zod.string().nullish(),
+  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
+  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
+  "agentId": zod.string().nullish(),
+  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
+  "slotId": zod.string(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "numGuests": zod.number(),
+  "totalAmount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed', 'cart_abandoned']),
+  "paymentStatus": zod.enum(['unpaid', 'deposit', 'paid', 'refunded']),
+  "paymentMethod": zod.string().nullish(),
+  "chargesBreakdown": zod.array(zod.object({
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "amount": zod.number().describe('Resolved rupee amount for this charge')
+})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+  "participantBreakdown": zod.array(zod.object({
+  "typeId": zod.string().nullish(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "unitPrice": zod.number(),
+  "amount": zod.number(),
+  "tierApplied": zod.boolean().optional()
+})).optional(),
+  "addonsBreakdown": zod.array(zod.object({
+  "addonId": zod.string(),
+  "label": zod.string(),
+  "qty": zod.number(),
+  "unitPrice": zod.number(),
+  "priceType": zod.string(),
+  "amount": zod.number()
+})).optional(),
+  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
+  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
+  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
+  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
+  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
+  "tags": zod.array(zod.string()),
+  "source": zod.string().describe('website | whatsapp | phone | manual'),
+  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
+  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
+  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
+  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "createdAt": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Change an agent's details or status
+ */
+export const UpdateAgentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateAgentBody = zod.object({
+  "name": zod.string().optional(),
+  "company": zod.string().nullish(),
+  "email": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "commissionPercent": zod.number().optional(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['invited', 'active', 'inactive']).optional()
+}).describe('Only the fields present are changed')
+
+export const UpdateAgentResponse = zod.object({
+  "id": zod.string(),
+  "agentRef": zod.string(),
+  "name": zod.string(),
+  "company": zod.string().nullish(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "status": zod.enum(['invited', 'active', 'inactive']),
+  "commissionPercent": zod.number(),
+  "notes": zod.string().nullish(),
+  "totalBookings": zod.number().describe('Bookings credited to this agent, excluding cancelled'),
+  "totalValue": zod.number().describe('Value of those bookings'),
+  "commissionValue": zod.number().describe('totalValue x commissionPercent'),
+  "lastBookingDate": zod.string().nullish(),
+  "hasPassword": zod.boolean().optional().describe('True once the agent has accepted an invitation'),
+  "inviteExpiresAt": zod.string().nullish().describe('An outstanding invitation, if any'),
+  "lastLoginAt": zod.string().nullish(),
+  "invitedAt": zod.string().nullish(),
+  "activatedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Remove an agent who has never been credited with a booking
+ */
+export const DeleteAgentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+/**
+ * Replaces any outstanding invitation. The link is emailed to the agent and also returned so it can be sent by hand.
+ * @summary Create a portal invitation link for an agent
+ */
+export const InviteAgentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const InviteAgentResponse = zod.object({
+  "inviteUrl": zod.string(),
+  "expiresAt": zod.string(),
+  "emailed": zod.boolean().describe('False when no mail provider is configured')
+})
+
+
+/**
+ * Powers the operational dashboard's list, weekly and monthly views.
+ * @summary Departures in a date range, with who is on each
+ */
+export const GetOperationsQueryParams = zod.object({
+  "from": zod.coerce.string().describe('YYYY-MM-DD'),
+  "to": zod.coerce.string().describe('YYYY-MM-DD')
+})
+
+export const GetOperationsResponse = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "timezone": zod.string(),
+  "departures": zod.array(zod.object({
+  "slotId": zod.string(),
+  "tourId": zod.string(),
+  "tourTitle": zod.string(),
+  "tourCode": zod.string().nullish(),
+  "variantLabel": zod.string().nullish(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "capacity": zod.number(),
+  "bookedCount": zod.number(),
+  "status": zod.string(),
+  "bookings": zod.number().describe('Confirmed and pending bookings on this departure'),
+  "guests": zod.number().describe('Heads travelling, excluding cancelled bookings')
+}))
+})
+
+
+/**
+ * @summary Find a booking by reference or any passenger detail
+ */
+export const SearchBookingsQueryParams = zod.object({
+  "q": zod.coerce.string()
+})
+
+export const SearchBookingsResponseItem = zod.object({
+  "id": zod.string(),
+  "bookingRef": zod.string(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "tourTitle": zod.string().nullish(),
+  "date": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "status": zod.string(),
+  "numGuests": zod.number()
+})
+export const SearchBookingsResponse = zod.array(SearchBookingsResponseItem)
+
+
+/**
+ * @summary Ways of doing this trip, including inactive ones
+ */
+export const GetTourVariantsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetTourVariantsResponse = zod.object({
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Replace a trip's variants
+ */
+export const SaveTourVariantsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SaveTourVariantsBody = zod.object({
+  "variants": zod.array(zod.object({
+  "id": zod.string().nullish().describe('Omit to create'),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number().optional(),
+  "sortOrder": zod.number().optional(),
+  "active": zod.boolean().optional()
+}))
+})
+
+export const SaveTourVariantsResponse = zod.object({
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Extra questions asked when booking this trip
+ */
+export const GetTourBookingFieldsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetTourBookingFieldsResponse = zod.object({
+  "fields": zod.array(zod.object({
+  "id": zod.string(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "help": zod.string().nullish(),
+  "fieldType": zod.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'date']),
+  "options": zod.array(zod.string()),
+  "appliesTo": zod.enum(['booking', 'passenger', 'enquiry']),
+  "required": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Replace a trip's extra booking fields
+ */
+export const SaveTourBookingFieldsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SaveTourBookingFieldsBody = zod.object({
+  "fields": zod.array(zod.object({
+  "id": zod.string().nullish(),
+  "key": zod.string().optional().describe('Omit and it is derived from the label'),
+  "label": zod.string(),
+  "help": zod.string().nullish(),
+  "fieldType": zod.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'date']).optional(),
+  "options": zod.array(zod.string()).optional(),
+  "appliesTo": zod.enum(['booking', 'passenger', 'enquiry']).optional(),
+  "required": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "active": zod.boolean().optional()
+}))
+})
+
+export const SaveTourBookingFieldsResponse = zod.object({
+  "fields": zod.array(zod.object({
+  "id": zod.string(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "help": zod.string().nullish(),
+  "fieldType": zod.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'date']),
+  "options": zod.array(zod.string()),
+  "appliesTo": zod.enum(['booking', 'passenger', 'enquiry']),
+  "required": zod.boolean(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Rates, settings, departures and live URLs for one trip
+ */
+export const GetTourOverviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetTourOverviewResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "code": zod.string().nullish(),
+  "currency": zod.string(),
+  "timezone": zod.string(),
+  "status": zod.enum(['draft', 'published']),
+  "tourUrl": zod.string().describe('Live storefront page for this trip'),
+  "bookingUrl": zod.string(),
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "rates": zod.array(zod.object({
+  "variant": zod.string().nullish(),
+  "label": zod.string(),
+  "price": zod.number()
+})).describe('One line per participant type, for the rates summary'),
+  "settings": zod.object({
+  "minParticipants": zod.number().nullish(),
+  "maxParticipants": zod.number().nullish(),
+  "bookingLeadTimeHours": zod.number(),
+  "depositPercent": zod.number(),
+  "allowPartialDeposit": zod.boolean(),
+  "bookingMode": zod.string()
+}),
+  "departures": zod.array(zod.object({
+  "date": zod.string(),
+  "capacity": zod.number(),
+  "booked": zod.number()
+})).describe('Per-day seat counts for the next six months, for the heat-map'),
+  "counts": zod.object({
+  "upcomingSlots": zod.number(),
+  "bookings": zod.number(),
+  "addons": zod.number(),
+  "bookingFields": zod.number()
+})
+})
+
+
+/**
+ * @summary One month of departures for this trip
+ */
+export const GetTourCalendarParams = zod.object({
+  "id": zod.coerce.string(),
+  "month": zod.coerce.string().describe('YYYY-MM')
+})
+
+export const GetTourCalendarResponse = zod.object({
+  "month": zod.string().describe('YYYY-MM'),
+  "timezone": zod.string(),
+  "variants": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "seatsPerGuest": zod.number(),
+  "sortOrder": zod.number(),
+  "active": zod.boolean()
+})),
+  "slots": zod.array(zod.object({
+  "id": zod.string(),
+  "variantId": zod.string().nullish(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "capacity": zod.number(),
+  "bookedCount": zod.number(),
+  "status": zod.string(),
+  "overridden": zod.boolean().describe('Capacity differs from the rule that generated it')
+}))
+})
+
+
+/**
+ * @summary Change one departure's capacity or close it
+ */
+export const OverrideTourSlotParams = zod.object({
+  "slotId": zod.coerce.string().uuid()
+})
+
+export const OverrideTourSlotBody = zod.object({
+  "capacity": zod.number().nullish(),
+  "status": zod.enum(['open', 'closed']).nullish()
+}).describe('Fields left out are unchanged')
+
+
+/**
+ * @summary Record an anonymous analytics event
+ */
+export const TrackEventBody = zod.object({
+  "type": zod.enum(['pageview', 'booking_started', 'booking_created', 'enquiry_created']),
+  "path": zod.string(),
+  "referrer": zod.string().nullish(),
+  "utmSource": zod.string().nullish(),
+  "utmMedium": zod.string().nullish(),
+  "utmCampaign": zod.string().nullish(),
+  "sessionId": zod.string(),
+  "tourId": zod.string().nullish(),
+  "destinationId": zod.string().nullish(),
+  "value": zod.number().nullish()
+})
+
+
+/**
+ * @summary Traffic and conversion overview
+ */
+export const GetAnalyticsQueryParams = zod.object({
+  "from": zod.coerce.string().optional().describe('YYYY-MM-DD, defaults to 30 days ago'),
+  "to": zod.coerce.string().optional()
+})
+
+export const GetAnalyticsResponse = zod.object({
+  "range": zod.object({
+  "from": zod.string(),
+  "to": zod.string()
+}),
+  "totals": zod.object({
+  "pageviews": zod.number(),
+  "visitors": zod.number(),
+  "bookingsStarted": zod.number(),
+  "bookings": zod.number(),
+  "enquiries": zod.number(),
+  "revenue": zod.number()
+}),
+  "previous": zod.object({
+  "pageviews": zod.number(),
+  "visitors": zod.number(),
+  "bookingsStarted": zod.number(),
+  "bookings": zod.number(),
+  "enquiries": zod.number(),
+  "revenue": zod.number()
+}),
+  "liveVisitors": zod.number(),
+  "trend": zod.array(zod.object({
+  "date": zod.string(),
+  "pageviews": zod.number(),
+  "visitors": zod.number(),
+  "bookings": zod.number()
+})),
+  "sources": zod.array(zod.object({
+  "source": zod.string(),
+  "medium": zod.string(),
+  "visitors": zod.number(),
+  "bookings": zod.number()
+})),
+  "referrers": zod.array(zod.object({
+  "referrer": zod.string(),
+  "visitors": zod.number()
+})),
+  "campaigns": zod.array(zod.object({
+  "campaign": zod.string(),
+  "visitors": zod.number(),
+  "bookings": zod.number()
+})),
+  "topPages": zod.array(zod.object({
+  "path": zod.string(),
+  "pageviews": zod.number(),
+  "visitors": zod.number()
+})),
+  "topTours": zod.array(zod.object({
+  "tourId": zod.string(),
+  "title": zod.string(),
+  "views": zod.number(),
+  "bookings": zod.number(),
+  "conversion": zod.number()
+}))
+})
+
+
+/**
+ * @summary Available report types
+ */
+export const ListReportTypesResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "dateBasis": zod.string()
+})
+export const ListReportTypesResponse = zod.array(ListReportTypesResponseItem)
+
+
+/**
+ * @summary Run a report
+ */
+export const RunReportQueryParams = zod.object({
+  "key": zod.coerce.string(),
+  "from": zod.coerce.string().optional(),
+  "to": zod.coerce.string().optional(),
+  "tourId": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "couponCode": zod.coerce.string().optional()
+})
+
+export const RunReportResponse = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "dateBasis": zod.string(),
+  "columns": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "numeric": zod.boolean().optional(),
+  "money": zod.boolean().optional()
+})),
+  "rows": zod.array(zod.record(zod.string(), zod.unknown())),
+  "totals": zod.record(zod.string(), zod.number())
+})
+
+
+/**
+ * @summary Download a report as CSV
+ */
+export const ExportReportCsvQueryParams = zod.object({
+  "key": zod.coerce.string(),
+  "from": zod.coerce.string().optional(),
+  "to": zod.coerce.string().optional(),
+  "tourId": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "couponCode": zod.coerce.string().optional()
+})
+
+
+/**
+ * @summary Reports that email themselves on a schedule
+ */
+export const ListScheduledReportsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "reportKey": zod.string(),
+  "filters": zod.record(zod.string(), zod.unknown()).optional(),
+  "cadence": zod.enum(['daily', 'weekly', 'monthly']),
+  "sendHour": zod.number(),
+  "recipients": zod.array(zod.string()),
+  "active": zod.boolean(),
+  "lastSentOn": zod.string().nullish(),
+  "lastError": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListScheduledReportsResponse = zod.array(ListScheduledReportsResponseItem)
+
+
+/**
+ * @summary Schedule a report
+ */
+export const CreateScheduledReportBody = zod.object({
+  "name": zod.string().optional(),
+  "reportKey": zod.string().optional(),
+  "filters": zod.record(zod.string(), zod.unknown()).optional(),
+  "cadence": zod.enum(['daily', 'weekly', 'monthly']).optional(),
+  "sendHour": zod.number().optional(),
+  "recipients": zod.array(zod.string()).optional(),
+  "active": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a scheduled report
+ */
+export const UpdateScheduledReportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateScheduledReportBody = zod.object({
+  "name": zod.string().optional(),
+  "reportKey": zod.string().optional(),
+  "filters": zod.record(zod.string(), zod.unknown()).optional(),
+  "cadence": zod.enum(['daily', 'weekly', 'monthly']).optional(),
+  "sendHour": zod.number().optional(),
+  "recipients": zod.array(zod.string()).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateScheduledReportResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "reportKey": zod.string(),
+  "filters": zod.record(zod.string(), zod.unknown()).optional(),
+  "cadence": zod.enum(['daily', 'weekly', 'monthly']),
+  "sendHour": zod.number(),
+  "recipients": zod.array(zod.string()),
+  "active": zod.boolean(),
+  "lastSentOn": zod.string().nullish(),
+  "lastError": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a scheduled report
+ */
+export const DeleteScheduledReportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Send a scheduled report immediately, as a test
+ */
+export const RunScheduledReportNowParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Search published tours, destinations, posts and pages
+ */
+export const SearchSiteQueryParams = zod.object({
+  "q": zod.coerce.string(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const SearchSiteResponse = zod.object({
+  "query": zod.string(),
+  "results": zod.array(zod.object({
+  "type": zod.enum(['tour', 'destination', 'blog', 'page']),
+  "url": zod.string(),
+  "title": zod.string(),
+  "blurb": zod.string().nullish(),
+  "image": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Roles and what each can do
+ */
+export const ListRolesResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "capabilities": zod.array(zod.string())
+})
+export const ListRolesResponse = zod.array(ListRolesResponseItem)
+
+
+/**
+ * @summary Staff accounts
+ */
+export const ListAdminUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string().nullish(),
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "roleLabel": zod.string(),
+  "capabilities": zod.array(zod.string()),
+  "active": zod.boolean(),
+  "mustChangePassword": zod.boolean(),
+  "lastLoginAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
+
+
+/**
+ * @summary Add a staff account
+ */
+export const CreateAdminUserBody = zod.object({
+  "email": zod.string(),
+  "name": zod.string().nullish(),
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "password": zod.string().describe('At least 10 characters')
+})
+
+
+/**
+ * @summary Change a staff account's name, role, password or status
+ */
+export const UpdateAdminUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateAdminUserBody = zod.object({
+  "name": zod.string().nullish(),
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']).optional(),
+  "active": zod.boolean().optional(),
+  "password": zod.string().optional()
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string().nullish(),
+  "role": zod.enum(['owner', 'admin', 'manager', 'finance', 'editor', 'viewer']),
+  "roleLabel": zod.string(),
+  "capabilities": zod.array(zod.string()),
+  "active": zod.boolean(),
+  "mustChangePassword": zod.boolean(),
+  "lastLoginAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Remove a staff account
+ */
+export const DeleteAdminUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Payment methods offered at checkout, and whether any charge depends on the choice
+ */
+export const GetPaymentMethodsQueryParams = zod.object({
+  "tour": zod.coerce.string().optional().describe('Tour slug')
+})
+
+export const GetPaymentMethodsResponse = zod.object({
+  "methods": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string()
+})),
+  "required": zod.boolean().describe('True when a live charge depends on the payment method, so the customer must choose before the total can be quoted')
+})
+
+
+/**
+ * @summary Taxes and fees, including expired ones
+ */
+export const ListAdminChargesResponseItem = zod.object({
+  "id": zod.string().nullish(),
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "paymentMethods": zod.array(zod.string()).optional().describe('Empty = every method. Otherwise upi | card | netbanking | wallet | cash | bank_transfer | cheque | card_machine | other'),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+export const ListAdminChargesResponse = zod.array(ListAdminChargesResponseItem)
+
+
+/**
+ * @summary Replace the charge list
+ */
+export const SaveChargesBodyItem = zod.object({
+  "id": zod.string().nullish(),
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "paymentMethods": zod.array(zod.string()).optional().describe('Empty = every method. Otherwise upi | card | netbanking | wallet | cash | bank_transfer | cheque | card_machine | other'),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+export const SaveChargesBody = zod.array(SaveChargesBodyItem)
+
+export const SaveChargesResponseItem = zod.object({
+  "id": zod.string().nullish(),
+  "label": zod.string(),
+  "type": zod.enum(['percent', 'flat']),
+  "value": zod.number(),
+  "tourIds": zod.array(zod.string()).optional(),
+  "paymentMethods": zod.array(zod.string()).optional().describe('Empty = every method. Otherwise upi | card | netbanking | wallet | cash | bank_transfer | cheque | card_machine | other'),
+  "validFrom": zod.string().nullish(),
+  "validTo": zod.string().nullish(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+export const SaveChargesResponse = zod.array(SaveChargesResponseItem)
+
+
+/**
+ * @summary Charges that have expired or are about to
+ */
+export const GetChargeHealthResponse = zod.object({
+  "expired": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "validTo": zod.string()
+})),
+  "expiringSoon": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "validTo": zod.string(),
+  "daysLeft": zod.number()
+})),
+  "notYetActive": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "validFrom": zod.string()
+}))
+})
+
+
+/**
+ * @summary URL redirects, with any chains flagged
+ */
+export const ListRedirectsResponse = zod.object({
+  "redirects": zod.array(zod.object({
+  "id": zod.string(),
+  "fromPath": zod.string(),
+  "toPath": zod.string(),
+  "statusCode": zod.number(),
+  "active": zod.boolean(),
+  "hits": zod.number(),
+  "lastHitAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "chains": zod.array(zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "then": zod.string()
+}))
+})
+
+
+/**
+ * @summary Add a redirect
+ */
+export const CreateRedirectBody = zod.object({
+  "fromPath": zod.string(),
+  "toPath": zod.string(),
+  "statusCode": zod.union([zod.literal(301),zod.literal(302)]).optional(),
+  "active": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a redirect
+ */
+export const UpdateRedirectParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateRedirectBody = zod.object({
+  "fromPath": zod.string(),
+  "toPath": zod.string(),
+  "statusCode": zod.union([zod.literal(301),zod.literal(302)]).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateRedirectResponse = zod.object({
+  "id": zod.string(),
+  "fromPath": zod.string(),
+  "toPath": zod.string(),
+  "statusCode": zod.number(),
+  "active": zod.boolean(),
+  "hits": zod.number(),
+  "lastHitAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a redirect
+ */
+export const DeleteRedirectParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Media library, with a usage count per file
+ */
+export const ListMediaQueryParams = zod.object({
+  "q": zod.coerce.string().optional().describe('Match filename or URL'),
+  "kind": zod.enum(['image', 'video']).optional()
+})
+
+export const ListMediaResponseItem = zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['image', 'video']),
+  "status": zod.string(),
+  "url": zod.string().nullish(),
+  "hlsUrl": zod.string().nullish(),
+  "posterUrl": zod.string().nullish(),
+  "filename": zod.string().nullish(),
+  "mime": zod.string().nullish(),
+  "width": zod.number().nullish(),
+  "height": zod.number().nullish(),
+  "usageCount": zod.number().describe('How many tours, pages, posts or gallery items reference this file'),
+  "createdAt": zod.string()
+})
+export const ListMediaResponse = zod.array(ListMediaResponseItem)
+
+
+/**
+ * @summary Delete a file
+ */
+export const DeleteMediaParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Delete a file even though it is still referenced
+ */
+export const ForceDeleteMediaParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * Fire-and-forget lead alert. Always answers 202 — whether an alert was actually sent depends on the admin switch, deduplication and rate limiting, and the caller has no business knowing which.
+
+ * @summary Tell the team someone has started filling the booking form
+ */
+export const ReportBookingIntentBody = zod.object({
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "tourSlug": zod.string().nullish()
 })
 
 

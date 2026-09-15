@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AddonLine } from './addonLine';
 import type { BookingDetailPaymentStatus } from './bookingDetailPaymentStatus';
 import type { BookingDetailStatus } from './bookingDetailStatus';
+import type { ChargeLine } from './chargeLine';
+import type { ParticipantLine } from './participantLine';
 
 export interface BookingDetail {
   id: string;
@@ -14,6 +17,13 @@ export interface BookingDetail {
   tourId: string;
   tourSlug?: string | null;
   tourTitle?: string | null;
+  /** Operator-facing trip code */
+  tourCode?: string | null;
+  /** Which trip variant was sold */
+  variantLabel?: string | null;
+  agentId?: string | null;
+  /** The agent credited with this booking */
+  agentName?: string | null;
   slotId: string;
   date?: string | null;
   startTime?: string | null;
@@ -26,5 +36,33 @@ export interface BookingDetail {
   currency: string;
   status: BookingDetailStatus;
   paymentStatus: BookingDetailPaymentStatus;
+  paymentMethod?: string | null;
+  /** Base-price add-ons (taxes/fees) resolved at booking time */
+  chargesBreakdown?: ChargeLine[];
+  participantBreakdown?: ParticipantLine[];
+  addonsBreakdown?: AddonLine[];
+  /** Discount code applied at booking time */
+  couponCode?: string | null;
+  /** Rupees taken off the base price by the coupon */
+  discountAmount: number;
+  /** Net settled from the payments ledger (payments minus refunds) */
+  amountPaid: number;
+  /** totalAmount minus amountPaid, floored at 0 */
+  amountDue: number;
+  /** The customer's own message from the booking form */
+  notes?: string | null;
+  /** Staff-only notes, never shown to the customer */
+  internalNotes?: string | null;
+  tags: string[];
+  /** website | whatsapp | phone | manual */
+  source: string;
+  /** Latest Razorpay payment link sent for this booking, if any */
+  paymentLinkUrl?: string | null;
+  /** created | paid | expired | cancelled | failed */
+  paymentLinkStatus?: string | null;
+  /** Razorpay Order id to pay via Standard Checkout, while unpaid */
+  razorpayOrderId?: string | null;
+  /** Razorpay public key id for checkout.js, while unpaid */
+  razorpayKeyId?: string | null;
   createdAt?: string | null;
 }

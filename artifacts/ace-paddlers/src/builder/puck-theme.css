@@ -1,0 +1,27 @@
+/**
+ * Puck's typography, sourced from the app instead of from rsms.me.
+ *
+ * Puck asks for Inter and imports it from a third-party host; the build strips
+ * that import (see `stripRemoteCssImports` in vite.config.ts), which would
+ * otherwise leave the editor falling back to the system stack while every
+ * other admin screen renders in the site's own font.
+ *
+ * Pointing it at `--app-font-sans` costs nothing — that face is already loaded
+ * for the rest of the admin — and makes the builder look like the console it
+ * lives in rather than a separate application. `--app-font-sans` is set from
+ * the Typography settings at runtime, so the editor follows the site's font if
+ * that is ever changed.
+ *
+ * Both declarations are needed: Puck sets the variable twice, the second time
+ * inside `@supports (font-variation-settings: normal)`, which every current
+ * browser matches and which would otherwise win.
+ */
+:root {
+  --puck-font-family: var(--app-font-sans, system-ui, sans-serif);
+}
+
+@supports (font-variation-settings: normal) {
+  :root {
+    --puck-font-family: var(--app-font-sans, system-ui, sans-serif);
+  }
+}

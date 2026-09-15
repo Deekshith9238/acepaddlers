@@ -5,8 +5,42 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ListBookingsStatus } from './listBookingsStatus';
+import type { ListBookingsPaymentStatus } from './listBookingsPaymentStatus';
 
 export type ListBookingsParams = {
-status?: ListBookingsStatus;
+/**
+ * Booking status, or 'open' for pending+confirmed
+ */
+status?: string;
+paymentStatus?: ListBookingsPaymentStatus;
+source?: string;
+tourId?: string;
+/**
+ * Booking created on/after (YYYY-MM-DD)
+ */
+bookedFrom?: string;
+bookedTo?: string;
+/**
+ * Departure date on/after (YYYY-MM-DD)
+ */
+departsFrom?: string;
+departsTo?: string;
+/**
+ * Only bookings still owing money
+ */
+balanceDue?: boolean;
+/**
+ * Tour category slug — VL's "collections"
+ */
+category?: string;
+variantId?: string;
+paymentMethod?: string;
+/**
+ * An agent id, or "none" for direct bookings
+ */
+agentId?: string;
+/**
+ * Search ref, name, e-mail or phone
+ */
+q?: string;
 };

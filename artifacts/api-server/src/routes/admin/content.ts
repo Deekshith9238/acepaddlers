@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { db, destinations, tours, blogPosts, galleryItems } from "@workspace/db";
 import {
   CreateDestinationBody,
@@ -8,11 +8,12 @@ import {
   CreateGalleryItemBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../../middlewares/requireAdmin";
+import { requireCapability } from "../../middlewares/requireCapability";
 
 const router: IRouter = Router();
 
 // All routes below require a valid admin session.
-router.use(requireAdmin);
+router.use(requireAdmin, requireCapability("content"));
 
 function isUniqueViolation(e: unknown): boolean {
   // node-postgres sets code "23505" on unique violations; drizzle wraps the
@@ -102,15 +103,36 @@ router.post("/tours", async (req, res) => {
   }
 });
 
+// The trip editor saves one tab at a time, so a PATCH carries only the fields
+// that tab owns — requiring the whole tour would make every tab resend the
+// others and quietly clobber concurrent edits.
+const PatchTourBody = CreateTourBody.partial();
+
 router.patch("/tours/:id", async (req, res) => {
-  const parsed = CreateTourBody.safeParse(req.body);
+  const parsed = PatchTourBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid", issues: parsed.error.issues });
     return;
   }
+  const { details, ...rest } = parsed.data;
+  const set: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+  if (details) {
+    // `details` is a bag of unrelated keys (FAQs, rapid grades, group size,
+    // meta title…) owned by different tabs. Replacing the column would let a
+    // tab that saves FAQs silently delete everything else in it, so merge in
+    // SQL instead: one statement, so two tabs saving at once cannot lose each
+    // other's keys. A key sent as null is removed.
+    const keep = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== null));
+    const drop = Object.entries(details).filter(([, v]) => v === null).map(([k]) => k);
+    // Both lists go in as single JSON parameters. Drizzle expands an
+    // interpolated array into "($1, $2)", which is not a text[] — and an empty
+    // one, the usual case, becomes "()" and would fail every save.
+    set.details = sql`(coalesce(${tours.details}, '{}'::jsonb) || ${JSON.stringify(keep)}::jsonb)
+      - (select coalesce(array_agg(x), '{}') from jsonb_array_elements_text(${JSON.stringify(drop)}::jsonb) x)`;
+  }
   const [row] = await db
     .update(tours)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set(set)
     .where(eq(tours.id, req.params.id))
     .returning();
   if (!row) {

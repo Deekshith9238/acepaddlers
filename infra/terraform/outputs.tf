@@ -35,3 +35,20 @@ output "ses_dkim_tokens" {
   description = "Add these as CNAME records to verify SES (if ses_domain set)"
   value       = try(aws_ses_domain_dkim.main[0].dkim_tokens, [])
 }
+
+# ── Custom domain (ALB HTTPS) — records to add at GoDaddy ──
+output "acm_validation_records" {
+  description = "Add as CNAME(s) at GoDaddy to validate the SSL certificate"
+  value = try([
+    for o in aws_acm_certificate.alb[0].domain_validation_options : {
+      name  = o.resource_record_name
+      type  = o.resource_record_type
+      value = o.resource_record_value
+    }
+  ], [])
+}
+
+output "web_cname_target" {
+  description = "Point www (CNAME) at this ALB DNS name to serve the site over HTTPS"
+  value       = aws_lb.api.dns_name
+}

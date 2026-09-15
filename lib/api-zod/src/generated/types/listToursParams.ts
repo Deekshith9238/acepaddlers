@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListToursCategory } from './listToursCategory';
 import type { ListToursType } from './listToursType';
 
 export type ListToursParams = {
@@ -13,4 +14,8 @@ export type ListToursParams = {
  */
 destination?: string;
 type?: ListToursType;
+/**
+ * Filter by destination section
+ */
+category?: ListToursCategory;
 };

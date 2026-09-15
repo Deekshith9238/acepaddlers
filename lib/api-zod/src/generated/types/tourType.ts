@@ -6,12 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TourType = typeof TourType[keyof typeof TourType];
-
-
-export const TourType = {
-  rafting: 'rafting',
-  camping: 'camping',
-  homestay: 'homestay',
-  water_sports: 'water_sports',
-} as const;
+export interface TourType {
+  id: string;
+  slug: string;
+  label: string;
+  sortOrder?: number;
+}

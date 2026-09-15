@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
-import os from "node:os";
 import path from "node:path";
-import { writeFile, rm } from "node:fs/promises";
 import sharp from "sharp";
 import { db, mediaAssets } from "@workspace/db";
 import { storage } from "./storage";
-import { transcoder } from "./transcoder";
 
 export interface UploadInput {
   buffer: Buffer;
@@ -49,26 +46,23 @@ export async function processUpload(file: UploadInput) {
   }
 
   if (file.mimetype.startsWith("video/")) {
-    const tmp = path.join(os.tmpdir(), `${id}-source`);
-    await writeFile(tmp, file.buffer);
-    try {
-      const { hlsKey, posterKey } = await transcoder.toHls(tmp, `video/${id}`);
-      const [row] = await db
-        .insert(mediaAssets)
-        .values({
-          kind: "video",
-          status: "ready",
-          hlsUrl: storage.publicUrl(hlsKey),
-          posterUrl: storage.publicUrl(posterKey),
-          storageKey: `video/${id}`,
-          filename: file.originalname,
-          mime: file.mimetype,
-        })
-        .returning();
-      return row;
-    } finally {
-      await rm(tmp, { force: true });
-    }
+    // Store the original file directly and serve it via an HTML5 <video> tag —
+    // same flow as images. (HLS/MediaConvert transcoding is a later phase.)
+    const ext = (path.extname(file.originalname) || ".mp4").toLowerCase();
+    const key = `video/${id}${ext}`;
+    await storage.save(key, file.buffer);
+    const [row] = await db
+      .insert(mediaAssets)
+      .values({
+        kind: "video",
+        status: "ready",
+        url: storage.publicUrl(key),
+        storageKey: key,
+        filename: file.originalname,
+        mime: file.mimetype,
+      })
+      .returning();
+    return row;
   }
 
   throw new UnsupportedMediaError();

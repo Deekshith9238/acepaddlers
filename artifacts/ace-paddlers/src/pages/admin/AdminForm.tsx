@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import AdminLayout from "@/admin/AdminLayout";
 import AdminField from "@/admin/AdminField";
 import { RESOURCES, rowToForm, formToInput, type ResourceConfig } from "@/admin/resources";
+import DestinationSubResources from "@/admin/DestinationSubResources";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function FormInner({ cfg, id }: { cfg: ResourceConfig; id?: string }) {
@@ -19,6 +19,15 @@ function FormInner({ cfg, id }: { cfg: ResourceConfig; id?: string }) {
     const v = rowToForm(cfg.fields, {});
     if (cfg.fields.some((f) => f.name === "status")) v.status = "draft";
     if (cfg.key === "tours") v.currency = "INR";
+    // Prefill new-record fields from query params (e.g. creating a destination's
+    // activity links to /admin/tours/new?destinationId=…&category=activity).
+    if (isNew) {
+      const qs = new URLSearchParams(window.location.search);
+      for (const f of cfg.fields) {
+        const q = qs.get(f.name);
+        if (q != null && (v[f.name] === "" || v[f.name] == null)) v[f.name] = q;
+      }
+    }
     return v;
   });
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +61,7 @@ function FormInner({ cfg, id }: { cfg: ResourceConfig; id?: string }) {
   }
 
   return (
+    <>
     <form onSubmit={onSubmit}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-slate-800">
@@ -80,6 +90,8 @@ function FormInner({ cfg, id }: { cfg: ResourceConfig; id?: string }) {
         </button>
       </div>
     </form>
+    {cfg.key === "destinations" && id && <DestinationSubResources destinationId={id} />}
+    </>
   );
 }
 
@@ -87,8 +99,6 @@ export default function AdminForm() {
   const params = useParams<{ resource: string; id?: string }>();
   const cfg = RESOURCES[params.resource];
   return (
-    <AdminLayout>
-      {cfg ? <FormInner key={`${params.resource}:${params.id ?? "new"}`} cfg={cfg} id={params.id} /> : <p>Unknown resource.</p>}
-    </AdminLayout>
+    cfg ? <FormInner key={`${params.resource}:${params.id ?? "new"}`} cfg={cfg} id={params.id} /> : <p>Unknown resource.</p>
   );
 }

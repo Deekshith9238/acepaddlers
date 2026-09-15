@@ -10,6 +10,8 @@ import type { SlotStatus } from './slotStatus';
 export interface Slot {
   id: string;
   tourId: string;
+  /** Which trip variant this departure belongs to */
+  variantId?: string | null;
   date: string;
   startTime: string;
   capacity: number;

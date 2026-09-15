@@ -19,8 +19,12 @@ export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
 
 
 export const AdminUserRole = {
+  owner: 'owner',
   admin: 'admin',
+  manager: 'manager',
+  finance: 'finance',
   editor: 'editor',
+  viewer: 'viewer',
 } as const;
 
 export interface AdminUser {
@@ -28,6 +32,9 @@ export interface AdminUser {
   email: string;
   name?: string | null;
   role: AdminUserRole;
+  /** What this role may change — the UI hides anything absent here */
+  capabilities?: string[];
+  token?: string | null;
 }
 
 export type DestinationStatus = typeof DestinationStatus[keyof typeof DestinationStatus];
@@ -57,14 +64,15 @@ export interface Destination {
   sortOrder?: number;
 }
 
-export type TourType = typeof TourType[keyof typeof TourType];
+/**
+ * direct = pay online now; enquiry = no payment, team confirms manually
+ */
+export type TourBookingMode = typeof TourBookingMode[keyof typeof TourBookingMode];
 
 
-export const TourType = {
-  rafting: 'rafting',
-  camping: 'camping',
-  homestay: 'homestay',
-  water_sports: 'water_sports',
+export const TourBookingMode = {
+  direct: 'direct',
+  enquiry: 'enquiry',
 } as const;
 
 export type TourDetails = { [key: string]: unknown };
@@ -77,11 +85,59 @@ export const TourStatus = {
   published: 'published',
 } as const;
 
+export type TourPriceLabelPosition = typeof TourPriceLabelPosition[keyof typeof TourPriceLabelPosition];
+
+
+export const TourPriceLabelPosition = {
+  before: 'before',
+  after: 'after',
+  none: 'none',
+} as const;
+
+export type TourSeatSharing = typeof TourSeatSharing[keyof typeof TourSeatSharing];
+
+
+export const TourSeatSharing = {
+  independent: 'independent',
+  reduces: 'reduces',
+  closes: 'closes',
+} as const;
+
+export type TourDepartureDisplay = typeof TourDepartureDisplay[keyof typeof TourDepartureDisplay];
+
+
+export const TourDepartureDisplay = {
+  calendar: 'calendar',
+  list: 'list',
+} as const;
+
+/**
+ * Custom nouns: trip, departure, participant, room
+ */
+export type TourLabels = {[key: string]: string};
+
+export type ItineraryDayItemsItem = {
+  time?: string | null;
+  title: string;
+  description?: string | null;
+  /** @deprecated */
+  text?: string | null;
+};
+
+export interface ItineraryDay {
+  /** e.g. Day 1 or Day Visit */
+  title: string;
+  items: ItineraryDayItemsItem[];
+}
+
 export interface Tour {
   id: string;
   slug: string;
   destinationId?: string | null;
-  type: TourType;
+  /** Slug of a tour type (see /tour-types) */
+  type: string;
+  /** Slug of a tour category (see /tour-categories) */
+  category?: string;
   title: string;
   location?: string | null;
   tagline?: string | null;
@@ -92,6 +148,8 @@ export interface Tour {
   currency: string;
   duration?: string | null;
   capacityPerSlot: number;
+  /** direct = pay online now; enquiry = no payment, team confirms manually */
+  bookingMode?: TourBookingMode;
   minAge?: number | null;
   maxWeightKg?: number | null;
   season?: string | null;
@@ -104,6 +162,43 @@ export interface Tour {
   seoDescription?: string | null;
   status?: TourStatus;
   sortOrder?: number;
+  /** Operator-facing trip code, e.g. ACE-CampKarle */
+  code?: string | null;
+  /** false = a private departure not pooled with other customers */
+  sharedTrip?: boolean;
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  /** Terms for this trip only */
+  terms?: string | null;
+  /** Headline price for display; the rate card does the maths */
+  advertisedPrice?: number | null;
+  priceLabelPosition?: TourPriceLabelPosition;
+  showAdvertisedPrice?: boolean;
+  allowPartialDeposit?: boolean;
+  /** Percent of the total accepted as a deposit */
+  depositPercent?: number;
+  seatSharing?: TourSeatSharing;
+  departureDisplay?: TourDepartureDisplay;
+  showSeatsAvailable?: boolean;
+  showSeatsBooked?: boolean;
+  showGuaranteedDeparture?: boolean;
+  showSeatsToGuarantee?: boolean;
+  bookingLeadTimeHours?: number;
+  paymentDeadlineDays?: number | null;
+  itinerary?: ItineraryDay[];
+  itineraryText?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  shortAddress?: string | null;
+  detailedAddress?: string | null;
+  directions?: string | null;
+  confirmationEmailIntro?: string | null;
+  /** Custom nouns: trip, departure, participant, room */
+  labels?: TourLabels;
+  relatedTourIds?: string[];
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
 }
 
 export type BlogPostSummaryStatus = typeof BlogPostSummaryStatus[keyof typeof BlogPostSummaryStatus];
@@ -174,14 +269,15 @@ export interface DestinationInput {
   sortOrder?: number;
 }
 
-export type TourInputType = typeof TourInputType[keyof typeof TourInputType];
+/**
+ * direct = pay online now; enquiry = no payment, team confirms manually
+ */
+export type TourInputBookingMode = typeof TourInputBookingMode[keyof typeof TourInputBookingMode];
 
 
-export const TourInputType = {
-  rafting: 'rafting',
-  camping: 'camping',
-  homestay: 'homestay',
-  water_sports: 'water_sports',
+export const TourInputBookingMode = {
+  direct: 'direct',
+  enquiry: 'enquiry',
 } as const;
 
 export type TourInputDetails = { [key: string]: unknown };
@@ -194,10 +290,44 @@ export const TourInputStatus = {
   published: 'published',
 } as const;
 
+export type TourInputPriceLabelPosition = typeof TourInputPriceLabelPosition[keyof typeof TourInputPriceLabelPosition];
+
+
+export const TourInputPriceLabelPosition = {
+  before: 'before',
+  after: 'after',
+  none: 'none',
+} as const;
+
+export type TourInputSeatSharing = typeof TourInputSeatSharing[keyof typeof TourInputSeatSharing];
+
+
+export const TourInputSeatSharing = {
+  independent: 'independent',
+  reduces: 'reduces',
+  closes: 'closes',
+} as const;
+
+export type TourInputDepartureDisplay = typeof TourInputDepartureDisplay[keyof typeof TourInputDepartureDisplay];
+
+
+export const TourInputDepartureDisplay = {
+  calendar: 'calendar',
+  list: 'list',
+} as const;
+
+/**
+ * Custom nouns: trip, departure, participant, room
+ */
+export type TourInputLabels = {[key: string]: string};
+
 export interface TourInput {
   slug: string;
   destinationId?: string | null;
-  type: TourInputType;
+  /** Slug of a tour type (see /tour-types) */
+  type: string;
+  /** Slug of a tour category (see /tour-categories) */
+  category?: string;
   title: string;
   location?: string | null;
   tagline?: string | null;
@@ -208,6 +338,8 @@ export interface TourInput {
   currency?: string;
   duration?: string | null;
   capacityPerSlot?: number;
+  /** direct = pay online now; enquiry = no payment, team confirms manually */
+  bookingMode?: TourInputBookingMode;
   minAge?: number | null;
   maxWeightKg?: number | null;
   season?: string | null;
@@ -220,6 +352,43 @@ export interface TourInput {
   seoDescription?: string | null;
   status?: TourInputStatus;
   sortOrder?: number;
+  /** Operator-facing trip code, e.g. ACE-CampKarle */
+  code?: string | null;
+  /** false = a private departure not pooled with other customers */
+  sharedTrip?: boolean;
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  /** Terms for this trip only */
+  terms?: string | null;
+  /** Headline price for display; the rate card does the maths */
+  advertisedPrice?: number | null;
+  priceLabelPosition?: TourInputPriceLabelPosition;
+  showAdvertisedPrice?: boolean;
+  allowPartialDeposit?: boolean;
+  /** Percent of the total accepted as a deposit */
+  depositPercent?: number;
+  seatSharing?: TourInputSeatSharing;
+  departureDisplay?: TourInputDepartureDisplay;
+  showSeatsAvailable?: boolean;
+  showSeatsBooked?: boolean;
+  showGuaranteedDeparture?: boolean;
+  showSeatsToGuarantee?: boolean;
+  bookingLeadTimeHours?: number;
+  paymentDeadlineDays?: number | null;
+  itinerary?: ItineraryDay[];
+  itineraryText?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  shortAddress?: string | null;
+  detailedAddress?: string | null;
+  directions?: string | null;
+  confirmationEmailIntro?: string | null;
+  /** Custom nouns: trip, departure, participant, room */
+  labels?: TourInputLabels;
+  relatedTourIds?: string[];
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
 }
 
 export type BlogPostInputStatus = typeof BlogPostInputStatus[keyof typeof BlogPostInputStatus];
@@ -271,6 +440,8 @@ export const SlotStatus = {
 export interface Slot {
   id: string;
   tourId: string;
+  /** Which trip variant this departure belongs to */
+  variantId?: string | null;
   date: string;
   startTime: string;
   capacity: number;
@@ -285,6 +456,38 @@ export interface GuestDetail {
   weightKg?: number;
 }
 
+export type ChargeLineType = typeof ChargeLineType[keyof typeof ChargeLineType];
+
+
+export const ChargeLineType = {
+  percent: 'percent',
+  flat: 'flat',
+} as const;
+
+export interface ChargeLine {
+  label: string;
+  type: ChargeLineType;
+  value: number;
+  /** Resolved rupee amount for this charge */
+  amount: number;
+}
+
+export interface VerifyPaymentInput {
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
+}
+
+export interface ParticipantSelection {
+  typeId: string;
+  count: number;
+}
+
+export interface AddonSelection {
+  addonId: string;
+  qty: number;
+}
+
 export interface BookingInput {
   slotId: string;
   customerName: string;
@@ -293,6 +496,15 @@ export interface BookingInput {
   numGuests: number;
   guestDetails?: GuestDetail[];
   notes?: string | null;
+  /** Discount code; ignored if it fails validation */
+  couponCode?: string | null;
+  /** Per-type counts; when given, numGuests is derived from these */
+  participants?: ParticipantSelection[];
+  /** Anonymous session id, so the booking joins up with the visitor's pageviews */
+  analyticsSessionId?: string | null;
+  addons?: AddonSelection[];
+  /** How the customer intends to pay; decides which method-scoped charges apply */
+  paymentMethod?: string | null;
 }
 
 export type BookingDetailStatus = typeof BookingDetailStatus[keyof typeof BookingDetailStatus];
@@ -303,6 +515,7 @@ export const BookingDetailStatus = {
   confirmed: 'confirmed',
   cancelled: 'cancelled',
   completed: 'completed',
+  cart_abandoned: 'cart_abandoned',
 } as const;
 
 export type BookingDetailPaymentStatus = typeof BookingDetailPaymentStatus[keyof typeof BookingDetailPaymentStatus];
@@ -315,12 +528,37 @@ export const BookingDetailPaymentStatus = {
   refunded: 'refunded',
 } as const;
 
+export interface ParticipantLine {
+  typeId?: string | null;
+  label: string;
+  count: number;
+  unitPrice: number;
+  amount: number;
+  tierApplied?: boolean;
+}
+
+export interface AddonLine {
+  addonId: string;
+  label: string;
+  qty: number;
+  unitPrice: number;
+  priceType: string;
+  amount: number;
+}
+
 export interface BookingDetail {
   id: string;
   bookingRef: string;
   tourId: string;
   tourSlug?: string | null;
   tourTitle?: string | null;
+  /** Operator-facing trip code */
+  tourCode?: string | null;
+  /** Which trip variant was sold */
+  variantLabel?: string | null;
+  agentId?: string | null;
+  /** The agent credited with this booking */
+  agentName?: string | null;
   slotId: string;
   date?: string | null;
   startTime?: string | null;
@@ -333,10 +571,591 @@ export interface BookingDetail {
   currency: string;
   status: BookingDetailStatus;
   paymentStatus: BookingDetailPaymentStatus;
+  paymentMethod?: string | null;
+  /** Base-price add-ons (taxes/fees) resolved at booking time */
+  chargesBreakdown?: ChargeLine[];
+  participantBreakdown?: ParticipantLine[];
+  addonsBreakdown?: AddonLine[];
+  /** Discount code applied at booking time */
+  couponCode?: string | null;
+  /** Rupees taken off the base price by the coupon */
+  discountAmount: number;
+  /** Net settled from the payments ledger (payments minus refunds) */
+  amountPaid: number;
+  /** totalAmount minus amountPaid, floored at 0 */
+  amountDue: number;
+  /** The customer's own message from the booking form */
+  notes?: string | null;
+  /** Staff-only notes, never shown to the customer */
+  internalNotes?: string | null;
+  tags: string[];
+  /** website | whatsapp | phone | manual */
+  source: string;
+  /** Latest Razorpay payment link sent for this booking, if any */
+  paymentLinkUrl?: string | null;
+  /** created | paid | expired | cancelled | failed */
+  paymentLinkStatus?: string | null;
+  /** Razorpay Order id to pay via Standard Checkout, while unpaid */
+  razorpayOrderId?: string | null;
+  /** Razorpay public key id for checkout.js, while unpaid */
+  razorpayKeyId?: string | null;
   createdAt?: string | null;
 }
 
+export interface ParticipantType {
+  id: string;
+  /** null = applies to every variant */
+  variantId?: string | null;
+  label: string;
+  description?: string | null;
+  price: number;
+  minAge?: number | null;
+  maxAge?: number | null;
+  occupiesSeat: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface PriceTier {
+  id: string;
+  participantTypeId?: string | null;
+  minGuests: number;
+  maxGuests?: number | null;
+  price: number;
+}
+
+export type AddonPriceType = typeof AddonPriceType[keyof typeof AddonPriceType];
+
+
+export const AddonPriceType = {
+  per_unit: 'per_unit',
+  per_person: 'per_person',
+  per_booking: 'per_booking',
+} as const;
+
+export interface Addon {
+  id: string;
+  /** null = offered on every variant */
+  variantId?: string | null;
+  label: string;
+  description?: string | null;
+  price: number;
+  priceType: AddonPriceType;
+  minQty: number;
+  maxQty?: number | null;
+  required: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface TourVariant {
+  id: string;
+  code: string;
+  label: string;
+  description?: string | null;
+  seatsPerGuest: number;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface RateCard {
+  currency: string;
+  /** tours.priceValue — used when no participant types are configured */
+  basePrice: number;
+  participantTypes: ParticipantType[];
+  tiers: PriceTier[];
+  addons: Addon[];
+  /** Empty when the trip is sold one way only */
+  variants?: TourVariant[];
+}
+
+export interface QuoteInput {
+  slotId: string;
+  numGuests?: number;
+  participants?: ParticipantSelection[];
+  addons?: AddonSelection[];
+  couponCode?: string | null;
+  paymentMethod?: string | null;
+}
+
+export interface QuoteResult {
+  participantLines: ParticipantLine[];
+  addonLines: AddonLine[];
+  baseAmount: number;
+  discountAmount: number;
+  couponCode?: string | null;
+  /** Why a supplied code did not apply */
+  couponReason?: string | null;
+  chargesBreakdown: ChargeLine[];
+  totalAmount: number;
+  currency: string;
+  numGuests: number;
+  seatsUsed: number;
+}
+
+export type RateCardInputParticipantTypesItem = {
+  /** Omit to create */
+  id?: string | null;
+  variantId?: string | null;
+  label: string;
+  description?: string | null;
+  price: number;
+  minAge?: number | null;
+  maxAge?: number | null;
+  occupiesSeat?: boolean;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export type RateCardInputTiersItem = {
+  id?: string | null;
+  participantTypeId?: string | null;
+  minGuests: number;
+  maxGuests?: number | null;
+  price: number;
+};
+
+export type RateCardInputAddonsItemPriceType = typeof RateCardInputAddonsItemPriceType[keyof typeof RateCardInputAddonsItemPriceType];
+
+
+export const RateCardInputAddonsItemPriceType = {
+  per_unit: 'per_unit',
+  per_person: 'per_person',
+  per_booking: 'per_booking',
+} as const;
+
+export type RateCardInputAddonsItem = {
+  id?: string | null;
+  variantId?: string | null;
+  label: string;
+  description?: string | null;
+  price: number;
+  priceType?: RateCardInputAddonsItemPriceType;
+  minQty?: number;
+  maxQty?: number | null;
+  required?: boolean;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export interface RateCardInput {
+  participantTypes?: RateCardInputParticipantTypesItem[];
+  tiers?: RateCardInputTiersItem[];
+  addons?: RateCardInputAddonsItem[];
+}
+
+export interface FirebaseTokenInput {
+  /** The JWT from the Firebase client SDK */
+  idToken: string;
+}
+
+export interface FirebaseConfigResponse {
+  enabled: boolean;
+  apiKey?: string | null;
+  authDomain?: string | null;
+  projectId?: string | null;
+}
+
+export interface AgentLoginInput {
+  email: string;
+  password: string;
+}
+
+export interface AgentAcceptInviteInput {
+  token: string;
+  /** At least 10 characters */
+  password: string;
+}
+
+export interface AgentChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface AgentSelf {
+  id: string;
+  agentRef: string;
+  name: string;
+  company?: string | null;
+  email: string;
+  phone?: string | null;
+  commissionPercent: number;
+  status: string;
+}
+
+export type AgentSessionResponse = AgentSelf & {
+  /** Bearer token; also set as an httpOnly cookie */
+  token: string;
+};
+
+export interface AgentPortalSummary {
+  totalBookings: number;
+  totalValue: number;
+  commissionPercent: number;
+  commissionValue: number;
+  upcomingDepartures: number;
+  lastBookingDate?: string | null;
+}
+
+/**
+ * Deliberately narrower than the admin's BookingDetail — an agent sees what they sent, not the ledger behind it.
+ */
+export interface AgentBookingRow {
+  id: string;
+  bookingRef: string;
+  tourTitle?: string | null;
+  tourCode?: string | null;
+  variantLabel?: string | null;
+  date?: string | null;
+  startTime?: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  numGuests: number;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  commissionValue: number;
+  createdAt: string;
+}
+
+export type AgentDetailStatus = typeof AgentDetailStatus[keyof typeof AgentDetailStatus];
+
+
+export const AgentDetailStatus = {
+  invited: 'invited',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface AgentDetail {
+  id: string;
+  agentRef: string;
+  name: string;
+  company?: string | null;
+  email: string;
+  phone?: string | null;
+  city?: string | null;
+  status: AgentDetailStatus;
+  commissionPercent: number;
+  notes?: string | null;
+  /** Bookings credited to this agent, excluding cancelled */
+  totalBookings: number;
+  /** Value of those bookings */
+  totalValue: number;
+  /** totalValue x commissionPercent */
+  commissionValue: number;
+  lastBookingDate?: string | null;
+  /** True once the agent has accepted an invitation */
+  hasPassword?: boolean;
+  /** An outstanding invitation, if any */
+  inviteExpiresAt?: string | null;
+  lastLoginAt?: string | null;
+  invitedAt?: string | null;
+  activatedAt?: string | null;
+  createdAt: string;
+}
+
+export type AgentWithBookings = AgentDetail & {
+  bookings: BookingDetail[];
+};
+
+export type AgentInputStatus = typeof AgentInputStatus[keyof typeof AgentInputStatus];
+
+
+export const AgentInputStatus = {
+  invited: 'invited',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface AgentInput {
+  name: string;
+  company?: string | null;
+  email: string;
+  phone?: string | null;
+  city?: string | null;
+  commissionPercent?: number;
+  notes?: string | null;
+  status?: AgentInputStatus;
+}
+
+export type AgentPatchInputStatus = typeof AgentPatchInputStatus[keyof typeof AgentPatchInputStatus];
+
+
+export const AgentPatchInputStatus = {
+  invited: 'invited',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+/**
+ * Only the fields present are changed
+ */
+export interface AgentPatchInput {
+  name?: string;
+  company?: string | null;
+  email?: string;
+  phone?: string | null;
+  city?: string | null;
+  commissionPercent?: number;
+  notes?: string | null;
+  status?: AgentPatchInputStatus;
+}
+
+export interface OperationsDeparture {
+  slotId: string;
+  tourId: string;
+  tourTitle: string;
+  tourCode?: string | null;
+  variantLabel?: string | null;
+  date: string;
+  startTime: string;
+  capacity: number;
+  bookedCount: number;
+  status: string;
+  /** Confirmed and pending bookings on this departure */
+  bookings: number;
+  /** Heads travelling, excluding cancelled bookings */
+  guests: number;
+}
+
+export interface OperationsRange {
+  from: string;
+  to: string;
+  timezone: string;
+  departures: OperationsDeparture[];
+}
+
+export interface BookingSearchHit {
+  id: string;
+  bookingRef: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  tourTitle?: string | null;
+  date?: string | null;
+  startTime?: string | null;
+  status: string;
+  numGuests: number;
+}
+
+export interface TourVariantsResponse {
+  variants: TourVariant[];
+}
+
+export type SaveTourVariantsInputVariantsItem = {
+  /** Omit to create */
+  id?: string | null;
+  code: string;
+  label: string;
+  description?: string | null;
+  seatsPerGuest?: number;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export interface SaveTourVariantsInput {
+  variants: SaveTourVariantsInputVariantsItem[];
+}
+
+export type TourBookingFieldFieldType = typeof TourBookingFieldFieldType[keyof typeof TourBookingFieldFieldType];
+
+
+export const TourBookingFieldFieldType = {
+  text: 'text',
+  textarea: 'textarea',
+  number: 'number',
+  select: 'select',
+  checkbox: 'checkbox',
+  date: 'date',
+} as const;
+
+export type TourBookingFieldAppliesTo = typeof TourBookingFieldAppliesTo[keyof typeof TourBookingFieldAppliesTo];
+
+
+export const TourBookingFieldAppliesTo = {
+  booking: 'booking',
+  passenger: 'passenger',
+  enquiry: 'enquiry',
+} as const;
+
+export interface TourBookingField {
+  id: string;
+  key: string;
+  label: string;
+  help?: string | null;
+  fieldType: TourBookingFieldFieldType;
+  options: string[];
+  appliesTo: TourBookingFieldAppliesTo;
+  required: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface TourBookingFieldsResponse {
+  fields: TourBookingField[];
+}
+
+export type SaveTourBookingFieldsInputFieldsItemFieldType = typeof SaveTourBookingFieldsInputFieldsItemFieldType[keyof typeof SaveTourBookingFieldsInputFieldsItemFieldType];
+
+
+export const SaveTourBookingFieldsInputFieldsItemFieldType = {
+  text: 'text',
+  textarea: 'textarea',
+  number: 'number',
+  select: 'select',
+  checkbox: 'checkbox',
+  date: 'date',
+} as const;
+
+export type SaveTourBookingFieldsInputFieldsItemAppliesTo = typeof SaveTourBookingFieldsInputFieldsItemAppliesTo[keyof typeof SaveTourBookingFieldsInputFieldsItemAppliesTo];
+
+
+export const SaveTourBookingFieldsInputFieldsItemAppliesTo = {
+  booking: 'booking',
+  passenger: 'passenger',
+  enquiry: 'enquiry',
+} as const;
+
+export type SaveTourBookingFieldsInputFieldsItem = {
+  id?: string | null;
+  /** Omit and it is derived from the label */
+  key?: string;
+  label: string;
+  help?: string | null;
+  fieldType?: SaveTourBookingFieldsInputFieldsItemFieldType;
+  options?: string[];
+  appliesTo?: SaveTourBookingFieldsInputFieldsItemAppliesTo;
+  required?: boolean;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export interface SaveTourBookingFieldsInput {
+  fields: SaveTourBookingFieldsInputFieldsItem[];
+}
+
+export type TourOverviewStatus = typeof TourOverviewStatus[keyof typeof TourOverviewStatus];
+
+
+export const TourOverviewStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;
+
+export type TourOverviewRatesItem = {
+  variant?: string | null;
+  label: string;
+  price: number;
+};
+
+export type TourOverviewSettings = {
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  bookingLeadTimeHours: number;
+  depositPercent: number;
+  allowPartialDeposit: boolean;
+  bookingMode: string;
+};
+
+export type TourOverviewDeparturesItem = {
+  date: string;
+  capacity: number;
+  booked: number;
+};
+
+export type TourOverviewCounts = {
+  upcomingSlots: number;
+  bookings: number;
+  addons: number;
+  bookingFields: number;
+};
+
+export interface TourOverview {
+  id: string;
+  title: string;
+  code?: string | null;
+  currency: string;
+  timezone: string;
+  status: TourOverviewStatus;
+  /** Live storefront page for this trip */
+  tourUrl: string;
+  bookingUrl: string;
+  variants: TourVariant[];
+  /** One line per participant type, for the rates summary */
+  rates: TourOverviewRatesItem[];
+  settings: TourOverviewSettings;
+  /** Per-day seat counts for the next six months, for the heat-map */
+  departures: TourOverviewDeparturesItem[];
+  counts: TourOverviewCounts;
+}
+
+export type TourCalendarMonthSlotsItem = {
+  id: string;
+  variantId?: string | null;
+  date: string;
+  startTime: string;
+  capacity: number;
+  bookedCount: number;
+  status: string;
+  /** Capacity differs from the rule that generated it */
+  overridden: boolean;
+};
+
+export interface TourCalendarMonth {
+  /** YYYY-MM */
+  month: string;
+  timezone: string;
+  variants: TourVariant[];
+  slots: TourCalendarMonthSlotsItem[];
+}
+
+export type SlotOverrideInputStatus = typeof SlotOverrideInputStatus[keyof typeof SlotOverrideInputStatus] | null;
+
+
+export const SlotOverrideInputStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+/**
+ * Fields left out are unchanged
+ */
+export interface SlotOverrideInput {
+  capacity?: number | null;
+  status?: SlotOverrideInputStatus;
+}
+
+export interface TourType {
+  id: string;
+  slug: string;
+  label: string;
+  sortOrder?: number;
+}
+
+export interface TourTypeInput {
+  slug: string;
+  label: string;
+  sortOrder?: number;
+}
+
+export interface TourCategory {
+  id: string;
+  slug: string;
+  label: string;
+  sortOrder?: number;
+}
+
+export interface TourCategoryInput {
+  slug: string;
+  label: string;
+  sortOrder?: number;
+}
+
 export interface GenerateSlotsInput {
+  /** Which variant to open. Omit on a trip with variants and one departure is opened for each of them. */
+  variantId?: string | null;
   from: string;
   to: string;
   /** 0=Sun … 6=Sat */
@@ -347,6 +1166,22 @@ export interface GenerateSlotsInput {
 
 export interface GenerateResult {
   created: number;
+}
+
+/**
+ * Provide ids, OR tourId with optional from/to range.
+ */
+export interface BulkDeleteSlotsInput {
+  ids?: string[];
+  tourId?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface BulkDeleteResult {
+  deleted: number;
+  /** Slots left in place because they have bookings */
+  skipped: number;
 }
 
 export type SlotUpdateInputStatus = typeof SlotUpdateInputStatus[keyof typeof SlotUpdateInputStatus];
@@ -371,10 +1206,24 @@ export const BookingStatusInputStatus = {
   confirmed: 'confirmed',
   cancelled: 'cancelled',
   completed: 'completed',
+  cart_abandoned: 'cart_abandoned',
 } as const;
 
 export interface BookingStatusInput {
-  status: BookingStatusInputStatus;
+  status?: BookingStatusInputStatus;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  /** Re-checks and adjusts slot capacity */
+  numGuests?: number;
+  /** Move the booking to a different departure */
+  slotId?: string;
+  notes?: string | null;
+  internalNotes?: string | null;
+  tags?: string[];
+  source?: string;
+  /** Credit the booking to an agent, or null to clear it */
+  agentId?: string | null;
 }
 
 export interface GoogleStatus {
@@ -382,6 +1231,34 @@ export interface GoogleStatus {
   connected: boolean;
   calendarId?: string | null;
   connectedAt?: string | null;
+}
+
+export interface RazorpayStatus {
+  configured: boolean;
+  /** Public key id only — never the secret */
+  keyId?: string | null;
+}
+
+export interface WhatsAppStatus {
+  configured: boolean;
+}
+
+export interface PaymentDetail {
+  id: string;
+  bookingId: string;
+  bookingRef?: string | null;
+  customerName?: string | null;
+  tourTitle?: string | null;
+  /** razorpay | razorpay_order */
+  provider: string;
+  providerLinkId?: string | null;
+  providerPaymentId?: string | null;
+  shortUrl?: string | null;
+  amount: number;
+  currency: string;
+  /** created | paid | expired | cancelled | failed */
+  status: string;
+  createdAt: string;
 }
 
 export type PageData = { [key: string]: unknown };
@@ -432,12 +1309,758 @@ export interface PageInput {
   status?: PageInputStatus;
 }
 
+export type EnquiryInputExtra = { [key: string]: unknown };
+
+export interface EnquiryInput {
+  customerName: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  company?: string | null;
+  tourSlug?: string | null;
+  destinationSlug?: string | null;
+  /** YYYY-MM-DD */
+  preferredDate?: string | null;
+  numGuests?: number | null;
+  message?: string | null;
+  /** website | corporate | whatsapp | phone | manual */
+  source?: string | null;
+  extra?: EnquiryInputExtra;
+  /** Anonymous session id, so the enquiry joins up with the visitor's pageviews */
+  analyticsSessionId?: string | null;
+}
+
+export interface EnquiryReceipt {
+  enquiryRef: string;
+}
+
+export type EnquiryDetailExtra = { [key: string]: unknown };
+
+export type EnquiryDetailStatus = typeof EnquiryDetailStatus[keyof typeof EnquiryDetailStatus];
+
+
+export const EnquiryDetailStatus = {
+  new: 'new',
+  active: 'active',
+  won: 'won',
+  lost: 'lost',
+  archived: 'archived',
+  spam: 'spam',
+} as const;
+
+export interface EnquiryDetail {
+  id: string;
+  enquiryRef: string;
+  customerId?: string | null;
+  customerName: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  company?: string | null;
+  tourId?: string | null;
+  tourTitle?: string | null;
+  destinationId?: string | null;
+  destinationName?: string | null;
+  preferredDate?: string | null;
+  numGuests?: number | null;
+  message?: string | null;
+  extra?: EnquiryDetailExtra;
+  source: string;
+  status: EnquiryDetailStatus;
+  assigneeId?: string | null;
+  assigneeName?: string | null;
+  internalNotes?: string | null;
+  tags: string[];
+  convertedBookingId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type EnquiryUpdateInputStatus = typeof EnquiryUpdateInputStatus[keyof typeof EnquiryUpdateInputStatus];
+
+
+export const EnquiryUpdateInputStatus = {
+  new: 'new',
+  active: 'active',
+  won: 'won',
+  lost: 'lost',
+  archived: 'archived',
+  spam: 'spam',
+} as const;
+
+export interface EnquiryUpdateInput {
+  status?: EnquiryUpdateInputStatus;
+  assigneeId?: string | null;
+  internalNotes?: string | null;
+  tags?: string[];
+  customerName?: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  company?: string | null;
+  preferredDate?: string | null;
+  numGuests?: number | null;
+  message?: string | null;
+}
+
+export interface CustomerDetail {
+  id: string;
+  customerRef: string;
+  salutation?: string | null;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  tags: string[];
+  notes?: string | null;
+  totalBookings: number;
+  totalEnquiries: number;
+  lastBookingDate?: string | null;
+  lifetimeValue: number;
+  createdAt: string;
+}
+
+export interface CustomerInput {
+  salutation?: string | null;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  tags?: string[];
+  notes?: string | null;
+}
+
+export interface CustomerMergeInput {
+  /** The record that survives */
+  winnerId: string;
+  /** The record folded into the winner */
+  loserId: string;
+}
+
+export interface CustomerProfile {
+  customer: CustomerDetail;
+  bookings: BookingDetail[];
+  enquiries: EnquiryDetail[];
+}
+
+export type RazorpaySyncRowOutcome = typeof RazorpaySyncRowOutcome[keyof typeof RazorpaySyncRowOutcome];
+
+
+export const RazorpaySyncRowOutcome = {
+  marked_paid: 'marked_paid',
+  status_updated: 'status_updated',
+  unchanged: 'unchanged',
+  already_paid: 'already_paid',
+  error: 'error',
+} as const;
+
+export interface RazorpaySyncRow {
+  paymentId: string;
+  providerLinkId: string;
+  provider: string;
+  before: string;
+  after: string;
+  razorpayStatus?: string | null;
+  razorpayPaymentId?: string | null;
+  amount?: number | null;
+  method?: string | null;
+  paidAt?: string | null;
+  outcome: RazorpaySyncRowOutcome;
+  message: string;
+}
+
+export type BookingLedgerPaymentStatus = typeof BookingLedgerPaymentStatus[keyof typeof BookingLedgerPaymentStatus];
+
+
+export const BookingLedgerPaymentStatus = {
+  unpaid: 'unpaid',
+  deposit: 'deposit',
+  paid: 'paid',
+  refunded: 'refunded',
+} as const;
+
+export type LedgerEntryKind = typeof LedgerEntryKind[keyof typeof LedgerEntryKind];
+
+
+export const LedgerEntryKind = {
+  payment: 'payment',
+  refund: 'refund',
+} as const;
+
+export interface LedgerEntry {
+  id: string;
+  kind: LedgerEntryKind;
+  method: string;
+  methodLabel: string;
+  /** razorpay | razorpay_order | manual */
+  provider: string;
+  amount: number;
+  currency: string;
+  status: string;
+  reference?: string | null;
+  shortUrl?: string | null;
+  providerPaymentId?: string | null;
+  notes?: string | null;
+  recordedBy?: string | null;
+  receivedAt?: string | null;
+  createdAt: string;
+}
+
+export interface BookingLedger {
+  bookingId: string;
+  currency: string;
+  total: number;
+  paid: number;
+  refunded: number;
+  net: number;
+  due: number;
+  paymentStatus: BookingLedgerPaymentStatus;
+  entries: LedgerEntry[];
+}
+
+export interface RazorpaySyncResult {
+  checkedAt: string;
+  results: RazorpaySyncRow[];
+  ledger: BookingLedger;
+}
+
+export type ManualPaymentInputKind = typeof ManualPaymentInputKind[keyof typeof ManualPaymentInputKind];
+
+
+export const ManualPaymentInputKind = {
+  payment: 'payment',
+  refund: 'refund',
+} as const;
+
+export type ManualPaymentInputMethod = typeof ManualPaymentInputMethod[keyof typeof ManualPaymentInputMethod];
+
+
+export const ManualPaymentInputMethod = {
+  cash: 'cash',
+  cheque: 'cheque',
+  bank_transfer: 'bank_transfer',
+  upi: 'upi',
+  card_machine: 'card_machine',
+  other: 'other',
+  razorpay: 'razorpay',
+} as const;
+
+export interface ManualPaymentInput {
+  kind: ManualPaymentInputKind;
+  /** Whole rupees, always positive */
+  amount: number;
+  method: ManualPaymentInputMethod;
+  /** Cheque number, UTR, receipt number */
+  reference?: string | null;
+  /** When the money actually moved (YYYY-MM-DD) */
+  receivedAt?: string | null;
+  notes?: string | null;
+}
+
+export interface CouponCheckInput {
+  code: string;
+  slotId: string;
+  numGuests: number;
+}
+
+export interface CouponCheckResult {
+  ok: boolean;
+  /** not_found | inactive | not_yet_valid | expired | usage_limit_reached | customer_limit_reached | tour_not_eligible | weekday_not_eligible | too_late | below_minimum */
+  reason?: string | null;
+  code?: string | null;
+  label?: string | null;
+  discount: number;
+  baseAmount: number;
+  /** What the booking would cost with the code applied */
+  newTotal: number;
+  currency: string;
+}
+
+export type CouponDetailDiscountType = typeof CouponDetailDiscountType[keyof typeof CouponDetailDiscountType];
+
+
+export const CouponDetailDiscountType = {
+  percent: 'percent',
+  flat: 'flat',
+} as const;
+
+export interface CouponDetail {
+  id: string;
+  code: string;
+  label?: string | null;
+  description?: string | null;
+  discountType: CouponDetailDiscountType;
+  discountValue: number;
+  maxDiscount?: number | null;
+  minBookingAmount?: number | null;
+  tourIds: string[];
+  weekdayMask?: number | null;
+  minDaysInAdvance?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  usageLimit?: number | null;
+  usageLimitPerCustomer?: number | null;
+  usedCount: number;
+  active: boolean;
+  batchId?: string | null;
+  batchLabel?: string | null;
+  /** Human-readable conditions */
+  summary: string;
+  /** Rupees given away by this code so far */
+  totalDiscounted: number;
+  createdAt: string;
+}
+
+export type CouponInputDiscountType = typeof CouponInputDiscountType[keyof typeof CouponInputDiscountType];
+
+
+export const CouponInputDiscountType = {
+  percent: 'percent',
+  flat: 'flat',
+} as const;
+
+export interface CouponInput {
+  code?: string;
+  label?: string | null;
+  description?: string | null;
+  discountType?: CouponInputDiscountType;
+  discountValue?: number;
+  maxDiscount?: number | null;
+  minBookingAmount?: number | null;
+  tourIds?: string[];
+  weekdayMask?: number | null;
+  minDaysInAdvance?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  usageLimit?: number | null;
+  usageLimitPerCustomer?: number | null;
+  active?: boolean;
+}
+
+export type CouponBatchInputDiscountType = typeof CouponBatchInputDiscountType[keyof typeof CouponBatchInputDiscountType];
+
+
+export const CouponBatchInputDiscountType = {
+  percent: 'percent',
+  flat: 'flat',
+} as const;
+
+export interface CouponBatchInput {
+  /** How many codes to generate (1–1000) */
+  count: number;
+  /** Leading text on every code, e.g. GROUPON */
+  prefix?: string | null;
+  batchLabel?: string | null;
+  discountType: CouponBatchInputDiscountType;
+  discountValue: number;
+  maxDiscount?: number | null;
+  minBookingAmount?: number | null;
+  tourIds?: string[];
+  weekdayMask?: number | null;
+  minDaysInAdvance?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  /** Per generated code; defaults to 1 */
+  usageLimit?: number | null;
+}
+
+export interface CouponRedemptionDetail {
+  id: string;
+  code: string;
+  discountAmount: number;
+  bookingId?: string | null;
+  bookingRef?: string | null;
+  customerName?: string | null;
+  tourTitle?: string | null;
+  createdAt: string;
+}
+
+export type TrackInputType = typeof TrackInputType[keyof typeof TrackInputType];
+
+
+export const TrackInputType = {
+  pageview: 'pageview',
+  booking_started: 'booking_started',
+  booking_created: 'booking_created',
+  enquiry_created: 'enquiry_created',
+} as const;
+
+export interface TrackInput {
+  type: TrackInputType;
+  path: string;
+  referrer?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  sessionId: string;
+  tourId?: string | null;
+  destinationId?: string | null;
+  value?: number | null;
+}
+
+export interface AnalyticsTotals {
+  pageviews: number;
+  visitors: number;
+  bookingsStarted: number;
+  bookings: number;
+  enquiries: number;
+  revenue: number;
+}
+
+export type AnalyticsOverviewRange = {
+  from: string;
+  to: string;
+};
+
+export type AnalyticsOverviewTrendItem = {
+  date: string;
+  pageviews: number;
+  visitors: number;
+  bookings: number;
+};
+
+export type AnalyticsOverviewSourcesItem = {
+  source: string;
+  medium: string;
+  visitors: number;
+  bookings: number;
+};
+
+export type AnalyticsOverviewReferrersItem = {
+  referrer: string;
+  visitors: number;
+};
+
+export type AnalyticsOverviewCampaignsItem = {
+  campaign: string;
+  visitors: number;
+  bookings: number;
+};
+
+export type AnalyticsOverviewTopPagesItem = {
+  path: string;
+  pageviews: number;
+  visitors: number;
+};
+
+export type AnalyticsOverviewTopToursItem = {
+  tourId: string;
+  title: string;
+  views: number;
+  bookings: number;
+  conversion: number;
+};
+
+export interface AnalyticsOverview {
+  range: AnalyticsOverviewRange;
+  totals: AnalyticsTotals;
+  previous: AnalyticsTotals;
+  liveVisitors: number;
+  trend: AnalyticsOverviewTrendItem[];
+  sources: AnalyticsOverviewSourcesItem[];
+  referrers: AnalyticsOverviewReferrersItem[];
+  campaigns: AnalyticsOverviewCampaignsItem[];
+  topPages: AnalyticsOverviewTopPagesItem[];
+  topTours: AnalyticsOverviewTopToursItem[];
+}
+
+export interface ReportMeta {
+  key: string;
+  label: string;
+  description: string;
+  dateBasis: string;
+}
+
+export interface ReportColumn {
+  key: string;
+  label: string;
+  numeric?: boolean;
+  money?: boolean;
+}
+
+export type ReportResultRowsItem = { [key: string]: unknown };
+
+export type ReportResultTotals = {[key: string]: number};
+
+export interface ReportResult {
+  key: string;
+  label: string;
+  dateBasis: string;
+  columns: ReportColumn[];
+  rows: ReportResultRowsItem[];
+  totals: ReportResultTotals;
+}
+
+export type ScheduledReportFilters = { [key: string]: unknown };
+
+export type ScheduledReportCadence = typeof ScheduledReportCadence[keyof typeof ScheduledReportCadence];
+
+
+export const ScheduledReportCadence = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ScheduledReport {
+  id: string;
+  name: string;
+  reportKey: string;
+  filters?: ScheduledReportFilters;
+  cadence: ScheduledReportCadence;
+  sendHour: number;
+  recipients: string[];
+  active: boolean;
+  lastSentOn?: string | null;
+  lastError?: string | null;
+  createdAt: string;
+}
+
+export type ScheduledReportInputFilters = { [key: string]: unknown };
+
+export type ScheduledReportInputCadence = typeof ScheduledReportInputCadence[keyof typeof ScheduledReportInputCadence];
+
+
+export const ScheduledReportInputCadence = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ScheduledReportInput {
+  name?: string;
+  reportKey?: string;
+  filters?: ScheduledReportInputFilters;
+  cadence?: ScheduledReportInputCadence;
+  sendHour?: number;
+  recipients?: string[];
+  active?: boolean;
+}
+
+export type SearchResultsResultsItemType = typeof SearchResultsResultsItemType[keyof typeof SearchResultsResultsItemType];
+
+
+export const SearchResultsResultsItemType = {
+  tour: 'tour',
+  destination: 'destination',
+  blog: 'blog',
+  page: 'page',
+} as const;
+
+export type SearchResultsResultsItem = {
+  type: SearchResultsResultsItemType;
+  url: string;
+  title: string;
+  blurb?: string | null;
+  image?: string | null;
+};
+
+export interface SearchResults {
+  query: string;
+  results: SearchResultsResultsItem[];
+}
+
+export interface RoleInfo {
+  key: string;
+  label: string;
+  description: string;
+  capabilities: string[];
+}
+
+export type AdminUserDetailRole = typeof AdminUserDetailRole[keyof typeof AdminUserDetailRole];
+
+
+export const AdminUserDetailRole = {
+  owner: 'owner',
+  admin: 'admin',
+  manager: 'manager',
+  finance: 'finance',
+  editor: 'editor',
+  viewer: 'viewer',
+} as const;
+
+export interface AdminUserDetail {
+  id: string;
+  email: string;
+  name?: string | null;
+  role: AdminUserDetailRole;
+  roleLabel: string;
+  capabilities: string[];
+  active: boolean;
+  mustChangePassword: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+}
+
+export type AdminUserInputRole = typeof AdminUserInputRole[keyof typeof AdminUserInputRole];
+
+
+export const AdminUserInputRole = {
+  owner: 'owner',
+  admin: 'admin',
+  manager: 'manager',
+  finance: 'finance',
+  editor: 'editor',
+  viewer: 'viewer',
+} as const;
+
+export interface AdminUserInput {
+  email: string;
+  name?: string | null;
+  role: AdminUserInputRole;
+  /** At least 10 characters */
+  password: string;
+}
+
+export type AdminUserUpdateRole = typeof AdminUserUpdateRole[keyof typeof AdminUserUpdateRole];
+
+
+export const AdminUserUpdateRole = {
+  owner: 'owner',
+  admin: 'admin',
+  manager: 'manager',
+  finance: 'finance',
+  editor: 'editor',
+  viewer: 'viewer',
+} as const;
+
+export interface AdminUserUpdate {
+  name?: string | null;
+  role?: AdminUserUpdateRole;
+  active?: boolean;
+  password?: string;
+}
+
+export type ChargeDetailType = typeof ChargeDetailType[keyof typeof ChargeDetailType];
+
+
+export const ChargeDetailType = {
+  percent: 'percent',
+  flat: 'flat',
+} as const;
+
+export interface ChargeDetail {
+  id?: string | null;
+  label: string;
+  type: ChargeDetailType;
+  value: number;
+  tourIds?: string[];
+  /** Empty = every method. Otherwise upi | card | netbanking | wallet | cash | bank_transfer | cheque | card_machine | other */
+  paymentMethods?: string[];
+  validFrom?: string | null;
+  validTo?: string | null;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export type ChargeHealthExpiredItem = {
+  id: string;
+  label: string;
+  validTo: string;
+};
+
+export type ChargeHealthExpiringSoonItem = {
+  id: string;
+  label: string;
+  validTo: string;
+  daysLeft: number;
+};
+
+export type ChargeHealthNotYetActiveItem = {
+  id: string;
+  label: string;
+  validFrom: string;
+};
+
+export interface ChargeHealth {
+  expired: ChargeHealthExpiredItem[];
+  expiringSoon: ChargeHealthExpiringSoonItem[];
+  notYetActive: ChargeHealthNotYetActiveItem[];
+}
+
+export interface RedirectDetail {
+  id: string;
+  fromPath: string;
+  toPath: string;
+  statusCode: number;
+  active: boolean;
+  hits: number;
+  lastHitAt?: string | null;
+  createdAt: string;
+}
+
+export type RedirectInputStatusCode = typeof RedirectInputStatusCode[keyof typeof RedirectInputStatusCode];
+
+
+export const RedirectInputStatusCode = {
+  NUMBER_301: 301,
+  NUMBER_302: 302,
+} as const;
+
+export interface RedirectInput {
+  fromPath: string;
+  toPath: string;
+  statusCode?: RedirectInputStatusCode;
+  active?: boolean;
+}
+
+export type RedirectListChainsItem = {
+  from: string;
+  to: string;
+  then: string;
+};
+
+export interface RedirectList {
+  redirects: RedirectDetail[];
+  chains: RedirectListChainsItem[];
+}
+
+export type MediaAssetKind = typeof MediaAssetKind[keyof typeof MediaAssetKind];
+
+
+export const MediaAssetKind = {
+  image: 'image',
+  video: 'video',
+} as const;
+
+export interface MediaAsset {
+  id: string;
+  kind: MediaAssetKind;
+  status: string;
+  url?: string | null;
+  hlsUrl?: string | null;
+  posterUrl?: string | null;
+  filename?: string | null;
+  mime?: string | null;
+  width?: number | null;
+  height?: number | null;
+  /** How many tours, pages, posts or gallery items reference this file */
+  usageCount: number;
+  createdAt: string;
+}
+
+export type PaymentMethodOptionsMethodsItem = {
+  key: string;
+  label: string;
+};
+
+export interface PaymentMethodOptions {
+  methods: PaymentMethodOptionsMethodsItem[];
+  /** True when a live charge depends on the payment method, so the customer must choose before the total can be quoted */
+  required: boolean;
+}
+
+export interface BookingIntentInput {
+  customerName: string;
+  customerPhone: string;
+  tourSlug?: string | null;
+}
+
 export type ListToursParams = {
 /**
  * Filter by destination slug
  */
 destination?: string;
 type?: ListToursType;
+/**
+ * Filter by destination section
+ */
+category?: ListToursCategory;
 };
 
 export type ListToursType = typeof ListToursType[keyof typeof ListToursType];
@@ -448,6 +2071,15 @@ export const ListToursType = {
   camping: 'camping',
   homestay: 'homestay',
   water_sports: 'water_sports',
+} as const;
+
+export type ListToursCategory = typeof ListToursCategory[keyof typeof ListToursCategory];
+
+
+export const ListToursCategory = {
+  activity: 'activity',
+  accommodation: 'accommodation',
+  package: 'package',
 } as const;
 
 export type GetAvailabilityParams = {
@@ -472,16 +2104,214 @@ to?: string;
 };
 
 export type ListBookingsParams = {
-status?: ListBookingsStatus;
+/**
+ * Booking status, or 'open' for pending+confirmed
+ */
+status?: string;
+paymentStatus?: ListBookingsPaymentStatus;
+source?: string;
+tourId?: string;
+/**
+ * Booking created on/after (YYYY-MM-DD)
+ */
+bookedFrom?: string;
+bookedTo?: string;
+/**
+ * Departure date on/after (YYYY-MM-DD)
+ */
+departsFrom?: string;
+departsTo?: string;
+/**
+ * Only bookings still owing money
+ */
+balanceDue?: boolean;
+/**
+ * Tour category slug — VL's "collections"
+ */
+category?: string;
+variantId?: string;
+paymentMethod?: string;
+/**
+ * An agent id, or "none" for direct bookings
+ */
+agentId?: string;
+/**
+ * Search ref, name, e-mail or phone
+ */
+q?: string;
 };
 
-export type ListBookingsStatus = typeof ListBookingsStatus[keyof typeof ListBookingsStatus];
+export type ListBookingsPaymentStatus = typeof ListBookingsPaymentStatus[keyof typeof ListBookingsPaymentStatus];
 
 
-export const ListBookingsStatus = {
-  pending: 'pending',
-  confirmed: 'confirmed',
-  cancelled: 'cancelled',
-  completed: 'completed',
+export const ListBookingsPaymentStatus = {
+  unpaid: 'unpaid',
+  deposit: 'deposit',
+  paid: 'paid',
+  refunded: 'refunded',
+} as const;
+
+export type ListEnquiriesParams = {
+/**
+ * new | active | won | lost | archived | spam | open (new+active)
+ */
+status?: string;
+source?: string;
+/**
+ * A staff id, or "unassigned" for leads nobody owns
+ */
+assigneeId?: string;
+tourId?: string;
+/**
+ * Free-text search across name, e-mail, phone, ref, company and message
+ */
+q?: string;
+};
+
+export type GetEnquiryCounts200 = {[key: string]: number};
+
+export type ListCustomersParams = {
+/**
+ * Search name, e-mail, phone or reference
+ */
+q?: string;
+tag?: string;
+minBookings?: number;
+};
+
+export type ListDuplicateCustomers200Item = {
+  email: string;
+  ids: string[];
+};
+
+export type ExportBookingsCsvParams = {
+status?: string;
+paymentStatus?: string;
+source?: string;
+tourId?: string;
+bookedFrom?: string;
+bookedTo?: string;
+departsFrom?: string;
+departsTo?: string;
+balanceDue?: boolean;
+/**
+ * Tour category slug — VL's "collections"
+ */
+category?: string;
+variantId?: string;
+paymentMethod?: string;
+/**
+ * An agent id, or "none" for direct bookings
+ */
+agentId?: string;
+q?: string;
+};
+
+export type ListCouponsParams = {
+active?: boolean;
+batchId?: string;
+q?: string;
+};
+
+export type AgentInviteStatusParams = {
+token: string;
+};
+
+export type AgentInviteStatus200 = {
+  name: string;
+  email: string;
+  company?: string | null;
+};
+
+export type AgentBookingsParams = {
+status?: string;
+q?: string;
+};
+
+export type ListAgentsParams = {
+/**
+ * invited | active | inactive
+ */
+status?: string;
+/**
+ * Name, company, email, phone or city
+ */
+q?: string;
+};
+
+export type InviteAgent200 = {
+  inviteUrl: string;
+  expiresAt: string;
+  /** False when no mail provider is configured */
+  emailed: boolean;
+};
+
+export type GetOperationsParams = {
+/**
+ * YYYY-MM-DD
+ */
+from: string;
+/**
+ * YYYY-MM-DD
+ */
+to: string;
+};
+
+export type SearchBookingsParams = {
+q: string;
+};
+
+export type GetAnalyticsParams = {
+/**
+ * YYYY-MM-DD, defaults to 30 days ago
+ */
+from?: string;
+to?: string;
+};
+
+export type RunReportParams = {
+key: string;
+from?: string;
+to?: string;
+tourId?: string;
+status?: string;
+couponCode?: string;
+};
+
+export type ExportReportCsvParams = {
+key: string;
+from?: string;
+to?: string;
+tourId?: string;
+status?: string;
+couponCode?: string;
+};
+
+export type SearchSiteParams = {
+q: string;
+limit?: number;
+};
+
+export type GetPaymentMethodsParams = {
+/**
+ * Tour slug
+ */
+tour?: string;
+};
+
+export type ListMediaParams = {
+/**
+ * Match filename or URL
+ */
+q?: string;
+kind?: ListMediaKind;
+};
+
+export type ListMediaKind = typeof ListMediaKind[keyof typeof ListMediaKind];
+
+
+export const ListMediaKind = {
+  image: 'image',
+  video: 'video',
 } as const;
 

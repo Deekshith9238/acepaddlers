@@ -1,10 +1,12 @@
 // Adapters mapping the backend API shapes to the legacy data shapes the
 // page components were written against. Keeps component bodies unchanged while
 // the data source moves from static files to the API.
-import type {
-  Tour as ApiTour,
-  BlogPost as ApiBlogPost,
-  BlogPostSummary as ApiBlogPostSummary,
+import { useMemo } from "react";
+import {
+  useListTourTypes,
+  type Tour as ApiTour,
+  type BlogPost as ApiBlogPost,
+  type BlogPostSummary as ApiBlogPostSummary,
 } from "@workspace/api-client-react";
 import type { Tour as LegacyTour, TourType } from "@/data/tours";
 import type { BlogPost as LegacyBlogPost, BlogSection } from "@/data/blog";
@@ -13,19 +15,26 @@ export function formatINR(value: number): string {
   return "₹" + value.toLocaleString("en-IN");
 }
 
-const TYPE_LABEL: Record<string, TourType> = {
-  rafting: "Rafting",
-  camping: "Camping",
-  homestay: "Homestay",
-  water_sports: "Water Sports",
-};
-
-/** Map a TourType enum value ("rafting") to its display label ("Rafting"). */
-export function tourTypeLabel(type: string): TourType {
-  return TYPE_LABEL[type] ?? "Rafting";
+/** "water_sports" -> "Water Sports" — fallback used before the live tour
+ *  types list has loaded, or for a type slug with no matching lookup row. */
+function humanizeSlug(slug: string): string {
+  return slug.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function adaptTour(t: ApiTour): LegacyTour {
+/** Map a tour type slug ("rafting") to its admin-authored display label.
+ *  Pass the live slug→label map from useTourTypeLabels() when available. */
+export function tourTypeLabel(type: string, labels?: Map<string, string>): TourType {
+  return labels?.get(type) ?? humanizeSlug(type);
+}
+
+/** Live tour-type slug→label lookup (Admin → Tour Types), for resolving
+ *  `tour.type` to its exact admin-authored label rather than a guess. */
+export function useTourTypeLabels(): Map<string, string> {
+  const { data } = useListTourTypes();
+  return useMemo(() => new Map((data ?? []).map((t) => [t.slug, t.label])), [data]);
+}
+
+export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour {
   const d = (t.details ?? {}) as Record<string, unknown>;
   const asStr = (v: unknown): string | undefined =>
     typeof v === "string" ? v : undefined;
@@ -38,7 +47,7 @@ export function adaptTour(t: ApiTour): LegacyTour {
     priceValue: t.priceValue,
     duration: t.duration ?? "",
     location: t.location ?? "",
-    type: tourTypeLabel(t.type),
+    type: tourTypeLabel(t.type, labels),
     img: t.images?.[0] ?? t.heroImage ?? "",
     heroImg: t.heroImage ?? t.images?.[0] ?? "",
     tagline: t.tagline ?? "",
@@ -56,6 +65,26 @@ export function adaptTour(t: ApiTour): LegacyTour {
     rapidGrades: (d.rapidGrades as LegacyTour["rapidGrades"]) ?? undefined,
     activities: (d.activities as string[] | undefined) ?? undefined,
     faqs: (d.faqs as LegacyTour["faqs"]) ?? undefined,
+
+    // Trip-editor fields. `?? undefined` throughout because the API sends null
+    // for "not set" and the page layer treats absent and null the same.
+    advertisedPrice: t.advertisedPrice ?? undefined,
+    showAdvertisedPrice: t.showAdvertisedPrice ?? undefined,
+    priceLabelPosition: (t.priceLabelPosition as LegacyTour["priceLabelPosition"]) ?? undefined,
+    terms: t.terms ?? undefined,
+    itinerary: (t.itinerary as LegacyTour["itinerary"]) ?? undefined,
+    itineraryText: t.itineraryText ?? undefined,
+    shortAddress: t.shortAddress ?? undefined,
+    detailedAddress: t.detailedAddress ?? undefined,
+    directions: t.directions ?? undefined,
+    latitude: t.latitude ?? undefined,
+    longitude: t.longitude ?? undefined,
+    labels: (t.labels as Record<string, string> | undefined) ?? undefined,
+    minParticipants: t.minParticipants ?? undefined,
+    maxParticipants: t.maxParticipants ?? undefined,
+    ogTitle: t.ogTitle ?? undefined,
+    ogDescription: t.ogDescription ?? undefined,
+    ogImage: t.ogImage ?? undefined,
   };
 }
 

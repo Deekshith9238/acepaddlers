@@ -16,6 +16,8 @@ tags:
     description: Public content (destinations, tours, blog, gallery)
   - name: booking
     description: Booking engine (availability and request-to-book)
+  - name: crm
+    description: Enquiry pipeline and customer records
 paths:
   /healthz:
     get:
@@ -127,6 +129,13 @@ paths:
           schema:
             type: string
             enum: [rafting, camping, homestay, water_sports]
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [activity, accommodation, package]
+          description: Filter by destination section
       responses:
         "200":
           description: Tours
@@ -204,6 +213,142 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/GalleryItem"
+  /tour-types:
+    get:
+      operationId: listTourTypes
+      tags: [content]
+      summary: List tour types (activity categories like Rafting, Camping)
+      responses:
+        "200":
+          description: Tour types
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TourType" } }
+  /tour-categories:
+    get:
+      operationId: listTourCategories
+      tags: [content]
+      summary: List tour categories (activity / accommodation / package)
+      responses:
+        "200":
+          description: Tour categories
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TourCategory" } }
+  /admin/tour-types:
+    get:
+      operationId: listAdminTourTypes
+      tags: [admin]
+      summary: List all tour types
+      responses:
+        "200":
+          description: Tour types
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TourType" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createTourType
+      tags: [admin]
+      summary: Create a tour type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourTypeInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourType" }
+        "409": { description: Slug already exists }
+  /admin/tour-types/{id}:
+    patch:
+      operationId: updateTourType
+      tags: [admin]
+      summary: Update a tour type
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourTypeInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourType" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteTourType
+      tags: [admin]
+      summary: Delete a tour type
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+        "409": { description: Still used by one or more tours }
+  /admin/tour-categories:
+    get:
+      operationId: listAdminTourCategories
+      tags: [admin]
+      summary: List all tour categories
+      responses:
+        "200":
+          description: Tour categories
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TourCategory" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createTourCategory
+      tags: [admin]
+      summary: Create a tour category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourCategoryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourCategory" }
+        "409": { description: Slug already exists }
+  /admin/tour-categories/{id}:
+    patch:
+      operationId: updateTourCategory
+      tags: [admin]
+      summary: Update a tour category
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TourCategoryInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourCategory" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteTourCategory
+      tags: [admin]
+      summary: Delete a tour category
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+        "409": { description: Still used by one or more tours }
   /admin/destinations:
     get:
       operationId: listAdminDestinations
@@ -475,6 +620,26 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/BookingDetail" }
         "404": { description: Not found }
+  /bookings/{ref}/verify-payment:
+    post:
+      operationId: verifyBookingPayment
+      tags: [booking]
+      summary: Verify a Standard Checkout payment signature and mark the booking paid/confirmed
+      parameters:
+        - { name: ref, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyPaymentInput" }
+      responses:
+        "200":
+          description: Booking, now paid and confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingDetail" }
+        "400": { description: Invalid signature or order/booking mismatch }
+        "404": { description: Not found }
   /admin/slots:
     get:
       operationId: listSlots
@@ -538,13 +703,43 @@ paths:
       responses:
         "204": { description: Deleted }
         "404": { description: Not found }
+  /admin/slots/bulk-delete:
+    post:
+      operationId: bulkDeleteSlots
+      tags: [admin]
+      summary: Delete many slots at once (by ids, or by tour + date range). Skips booked slots.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BulkDeleteSlotsInput" }
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkDeleteResult" }
+        "400": { description: Invalid }
   /admin/bookings:
     get:
       operationId: listBookings
       tags: [admin]
       summary: List bookings
       parameters:
-        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, confirmed, cancelled, completed] } }
+        - { name: status, in: query, required: false, schema: { type: string }, description: "Booking status, or 'open' for pending+confirmed" }
+        - { name: paymentStatus, in: query, required: false, schema: { type: string, enum: [unpaid, deposit, paid, refunded] } }
+        - { name: source, in: query, required: false, schema: { type: string } }
+        - { name: tourId, in: query, required: false, schema: { type: string } }
+        - { name: bookedFrom, in: query, required: false, schema: { type: string }, description: "Booking created on/after (YYYY-MM-DD)" }
+        - { name: bookedTo, in: query, required: false, schema: { type: string } }
+        - { name: departsFrom, in: query, required: false, schema: { type: string }, description: "Departure date on/after (YYYY-MM-DD)" }
+        - { name: departsTo, in: query, required: false, schema: { type: string } }
+        - { name: balanceDue, in: query, required: false, schema: { type: boolean }, description: "Only bookings still owing money" }
+        - { name: category, in: query, required: false, schema: { type: string }, description: "Tour category slug — VL's \"collections\"" }
+        - { name: variantId, in: query, required: false, schema: { type: string } }
+        - { name: paymentMethod, in: query, required: false, schema: { type: string } }
+        - { name: agentId, in: query, required: false, schema: { type: string }, description: "An agent id, or \"none\" for direct bookings" }
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Search ref, name, e-mail or phone" }
       responses:
         "200":
           description: Bookings
@@ -570,6 +765,42 @@ paths:
       summary: Disconnect Google Calendar
       responses:
         "204": { description: Disconnected }
+  /admin/integrations/razorpay:
+    get:
+      operationId: getRazorpayIntegration
+      tags: [admin]
+      summary: Razorpay configuration status (never exposes the secret key)
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RazorpayStatus" }
+        "401": { description: Not authenticated }
+  /admin/integrations/whatsapp:
+    get:
+      operationId: getWhatsAppIntegration
+      tags: [admin]
+      summary: WhatsApp Cloud API configuration status
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WhatsAppStatus" }
+        "401": { description: Not authenticated }
+  /admin/payments:
+    get:
+      operationId: listPayments
+      tags: [admin]
+      summary: List every payment attempt across every booking (provider-side audit trail)
+      responses:
+        "200":
+          description: Payments
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PaymentDetail" } }
+        "401": { description: Not authenticated }
   /admin/bookings/{id}:
     patch:
       operationId: updateBookingStatus
@@ -589,6 +820,33 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/BookingDetail" }
         "404": { description: Not found }
+    delete:
+      operationId: deleteBooking
+      tags: [admin]
+      summary: Permanently delete a booking
+      description: Releases slot capacity, cancels any calendar event and open payment link, then removes the booking. Irreversible.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/bookings/{id}/payment-link:
+    post:
+      operationId: sendPaymentLink
+      tags: [admin]
+      summary: Create and send a Razorpay payment link for a booking
+      description: Creates a Razorpay Payment Link for the booking's total amount and emails/WhatsApps it to the customer.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Payment link created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingDetail" }
+        "404": { description: Not found }
+        "409": { description: Booking already paid }
+        "501": { description: Razorpay not configured }
   /pages/{slug}:
     get:
       operationId: getPage
@@ -646,6 +904,1277 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Page" }
+  /enquiries:
+    post:
+      operationId: createEnquiry
+      tags: [crm]
+      summary: Submit an enquiry from a public form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnquiryInput" }
+      responses:
+        "201":
+          description: Enquiry created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnquiryReceipt" }
+        "400": { description: Invalid input }
+  /admin/enquiries:
+    get:
+      operationId: listEnquiries
+      tags: [crm]
+      summary: List enquiries in the pipeline
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string }, description: "new | active | won | lost | archived | spam | open (new+active)" }
+        - { name: source, in: query, required: false, schema: { type: string } }
+        - { name: assigneeId, in: query, required: false, schema: { type: string }, description: "A staff id, or \"unassigned\" for leads nobody owns" }
+        - { name: tourId, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Free-text search across name, e-mail, phone, ref, company and message" }
+      responses:
+        "200":
+          description: Enquiries
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/EnquiryDetail" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createAdminEnquiry
+      tags: [crm]
+      summary: Log an enquiry taken over the phone or in person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnquiryInput" }
+      responses:
+        "201":
+          description: Enquiry created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnquiryDetail" }
+        "401": { description: Not authenticated }
+  /admin/enquiries/counts:
+    get:
+      operationId: getEnquiryCounts
+      tags: [crm]
+      summary: Enquiry counts per pipeline stage
+      responses:
+        "200":
+          description: Counts keyed by status, plus "open"
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: { type: integer } }
+        "401": { description: Not authenticated }
+  /admin/enquiries/{id}:
+    get:
+      operationId: getEnquiry
+      tags: [crm]
+      summary: One enquiry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Enquiry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnquiryDetail" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateEnquiry
+      tags: [crm]
+      summary: Update an enquiry (stage, assignee, notes, tags, details)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnquiryUpdateInput" }
+      responses:
+        "200":
+          description: Updated enquiry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnquiryDetail" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteEnquiry
+      tags: [crm]
+      summary: Delete an enquiry permanently
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/customers:
+    get:
+      operationId: listCustomers
+      tags: [crm]
+      summary: List customer records
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Search name, e-mail, phone or reference" }
+        - { name: tag, in: query, required: false, schema: { type: string } }
+        - { name: minBookings, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/CustomerDetail" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createCustomer
+      tags: [crm]
+      summary: Add a customer manually
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerInput" }
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerDetail" }
+        "409": { description: A customer with that phone number already exists }
+  /admin/customers/duplicates:
+    get:
+      operationId: listDuplicateCustomers
+      tags: [crm]
+      summary: Candidate duplicate customer records, grouped by e-mail
+      responses:
+        "200":
+          description: Duplicate groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    email: { type: string }
+                    ids: { type: array, items: { type: string } }
+                  required: [email, ids]
+        "401": { description: Not authenticated }
+  /admin/customers/merge:
+    post:
+      operationId: mergeCustomers
+      tags: [crm]
+      summary: Merge one customer record into another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerMergeInput" }
+      responses:
+        "200":
+          description: Surviving customer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerDetail" }
+        "404": { description: Not found }
+  /admin/customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [crm]
+      summary: One customer with their booking and enquiry history
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerProfile" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateCustomer
+      tags: [crm]
+      summary: Update a customer record
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerInput" }
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerDetail" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteCustomer
+      tags: [crm]
+      summary: Delete a customer record (bookings and enquiries are kept, unlinked)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/bookings/export.csv:
+    get:
+      operationId: exportBookingsCsv
+      tags: [admin]
+      summary: Export the filtered booking list as CSV
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: paymentStatus, in: query, required: false, schema: { type: string } }
+        - { name: source, in: query, required: false, schema: { type: string } }
+        - { name: tourId, in: query, required: false, schema: { type: string } }
+        - { name: bookedFrom, in: query, required: false, schema: { type: string } }
+        - { name: bookedTo, in: query, required: false, schema: { type: string } }
+        - { name: departsFrom, in: query, required: false, schema: { type: string } }
+        - { name: departsTo, in: query, required: false, schema: { type: string } }
+        - { name: balanceDue, in: query, required: false, schema: { type: boolean } }
+        - { name: category, in: query, required: false, schema: { type: string }, description: "Tour category slug — VL's \"collections\"" }
+        - { name: variantId, in: query, required: false, schema: { type: string } }
+        - { name: paymentMethod, in: query, required: false, schema: { type: string } }
+        - { name: agentId, in: query, required: false, schema: { type: string }, description: "An agent id, or \"none\" for direct bookings" }
+        - { name: q, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+        "401": { description: Not authenticated }
+  /admin/bookings/{id}/payments:
+    get:
+      operationId: getBookingLedger
+      tags: [admin]
+      summary: Every payment and refund recorded against one booking
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Ledger
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingLedger" }
+        "404": { description: Not found }
+    post:
+      operationId: recordBookingPayment
+      tags: [admin]
+      summary: Record a payment or refund taken outside the gateway
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManualPaymentInput" }
+      responses:
+        "201":
+          description: Updated ledger
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingLedger" }
+        "400": { description: Invalid input }
+        "404": { description: Not found }
+  /admin/bookings/{id}/payments/razorpay-sync:
+    post:
+      operationId: syncBookingWithRazorpay
+      tags: [admin]
+      summary: Ask Razorpay for the real state of this booking's orders and payment links, and update the ledger to match
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: What Razorpay reported for each gateway row, and the updated ledger
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RazorpaySyncResult" }
+        "404": { description: Not found }
+        "501": { description: Razorpay is not configured on this server }
+  /admin/bookings/{id}/payments/{paymentId}:
+    delete:
+      operationId: deleteBookingPayment
+      tags: [admin]
+      summary: Remove a manually recorded ledger entry (gateway rows cannot be deleted)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: paymentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Updated ledger
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingLedger" }
+        "409": { description: Not a manual entry }
+        "404": { description: Not found }
+  /coupons/validate:
+    post:
+      operationId: validateCoupon
+      tags: [booking]
+      summary: Preview a discount code against a prospective booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponCheckInput" }
+      responses:
+        "200":
+          description: Result — `ok` false carries a reason rather than an error status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CouponCheckResult" }
+        "400": { description: Invalid input }
+  /admin/coupons:
+    get:
+      operationId: listCoupons
+      tags: [admin]
+      summary: List discount codes
+      parameters:
+        - { name: active, in: query, required: false, schema: { type: boolean } }
+        - { name: batchId, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Coupons
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/CouponDetail" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createCoupon
+      tags: [admin]
+      summary: Create a discount code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponInput" }
+      responses:
+        "201":
+          description: Coupon created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CouponDetail" }
+        "409": { description: Code already exists }
+  /admin/coupons/bulk:
+    post:
+      operationId: generateCouponBatch
+      tags: [admin]
+      summary: Generate a series of unique single-use codes for a partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponBatchInput" }
+      responses:
+        "201":
+          description: Generated codes
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/CouponDetail" } }
+        "400": { description: Invalid input }
+  /admin/coupons/{id}:
+    patch:
+      operationId: updateCoupon
+      tags: [admin]
+      summary: Update a discount code
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponInput" }
+      responses:
+        "200":
+          description: Updated coupon
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CouponDetail" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteCoupon
+      tags: [admin]
+      summary: Delete a discount code and its redemption history
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/coupons/{id}/redemptions:
+    get:
+      operationId: listCouponRedemptions
+      tags: [admin]
+      summary: Every booking that used this code
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Redemptions
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/CouponRedemptionDetail" } }
+        "404": { description: Not found }
+  /tours/{slug}/rate-card:
+    get:
+      operationId: getTourRateCard
+      tags: [content]
+      summary: Participant types, volume tiers and add-ons for a tour
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Rate card
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RateCard" }
+        "404": { description: Tour not found }
+  /quote:
+    post:
+      operationId: quoteBooking
+      tags: [booking]
+      summary: Price a prospective booking without creating it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QuoteInput" }
+      responses:
+        "200":
+          description: Quote
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuoteResult" }
+        "400": { description: Invalid selection }
+        "404": { description: Slot not found }
+  /admin/tours/{id}/rate-card:
+    get:
+      operationId: getAdminTourRateCard
+      tags: [admin]
+      summary: Rate card for editing, including inactive rows
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Rate card
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RateCard" }
+        "404": { description: Tour not found }
+    put:
+      operationId: saveTourRateCard
+      tags: [admin]
+      summary: Replace a tour's participant types, tiers and add-ons
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RateCardInput" }
+      responses:
+        "200":
+          description: Saved rate card
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RateCard" }
+        "400": { description: Invalid input }
+        "404": { description: Tour not found }
+  /auth/firebase-config:
+    get:
+      operationId: getFirebaseConfig
+      tags: [content]
+      summary: Public Firebase web config, or null when not configured
+      description: Served at runtime rather than baked into the bundle, so the same build works across environments. These values identify the project; they authorise nothing.
+      responses:
+        "200":
+          description: Config
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FirebaseConfigResponse" }
+  /admin/auth/firebase:
+    post:
+      operationId: adminFirebaseLogin
+      tags: [admin]
+      summary: Exchange a Firebase ID token for an admin session
+      description: The email must already belong to an active staff account. Signing in with Firebase never creates one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FirebaseTokenInput" }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUser" }
+        "401": { description: The Firebase token is invalid or the email is unverified }
+        "403": { description: No active staff account uses that email }
+        "503": { description: Firebase sign-in is not configured on this server }
+  /agent/auth/firebase:
+    post:
+      operationId: agentFirebaseLogin
+      tags: [agent]
+      summary: Exchange a Firebase ID token for an agent session
+      description: The email must already belong to an active agent. Signing in with Firebase never creates one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FirebaseTokenInput" }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentSessionResponse" }
+        "401": { description: The Firebase token is invalid or the email is unverified }
+        "403": { description: "No active agent uses that email" }
+        "503": { description: Firebase sign-in is not configured on this server }
+  /agent/auth/login:
+    post:
+      operationId: agentLogin
+      tags: [agent]
+      summary: Sign in to the agent portal
+      description: A separate credential realm from the admin console. An agent token never authenticates an admin request, and vice versa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentLoginInput" }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentSessionResponse" }
+        "401": { description: Wrong email or password }
+        "403": { description: "The account is not active, or has no password set yet" }
+  /agent/auth/logout:
+    post:
+      operationId: agentLogout
+      tags: [agent]
+      summary: End the agent's session
+      responses:
+        "204": { description: Signed out }
+  /agent/auth/me:
+    get:
+      operationId: agentMe
+      tags: [agent]
+      summary: The signed-in agent
+      responses:
+        "200":
+          description: Agent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentSelf" }
+        "401": { description: Not signed in }
+  /agent/auth/accept-invite:
+    post:
+      operationId: agentAcceptInvite
+      tags: [agent]
+      summary: Set a password from an invitation link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentAcceptInviteInput" }
+      responses:
+        "200":
+          description: Password set and signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentSessionResponse" }
+        "400": { description: Password too short }
+        "410": { description: "The invitation has expired or been used" }
+  /agent/auth/invite-status:
+    get:
+      operationId: agentInviteStatus
+      tags: [agent]
+      summary: Check an invitation before showing the password form
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Who the invitation is for
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  email: { type: string }
+                  company: { type: string, nullable: true }
+                required: [name, email]
+        "410": { description: "The invitation has expired or been used" }
+  /agent/auth/password:
+    post:
+      operationId: agentChangePassword
+      tags: [agent]
+      summary: Change the signed-in agent's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentChangePasswordInput" }
+      responses:
+        "204": { description: "Changed; all other sessions are ended" }
+        "400": { description: Password too short }
+        "401": { description: Current password is wrong }
+  /agent/summary:
+    get:
+      operationId: agentSummary
+      tags: [agent]
+      summary: The agent's own totals
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentPortalSummary" }
+        "401": { description: Not signed in }
+  /agent/bookings:
+    get:
+      operationId: agentBookings
+      tags: [agent]
+      summary: Bookings credited to the signed-in agent
+      description: Always scoped to the caller. There is no parameter for choosing an agent.
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AgentBookingRow" } }
+        "401": { description: Not signed in }
+  /admin/agents:
+    get:
+      operationId: listAgents
+      tags: [admin]
+      summary: Travel agents and resellers, with what they have sent you
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string }, description: "invited | active | inactive" }
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Name, company, email, phone or city" }
+      responses:
+        "200":
+          description: Agents
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AgentDetail" } }
+    post:
+      operationId: createAgent
+      tags: [admin]
+      summary: Invite an agent by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentDetail" }
+        "400": { description: Invalid input }
+        "409": { description: An agent already exists with that email }
+  /admin/agents/{id}:
+    get:
+      operationId: getAgent
+      tags: [admin]
+      summary: One agent, with every booking credited to them
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Agent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentWithBookings" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateAgent
+      tags: [admin]
+      summary: Change an agent's details or status
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentPatchInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentDetail" }
+        "400": { description: Invalid input }
+        "404": { description: Not found }
+        "409": { description: An agent already exists with that email }
+    delete:
+      operationId: deleteAgent
+      tags: [admin]
+      summary: Remove an agent who has never been credited with a booking
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+        "409": { description: The agent has bookings; deactivate instead }
+  /admin/agents/{id}/invite:
+    post:
+      operationId: inviteAgent
+      tags: [admin]
+      summary: Create a portal invitation link for an agent
+      description: Replaces any outstanding invitation. The link is emailed to the agent and also returned so it can be sent by hand.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inviteUrl: { type: string }
+                  expiresAt: { type: string }
+                  emailed: { type: boolean, description: "False when no mail provider is configured" }
+                required: [inviteUrl, expiresAt, emailed]
+        "404": { description: Not found }
+        "409": { description: The agent is inactive }
+  /admin/operations:
+    get:
+      operationId: getOperations
+      tags: [admin]
+      summary: Departures in a date range, with who is on each
+      description: Powers the operational dashboard's list, weekly and monthly views.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string }, description: "YYYY-MM-DD" }
+        - { name: to, in: query, required: true, schema: { type: string }, description: "YYYY-MM-DD" }
+      responses:
+        "200":
+          description: Departures
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsRange" }
+        "400": { description: Bad date range }
+  /admin/booking-search:
+    get:
+      operationId: searchBookings
+      tags: [admin]
+      summary: Find a booking by reference or any passenger detail
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Matches, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/BookingSearchHit" } }
+  /admin/tours/{id}/variants:
+    get:
+      operationId: getTourVariants
+      tags: [admin]
+      summary: Ways of doing this trip, including inactive ones
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Variants
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourVariantsResponse" }
+        "404": { description: Tour not found }
+    put:
+      operationId: saveTourVariants
+      tags: [admin]
+      summary: Replace a trip's variants
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveTourVariantsInput" }
+      responses:
+        "200":
+          description: Saved variants
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourVariantsResponse" }
+        "400": { description: Invalid input }
+        "404": { description: Tour not found }
+        "409": { description: A variant with bookings cannot be removed outright }
+  /admin/tours/{id}/booking-fields:
+    get:
+      operationId: getTourBookingFields
+      tags: [admin]
+      summary: Extra questions asked when booking this trip
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Fields
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourBookingFieldsResponse" }
+        "404": { description: Tour not found }
+    put:
+      operationId: saveTourBookingFields
+      tags: [admin]
+      summary: Replace a trip's extra booking fields
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveTourBookingFieldsInput" }
+      responses:
+        "200":
+          description: Saved fields
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourBookingFieldsResponse" }
+        "400": { description: Invalid input }
+        "404": { description: Tour not found }
+  /admin/tours/{id}/overview:
+    get:
+      operationId: getTourOverview
+      tags: [admin]
+      summary: Rates, settings, departures and live URLs for one trip
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourOverview" }
+        "404": { description: Tour not found }
+  /admin/tours/{id}/calendar/{month}:
+    get:
+      operationId: getTourCalendar
+      tags: [admin]
+      summary: One month of departures for this trip
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: month, in: path, required: true, schema: { type: string }, description: "YYYY-MM" }
+      responses:
+        "200":
+          description: Month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TourCalendarMonth" }
+        "400": { description: Bad month }
+        "404": { description: Tour not found }
+  /admin/tour-slots/{slotId}/override:
+    patch:
+      operationId: overrideTourSlot
+      tags: [admin]
+      summary: Change one departure's capacity or close it
+      parameters:
+        - { name: slotId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SlotOverrideInput" }
+      responses:
+        "204": { description: Updated }
+        "400": { description: Invalid input }
+        "404": { description: Slot not found }
+        "409": { description: Capacity below what is already booked }
+  /track:
+    post:
+      operationId: trackEvent
+      tags: [content]
+      summary: Record an anonymous analytics event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrackInput" }
+      responses:
+        "204": { description: "Recorded — always 204, even when the event is dropped" }
+  /admin/analytics:
+    get:
+      operationId: getAnalytics
+      tags: [admin]
+      summary: Traffic and conversion overview
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string }, description: "YYYY-MM-DD, defaults to 30 days ago" }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyticsOverview" }
+        "401": { description: Not authenticated }
+  /admin/reports:
+    get:
+      operationId: listReportTypes
+      tags: [admin]
+      summary: Available report types
+      responses:
+        "200":
+          description: Report definitions
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ReportMeta" } }
+        "401": { description: Not authenticated }
+  /admin/reports/run:
+    get:
+      operationId: runReport
+      tags: [admin]
+      summary: Run a report
+      parameters:
+        - { name: key, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: tourId, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: couponCode, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Report data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportResult" }
+        "404": { description: Unknown report }
+  /admin/reports/export.csv:
+    get:
+      operationId: exportReportCsv
+      tags: [admin]
+      summary: Download a report as CSV
+      parameters:
+        - { name: key, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: tourId, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: couponCode, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+        "404": { description: Unknown report }
+  /admin/scheduled-reports:
+    get:
+      operationId: listScheduledReports
+      tags: [admin]
+      summary: Reports that email themselves on a schedule
+      responses:
+        "200":
+          description: Scheduled reports
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ScheduledReport" } }
+        "401": { description: Not authenticated }
+    post:
+      operationId: createScheduledReport
+      tags: [admin]
+      summary: Schedule a report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduledReportInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduledReport" }
+        "400": { description: Invalid input }
+  /admin/scheduled-reports/{id}:
+    patch:
+      operationId: updateScheduledReport
+      tags: [admin]
+      summary: Update a scheduled report
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduledReportInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduledReport" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteScheduledReport
+      tags: [admin]
+      summary: Delete a scheduled report
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/scheduled-reports/{id}/run:
+    post:
+      operationId: runScheduledReportNow
+      tags: [admin]
+      summary: Send a scheduled report immediately, as a test
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "202": { description: Sending }
+        "404": { description: Not found }
+  /search:
+    get:
+      operationId: searchSite
+      tags: [content]
+      summary: Search published tours, destinations, posts and pages
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResults" }
+  /admin/roles:
+    get:
+      operationId: listRoles
+      tags: [admin]
+      summary: Roles and what each can do
+      responses:
+        "200":
+          description: Roles
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/RoleInfo" } }
+        "403": { description: Not permitted }
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: Staff accounts
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AdminUserDetail" } }
+        "403": { description: Not permitted }
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      summary: Add a staff account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminUserInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserDetail" }
+        "409": { description: Email already in use }
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Change a staff account's name, role, password or status
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminUserUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserDetail" }
+        "409": { description: "Would remove the last owner, or targets yourself" }
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Remove a staff account
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "409": { description: "Would remove the last owner, or targets yourself" }
+  /payment-methods:
+    get:
+      operationId: getPaymentMethods
+      tags: [content]
+      summary: Payment methods offered at checkout, and whether any charge depends on the choice
+      parameters:
+        - { name: tour, in: query, required: false, schema: { type: string }, description: "Tour slug" }
+      responses:
+        "200":
+          description: Methods
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentMethodOptions" }
+  /admin/charges:
+    get:
+      operationId: listAdminCharges
+      tags: [admin]
+      summary: Taxes and fees, including expired ones
+      responses:
+        "200":
+          description: Charges
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ChargeDetail" } }
+    put:
+      operationId: saveCharges
+      tags: [admin]
+      summary: Replace the charge list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: array, items: { $ref: "#/components/schemas/ChargeDetail" } }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ChargeDetail" } }
+        "400": { description: Invalid input }
+  /admin/charges/health:
+    get:
+      operationId: getChargeHealth
+      tags: [admin]
+      summary: Charges that have expired or are about to
+      responses:
+        "200":
+          description: Health
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargeHealth" }
+  /admin/redirects:
+    get:
+      operationId: listRedirects
+      tags: [admin]
+      summary: URL redirects, with any chains flagged
+      responses:
+        "200":
+          description: Redirects
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectList" }
+    post:
+      operationId: createRedirect
+      tags: [admin]
+      summary: Add a redirect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RedirectInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectDetail" }
+        "409": { description: That path already redirects }
+  /admin/redirects/{id}:
+    patch:
+      operationId: updateRedirect
+      tags: [admin]
+      summary: Update a redirect
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RedirectInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectDetail" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteRedirect
+      tags: [admin]
+      summary: Delete a redirect
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /admin/media:
+    get:
+      operationId: listMedia
+      tags: [admin]
+      summary: Media library, with a usage count per file
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Match filename or URL" }
+        - { name: kind, in: query, required: false, schema: { type: string, enum: [image, video] } }
+      responses:
+        "200":
+          description: Media assets
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/MediaAsset" } }
+        "401": { description: Not authenticated }
+  /admin/media/{id}:
+    delete:
+      operationId: deleteMedia
+      tags: [admin]
+      summary: Delete a file
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "409": { description: Still in use }
+        "404": { description: Not found }
+  /admin/media/{id}/force:
+    delete:
+      operationId: forceDeleteMedia
+      tags: [admin]
+      summary: Delete a file even though it is still referenced
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /booking-intent:
+    post:
+      operationId: reportBookingIntent
+      tags: [booking]
+      summary: Tell the team someone has started filling the booking form
+      description: >
+        Fire-and-forget lead alert. Always answers 202 — whether an alert was
+        actually sent depends on the admin switch, deduplication and rate
+        limiting, and the caller has no business knowing which.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingIntentInput" }
+      responses:
+        "202": { description: Accepted }
+        "400": { description: Invalid input }
 components:
   schemas:
     HealthStatus:
@@ -679,7 +2208,14 @@ components:
           nullable: true
         role:
           type: string
-          enum: [admin, editor]
+          enum: [owner, admin, manager, finance, editor, viewer]
+        capabilities:
+          type: array
+          items: { type: string }
+          description: "What this role may change — the UI hides anything absent here"
+        token:
+          type: string
+          nullable: true
       required:
         - id
         - email
@@ -710,7 +2246,8 @@ components:
         id: { type: string }
         slug: { type: string }
         destinationId: { type: string, nullable: true }
-        type: { type: string, enum: [rafting, camping, homestay, water_sports] }
+        type: { type: string, description: "Slug of a tour type (see /tour-types)" }
+        category: { type: string, description: "Slug of a tour category (see /tour-categories)" }
         title: { type: string }
         location: { type: string, nullable: true }
         tagline: { type: string, nullable: true }
@@ -721,6 +2258,7 @@ components:
         currency: { type: string }
         duration: { type: string, nullable: true }
         capacityPerSlot: { type: integer }
+        bookingMode: { type: string, enum: [direct, enquiry], description: "direct = pay online now; enquiry = no payment, team confirms manually" }
         minAge: { type: integer, nullable: true }
         maxWeightKg: { type: integer, nullable: true }
         season: { type: string, nullable: true }
@@ -733,6 +2271,37 @@ components:
         seoDescription: { type: string, nullable: true }
         status: { type: string, enum: [draft, published] }
         sortOrder: { type: integer }
+        code: { type: string, nullable: true, description: "Operator-facing trip code, e.g. ACE-CampKarle" }
+        sharedTrip: { type: boolean, description: "false = a private departure not pooled with other customers" }
+        minParticipants: { type: integer, nullable: true }
+        maxParticipants: { type: integer, nullable: true }
+        terms: { type: string, nullable: true, description: "Terms for this trip only" }
+        advertisedPrice: { type: integer, nullable: true, description: "Headline price for display; the rate card does the maths" }
+        priceLabelPosition: { type: string, enum: [before, after, none] }
+        showAdvertisedPrice: { type: boolean }
+        allowPartialDeposit: { type: boolean }
+        depositPercent: { type: integer, description: "Percent of the total accepted as a deposit" }
+        seatSharing: { type: string, enum: [independent, reduces, closes] }
+        departureDisplay: { type: string, enum: [calendar, list] }
+        showSeatsAvailable: { type: boolean }
+        showSeatsBooked: { type: boolean }
+        showGuaranteedDeparture: { type: boolean }
+        showSeatsToGuarantee: { type: boolean }
+        bookingLeadTimeHours: { type: integer }
+        paymentDeadlineDays: { type: integer, nullable: true }
+        itinerary: { type: array, items: { $ref: "#/components/schemas/ItineraryDay" } }
+        itineraryText: { type: string, nullable: true }
+        latitude: { type: string, nullable: true }
+        longitude: { type: string, nullable: true }
+        shortAddress: { type: string, nullable: true }
+        detailedAddress: { type: string, nullable: true }
+        directions: { type: string, nullable: true }
+        confirmationEmailIntro: { type: string, nullable: true }
+        labels: { type: object, additionalProperties: { type: string }, description: "Custom nouns: trip, departure, participant, room" }
+        relatedTourIds: { type: array, items: { type: string } }
+        ogTitle: { type: string, nullable: true }
+        ogDescription: { type: string, nullable: true }
+        ogImage: { type: string, nullable: true }
       required: [id, slug, type, title, images, priceValue, currency, capacityPerSlot, highlights, included, excluded]
     BlogPostSummary:
       type: object
@@ -796,7 +2365,8 @@ components:
       properties:
         slug: { type: string }
         destinationId: { type: string, nullable: true }
-        type: { type: string, enum: [rafting, camping, homestay, water_sports] }
+        type: { type: string, description: "Slug of a tour type (see /tour-types)" }
+        category: { type: string, description: "Slug of a tour category (see /tour-categories)" }
         title: { type: string }
         location: { type: string, nullable: true }
         tagline: { type: string, nullable: true }
@@ -807,6 +2377,7 @@ components:
         currency: { type: string }
         duration: { type: string, nullable: true }
         capacityPerSlot: { type: integer }
+        bookingMode: { type: string, enum: [direct, enquiry], description: "direct = pay online now; enquiry = no payment, team confirms manually" }
         minAge: { type: integer, nullable: true }
         maxWeightKg: { type: integer, nullable: true }
         season: { type: string, nullable: true }
@@ -819,6 +2390,37 @@ components:
         seoDescription: { type: string, nullable: true }
         status: { type: string, enum: [draft, published] }
         sortOrder: { type: integer }
+        code: { type: string, nullable: true, description: "Operator-facing trip code, e.g. ACE-CampKarle" }
+        sharedTrip: { type: boolean, description: "false = a private departure not pooled with other customers" }
+        minParticipants: { type: integer, nullable: true }
+        maxParticipants: { type: integer, nullable: true }
+        terms: { type: string, nullable: true, description: "Terms for this trip only" }
+        advertisedPrice: { type: integer, nullable: true, description: "Headline price for display; the rate card does the maths" }
+        priceLabelPosition: { type: string, enum: [before, after, none] }
+        showAdvertisedPrice: { type: boolean }
+        allowPartialDeposit: { type: boolean }
+        depositPercent: { type: integer, description: "Percent of the total accepted as a deposit" }
+        seatSharing: { type: string, enum: [independent, reduces, closes] }
+        departureDisplay: { type: string, enum: [calendar, list] }
+        showSeatsAvailable: { type: boolean }
+        showSeatsBooked: { type: boolean }
+        showGuaranteedDeparture: { type: boolean }
+        showSeatsToGuarantee: { type: boolean }
+        bookingLeadTimeHours: { type: integer }
+        paymentDeadlineDays: { type: integer, nullable: true }
+        itinerary: { type: array, items: { $ref: "#/components/schemas/ItineraryDay" } }
+        itineraryText: { type: string, nullable: true }
+        latitude: { type: string, nullable: true }
+        longitude: { type: string, nullable: true }
+        shortAddress: { type: string, nullable: true }
+        detailedAddress: { type: string, nullable: true }
+        directions: { type: string, nullable: true }
+        confirmationEmailIntro: { type: string, nullable: true }
+        labels: { type: object, additionalProperties: { type: string }, description: "Custom nouns: trip, departure, participant, room" }
+        relatedTourIds: { type: array, items: { type: string } }
+        ogTitle: { type: string, nullable: true }
+        ogDescription: { type: string, nullable: true }
+        ogImage: { type: string, nullable: true }
       required: [slug, type, title, priceValue]
     BlogPostInput:
       type: object
@@ -856,6 +2458,7 @@ components:
       properties:
         id: { type: string }
         tourId: { type: string }
+        variantId: { type: string, nullable: true, description: "Which trip variant this departure belongs to" }
         date: { type: string }
         startTime: { type: string }
         capacity: { type: integer }
@@ -869,16 +2472,36 @@ components:
         name: { type: string }
         age: { type: integer }
         weightKg: { type: integer }
+    ChargeLine:
+      type: object
+      properties:
+        label: { type: string }
+        type: { type: string, enum: [percent, flat] }
+        value: { type: number }
+        amount: { type: integer, description: "Resolved rupee amount for this charge" }
+      required: [label, type, value, amount]
+    VerifyPaymentInput:
+      type: object
+      properties:
+        razorpayPaymentId: { type: string }
+        razorpayOrderId: { type: string }
+        razorpaySignature: { type: string }
+      required: [razorpayPaymentId, razorpayOrderId, razorpaySignature]
     BookingInput:
       type: object
       properties:
-        slotId: { type: string }
+        slotId: { type: string, format: uuid }
         customerName: { type: string }
         customerEmail: { type: string }
         customerPhone: { type: string }
         numGuests: { type: integer }
         guestDetails: { type: array, items: { $ref: "#/components/schemas/GuestDetail" } }
         notes: { type: string, nullable: true }
+        couponCode: { type: string, nullable: true, description: "Discount code; ignored if it fails validation" }
+        participants: { type: array, items: { $ref: "#/components/schemas/ParticipantSelection" }, description: "Per-type counts; when given, numGuests is derived from these" }
+        analyticsSessionId: { type: string, nullable: true, description: "Anonymous session id, so the booking joins up with the visitor's pageviews" }
+        addons: { type: array, items: { $ref: "#/components/schemas/AddonSelection" } }
+        paymentMethod: { type: string, nullable: true, description: "How the customer intends to pay; decides which method-scoped charges apply" }
       required: [slotId, customerName, customerEmail, customerPhone, numGuests]
     BookingDetail:
       type: object
@@ -888,6 +2511,10 @@ components:
         tourId: { type: string }
         tourSlug: { type: string, nullable: true }
         tourTitle: { type: string, nullable: true }
+        tourCode: { type: string, nullable: true, description: "Operator-facing trip code" }
+        variantLabel: { type: string, nullable: true, description: "Which trip variant was sold" }
+        agentId: { type: string, nullable: true }
+        agentName: { type: string, nullable: true, description: "The agent credited with this booking" }
         slotId: { type: string }
         date: { type: string, nullable: true }
         startTime: { type: string, nullable: true }
@@ -898,13 +2525,554 @@ components:
         numGuests: { type: integer }
         totalAmount: { type: integer }
         currency: { type: string }
-        status: { type: string, enum: [pending, confirmed, cancelled, completed] }
+        status: { type: string, enum: [pending, confirmed, cancelled, completed, cart_abandoned] }
         paymentStatus: { type: string, enum: [unpaid, deposit, paid, refunded] }
+        paymentMethod: { type: string, nullable: true }
+        chargesBreakdown: { type: array, items: { $ref: "#/components/schemas/ChargeLine" }, description: "Base-price add-ons (taxes/fees) resolved at booking time" }
+        participantBreakdown: { type: array, items: { $ref: "#/components/schemas/ParticipantLine" } }
+        addonsBreakdown: { type: array, items: { $ref: "#/components/schemas/AddonLine" } }
+        couponCode: { type: string, nullable: true, description: "Discount code applied at booking time" }
+        discountAmount: { type: integer, description: "Rupees taken off the base price by the coupon" }
+        amountPaid: { type: integer, description: "Net settled from the payments ledger (payments minus refunds)" }
+        amountDue: { type: integer, description: "totalAmount minus amountPaid, floored at 0" }
+        notes: { type: string, nullable: true, description: "The customer's own message from the booking form" }
+        internalNotes: { type: string, nullable: true, description: "Staff-only notes, never shown to the customer" }
+        tags: { type: array, items: { type: string } }
+        source: { type: string, description: "website | whatsapp | phone | manual" }
+        paymentLinkUrl: { type: string, nullable: true, description: "Latest Razorpay payment link sent for this booking, if any" }
+        paymentLinkStatus: { type: string, nullable: true, description: "created | paid | expired | cancelled | failed" }
+        razorpayOrderId: { type: string, nullable: true, description: "Razorpay Order id to pay via Standard Checkout, while unpaid" }
+        razorpayKeyId: { type: string, nullable: true, description: "Razorpay public key id for checkout.js, while unpaid" }
         createdAt: { type: string, nullable: true }
-      required: [id, bookingRef, tourId, slotId, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, paymentStatus]
+      required: [id, bookingRef, tourId, slotId, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, paymentStatus, amountPaid, amountDue, tags, source, discountAmount]
+    ParticipantType:
+      type: object
+      properties:
+        id: { type: string }
+        variantId: { type: string, nullable: true, description: "null = applies to every variant" }
+        label: { type: string }
+        description: { type: string, nullable: true }
+        price: { type: integer }
+        minAge: { type: integer, nullable: true }
+        maxAge: { type: integer, nullable: true }
+        occupiesSeat: { type: boolean }
+        sortOrder: { type: integer }
+        active: { type: boolean }
+      required: [id, label, price, occupiesSeat, sortOrder, active]
+    PriceTier:
+      type: object
+      properties:
+        id: { type: string }
+        participantTypeId: { type: string, nullable: true }
+        minGuests: { type: integer }
+        maxGuests: { type: integer, nullable: true }
+        price: { type: integer }
+      required: [id, minGuests, price]
+    Addon:
+      type: object
+      properties:
+        id: { type: string }
+        variantId: { type: string, nullable: true, description: "null = offered on every variant" }
+        label: { type: string }
+        description: { type: string, nullable: true }
+        price: { type: integer }
+        priceType: { type: string, enum: [per_unit, per_person, per_booking] }
+        minQty: { type: integer }
+        maxQty: { type: integer, nullable: true }
+        required: { type: boolean }
+        sortOrder: { type: integer }
+        active: { type: boolean }
+      required: [id, label, price, priceType, minQty, required, sortOrder, active]
+    RateCard:
+      type: object
+      properties:
+        currency: { type: string }
+        basePrice: { type: integer, description: "tours.priceValue — used when no participant types are configured" }
+        participantTypes: { type: array, items: { $ref: "#/components/schemas/ParticipantType" } }
+        tiers: { type: array, items: { $ref: "#/components/schemas/PriceTier" } }
+        addons: { type: array, items: { $ref: "#/components/schemas/Addon" } }
+        variants: { type: array, items: { $ref: "#/components/schemas/TourVariant" }, description: "Empty when the trip is sold one way only" }
+      required: [currency, basePrice, participantTypes, tiers, addons]
+    ParticipantSelection:
+      type: object
+      properties:
+        typeId: { type: string }
+        count: { type: integer }
+      required: [typeId, count]
+    AddonSelection:
+      type: object
+      properties:
+        addonId: { type: string }
+        qty: { type: integer }
+      required: [addonId, qty]
+    ParticipantLine:
+      type: object
+      properties:
+        typeId: { type: string, nullable: true }
+        label: { type: string }
+        count: { type: integer }
+        unitPrice: { type: integer }
+        amount: { type: integer }
+        tierApplied: { type: boolean }
+      required: [label, count, unitPrice, amount]
+    AddonLine:
+      type: object
+      properties:
+        addonId: { type: string }
+        label: { type: string }
+        qty: { type: integer }
+        unitPrice: { type: integer }
+        priceType: { type: string }
+        amount: { type: integer }
+      required: [addonId, label, qty, unitPrice, priceType, amount]
+    QuoteInput:
+      type: object
+      properties:
+        slotId: { type: string, format: uuid }
+        numGuests: { type: integer }
+        participants: { type: array, items: { $ref: "#/components/schemas/ParticipantSelection" } }
+        addons: { type: array, items: { $ref: "#/components/schemas/AddonSelection" } }
+        couponCode: { type: string, nullable: true }
+        paymentMethod: { type: string, nullable: true }
+      required: [slotId]
+    QuoteResult:
+      type: object
+      properties:
+        participantLines: { type: array, items: { $ref: "#/components/schemas/ParticipantLine" } }
+        addonLines: { type: array, items: { $ref: "#/components/schemas/AddonLine" } }
+        baseAmount: { type: integer }
+        discountAmount: { type: integer }
+        couponCode: { type: string, nullable: true }
+        couponReason: { type: string, nullable: true, description: "Why a supplied code did not apply" }
+        chargesBreakdown: { type: array, items: { $ref: "#/components/schemas/ChargeLine" } }
+        totalAmount: { type: integer }
+        currency: { type: string }
+        numGuests: { type: integer }
+        seatsUsed: { type: integer }
+      required: [participantLines, addonLines, baseAmount, discountAmount, chargesBreakdown, totalAmount, currency, numGuests, seatsUsed]
+    RateCardInput:
+      type: object
+      properties:
+        participantTypes:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, nullable: true, description: "Omit to create" }
+              variantId: { type: string, nullable: true }
+              label: { type: string }
+              description: { type: string, nullable: true }
+              price: { type: integer }
+              minAge: { type: integer, nullable: true }
+              maxAge: { type: integer, nullable: true }
+              occupiesSeat: { type: boolean }
+              sortOrder: { type: integer }
+              active: { type: boolean }
+            required: [label, price]
+        tiers:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, nullable: true }
+              participantTypeId: { type: string, nullable: true }
+              minGuests: { type: integer }
+              maxGuests: { type: integer, nullable: true }
+              price: { type: integer }
+            required: [minGuests, price]
+        addons:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, nullable: true }
+              variantId: { type: string, nullable: true }
+              label: { type: string }
+              description: { type: string, nullable: true }
+              price: { type: integer }
+              priceType: { type: string, enum: [per_unit, per_person, per_booking] }
+              minQty: { type: integer }
+              maxQty: { type: integer, nullable: true }
+              required: { type: boolean }
+              sortOrder: { type: integer }
+              active: { type: boolean }
+            required: [label, price]
+    FirebaseTokenInput:
+      type: object
+      properties:
+        idToken: { type: string, description: "The JWT from the Firebase client SDK" }
+      required: [idToken]
+    FirebaseConfigResponse:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        apiKey: { type: string, nullable: true }
+        authDomain: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+      required: [enabled]
+    AgentLoginInput:
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+      required: [email, password]
+    AgentAcceptInviteInput:
+      type: object
+      properties:
+        token: { type: string }
+        password: { type: string, description: "At least 10 characters" }
+      required: [token, password]
+    AgentChangePasswordInput:
+      type: object
+      properties:
+        currentPassword: { type: string }
+        newPassword: { type: string }
+      required: [currentPassword, newPassword]
+    AgentSelf:
+      type: object
+      properties:
+        id: { type: string }
+        agentRef: { type: string }
+        name: { type: string }
+        company: { type: string, nullable: true }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        commissionPercent: { type: integer }
+        status: { type: string }
+      required: [id, agentRef, name, email, commissionPercent, status]
+    AgentSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/AgentSelf"
+        - type: object
+          properties:
+            token: { type: string, description: "Bearer token; also set as an httpOnly cookie" }
+          required: [token]
+    AgentPortalSummary:
+      type: object
+      properties:
+        totalBookings: { type: integer }
+        totalValue: { type: integer }
+        commissionPercent: { type: integer }
+        commissionValue: { type: integer }
+        upcomingDepartures: { type: integer }
+        lastBookingDate: { type: string, nullable: true }
+      required: [totalBookings, totalValue, commissionPercent, commissionValue, upcomingDepartures]
+    AgentBookingRow:
+      type: object
+      description: Deliberately narrower than the admin's BookingDetail — an agent sees what they sent, not the ledger behind it.
+      properties:
+        id: { type: string }
+        bookingRef: { type: string }
+        tourTitle: { type: string, nullable: true }
+        tourCode: { type: string, nullable: true }
+        variantLabel: { type: string, nullable: true }
+        date: { type: string, nullable: true }
+        startTime: { type: string, nullable: true }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        numGuests: { type: integer }
+        totalAmount: { type: integer }
+        currency: { type: string }
+        status: { type: string }
+        commissionValue: { type: integer }
+        createdAt: { type: string }
+      required: [id, bookingRef, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, commissionValue, createdAt]
+    AgentDetail:
+      type: object
+      properties:
+        id: { type: string }
+        agentRef: { type: string }
+        name: { type: string }
+        company: { type: string, nullable: true }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        status: { type: string, enum: [invited, active, inactive] }
+        commissionPercent: { type: integer }
+        notes: { type: string, nullable: true }
+        totalBookings: { type: integer, description: "Bookings credited to this agent, excluding cancelled" }
+        totalValue: { type: integer, description: "Value of those bookings" }
+        commissionValue: { type: integer, description: "totalValue x commissionPercent" }
+        lastBookingDate: { type: string, nullable: true }
+        hasPassword: { type: boolean, description: "True once the agent has accepted an invitation" }
+        inviteExpiresAt: { type: string, nullable: true, description: "An outstanding invitation, if any" }
+        lastLoginAt: { type: string, nullable: true }
+        invitedAt: { type: string, nullable: true }
+        activatedAt: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, agentRef, name, email, status, commissionPercent, totalBookings, totalValue, commissionValue, createdAt]
+    AgentWithBookings:
+      allOf:
+        - $ref: "#/components/schemas/AgentDetail"
+        - type: object
+          properties:
+            bookings: { type: array, items: { $ref: "#/components/schemas/BookingDetail" } }
+          required: [bookings]
+    AgentInput:
+      type: object
+      properties:
+        name: { type: string }
+        company: { type: string, nullable: true }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        commissionPercent: { type: integer }
+        notes: { type: string, nullable: true }
+        status: { type: string, enum: [invited, active, inactive] }
+      required: [name, email]
+    AgentPatchInput:
+      type: object
+      description: Only the fields present are changed
+      properties:
+        name: { type: string }
+        company: { type: string, nullable: true }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        commissionPercent: { type: integer }
+        notes: { type: string, nullable: true }
+        status: { type: string, enum: [invited, active, inactive] }
+    OperationsDeparture:
+      type: object
+      properties:
+        slotId: { type: string }
+        tourId: { type: string }
+        tourTitle: { type: string }
+        tourCode: { type: string, nullable: true }
+        variantLabel: { type: string, nullable: true }
+        date: { type: string }
+        startTime: { type: string }
+        capacity: { type: integer }
+        bookedCount: { type: integer }
+        status: { type: string }
+        bookings: { type: integer, description: "Confirmed and pending bookings on this departure" }
+        guests: { type: integer, description: "Heads travelling, excluding cancelled bookings" }
+      required: [slotId, tourId, tourTitle, date, startTime, capacity, bookedCount, status, bookings, guests]
+    OperationsRange:
+      type: object
+      properties:
+        from: { type: string }
+        to: { type: string }
+        timezone: { type: string }
+        departures: { type: array, items: { $ref: "#/components/schemas/OperationsDeparture" } }
+      required: [from, to, timezone, departures]
+    BookingSearchHit:
+      type: object
+      properties:
+        id: { type: string }
+        bookingRef: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        tourTitle: { type: string, nullable: true }
+        date: { type: string, nullable: true }
+        startTime: { type: string, nullable: true }
+        status: { type: string }
+        numGuests: { type: integer }
+      required: [id, bookingRef, customerName, customerEmail, customerPhone, status, numGuests]
+    ItineraryDay:
+      type: object
+      properties:
+        title: { type: string, description: "e.g. Day 1 or Day Visit" }
+        items:
+          type: array
+          items:
+            type: object
+            # title/description is the shape the site renders and the data
+            # already holds. `text` was an editor-only name that nothing ever
+            # displayed; it is accepted so an old row still parses, never written.
+            properties:
+              time: { type: string, nullable: true }
+              title: { type: string }
+              description: { type: string, nullable: true }
+              text: { type: string, nullable: true, deprecated: true }
+            required: [title]
+      required: [title, items]
+    TourVariant:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        label: { type: string }
+        description: { type: string, nullable: true }
+        seatsPerGuest: { type: integer }
+        sortOrder: { type: integer }
+        active: { type: boolean }
+      required: [id, code, label, seatsPerGuest, sortOrder, active]
+    TourVariantsResponse:
+      type: object
+      properties:
+        variants: { type: array, items: { $ref: "#/components/schemas/TourVariant" } }
+      required: [variants]
+    SaveTourVariantsInput:
+      type: object
+      properties:
+        variants:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, nullable: true, description: "Omit to create" }
+              code: { type: string }
+              label: { type: string }
+              description: { type: string, nullable: true }
+              seatsPerGuest: { type: integer }
+              sortOrder: { type: integer }
+              active: { type: boolean }
+            required: [code, label]
+      required: [variants]
+    TourBookingField:
+      type: object
+      properties:
+        id: { type: string }
+        key: { type: string }
+        label: { type: string }
+        help: { type: string, nullable: true }
+        fieldType: { type: string, enum: [text, textarea, number, select, checkbox, date] }
+        options: { type: array, items: { type: string } }
+        appliesTo: { type: string, enum: [booking, passenger, enquiry] }
+        required: { type: boolean }
+        sortOrder: { type: integer }
+        active: { type: boolean }
+      required: [id, key, label, fieldType, options, appliesTo, required, sortOrder, active]
+    TourBookingFieldsResponse:
+      type: object
+      properties:
+        fields: { type: array, items: { $ref: "#/components/schemas/TourBookingField" } }
+      required: [fields]
+    SaveTourBookingFieldsInput:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, nullable: true }
+              key: { type: string, description: "Omit and it is derived from the label" }
+              label: { type: string }
+              help: { type: string, nullable: true }
+              fieldType: { type: string, enum: [text, textarea, number, select, checkbox, date] }
+              options: { type: array, items: { type: string } }
+              appliesTo: { type: string, enum: [booking, passenger, enquiry] }
+              required: { type: boolean }
+              sortOrder: { type: integer }
+              active: { type: boolean }
+            required: [label]
+      required: [fields]
+    TourOverview:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        code: { type: string, nullable: true }
+        currency: { type: string }
+        timezone: { type: string }
+        status: { type: string, enum: [draft, published] }
+        tourUrl: { type: string, description: "Live storefront page for this trip" }
+        bookingUrl: { type: string }
+        variants: { type: array, items: { $ref: "#/components/schemas/TourVariant" } }
+        rates:
+          type: array
+          description: "One line per participant type, for the rates summary"
+          items:
+            type: object
+            properties:
+              variant: { type: string, nullable: true }
+              label: { type: string }
+              price: { type: integer }
+            required: [label, price]
+        settings:
+          type: object
+          properties:
+            minParticipants: { type: integer, nullable: true }
+            maxParticipants: { type: integer, nullable: true }
+            bookingLeadTimeHours: { type: integer }
+            depositPercent: { type: integer }
+            allowPartialDeposit: { type: boolean }
+            bookingMode: { type: string }
+          required: [bookingLeadTimeHours, depositPercent, allowPartialDeposit, bookingMode]
+        departures:
+          type: array
+          description: "Per-day seat counts for the next six months, for the heat-map"
+          items:
+            type: object
+            properties:
+              date: { type: string }
+              capacity: { type: integer }
+              booked: { type: integer }
+            required: [date, capacity, booked]
+        counts:
+          type: object
+          properties:
+            upcomingSlots: { type: integer }
+            bookings: { type: integer }
+            addons: { type: integer }
+            bookingFields: { type: integer }
+          required: [upcomingSlots, bookings, addons, bookingFields]
+      required: [id, title, currency, timezone, status, tourUrl, bookingUrl, variants, rates, settings, departures, counts]
+    TourCalendarMonth:
+      type: object
+      properties:
+        month: { type: string, description: "YYYY-MM" }
+        timezone: { type: string }
+        variants: { type: array, items: { $ref: "#/components/schemas/TourVariant" } }
+        slots:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              variantId: { type: string, nullable: true }
+              date: { type: string }
+              startTime: { type: string }
+              capacity: { type: integer }
+              bookedCount: { type: integer }
+              status: { type: string }
+              overridden: { type: boolean, description: "Capacity differs from the rule that generated it" }
+            required: [id, date, startTime, capacity, bookedCount, status, overridden]
+      required: [month, timezone, variants, slots]
+    SlotOverrideInput:
+      type: object
+      properties:
+        capacity: { type: integer, nullable: true }
+        status: { type: string, enum: [open, closed], nullable: true }
+      description: "Fields left out are unchanged"
+    TourType:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        label: { type: string }
+        sortOrder: { type: integer }
+      required: [id, slug, label]
+    TourTypeInput:
+      type: object
+      properties:
+        slug: { type: string }
+        label: { type: string }
+        sortOrder: { type: integer }
+      required: [slug, label]
+    TourCategory:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        label: { type: string }
+        sortOrder: { type: integer }
+      required: [id, slug, label]
+    TourCategoryInput:
+      type: object
+      properties:
+        slug: { type: string }
+        label: { type: string }
+        sortOrder: { type: integer }
+      required: [slug, label]
     GenerateSlotsInput:
       type: object
       properties:
+        variantId: { type: string, nullable: true, description: "Which variant to open. Omit on a trip with variants and one departure is opened for each of them." }
         from: { type: string }
         to: { type: string }
         weekdays: { type: array, items: { type: integer }, description: "0=Sun … 6=Sat" }
@@ -916,6 +3084,20 @@ components:
       properties:
         created: { type: integer }
       required: [created]
+    BulkDeleteSlotsInput:
+      type: object
+      description: Provide ids, OR tourId with optional from/to range.
+      properties:
+        ids: { type: array, items: { type: string } }
+        tourId: { type: string }
+        from: { type: string }
+        to: { type: string }
+    BulkDeleteResult:
+      type: object
+      properties:
+        deleted: { type: integer }
+        skipped: { type: integer, description: "Slots left in place because they have bookings" }
+      required: [deleted, skipped]
     SlotUpdateInput:
       type: object
       properties:
@@ -924,8 +3106,17 @@ components:
     BookingStatusInput:
       type: object
       properties:
-        status: { type: string, enum: [pending, confirmed, cancelled, completed] }
-      required: [status]
+        status: { type: string, enum: [pending, confirmed, cancelled, completed, cart_abandoned] }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        numGuests: { type: integer, description: "Re-checks and adjusts slot capacity" }
+        slotId: { type: string, description: "Move the booking to a different departure" }
+        notes: { type: string, nullable: true }
+        internalNotes: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        source: { type: string }
+        agentId: { type: string, nullable: true, description: "Credit the booking to an agent, or null to clear it" }
     GoogleStatus:
       type: object
       properties:
@@ -934,6 +3125,34 @@ components:
         calendarId: { type: string, nullable: true }
         connectedAt: { type: string, nullable: true }
       required: [configured, connected]
+    RazorpayStatus:
+      type: object
+      properties:
+        configured: { type: boolean }
+        keyId: { type: string, nullable: true, description: "Public key id only — never the secret" }
+      required: [configured]
+    WhatsAppStatus:
+      type: object
+      properties:
+        configured: { type: boolean }
+      required: [configured]
+    PaymentDetail:
+      type: object
+      properties:
+        id: { type: string }
+        bookingId: { type: string }
+        bookingRef: { type: string, nullable: true }
+        customerName: { type: string, nullable: true }
+        tourTitle: { type: string, nullable: true }
+        provider: { type: string, description: "razorpay | razorpay_order" }
+        providerLinkId: { type: string, nullable: true }
+        providerPaymentId: { type: string, nullable: true }
+        shortUrl: { type: string, nullable: true }
+        amount: { type: integer }
+        currency: { type: string }
+        status: { type: string, description: "created | paid | expired | cancelled | failed" }
+        createdAt: { type: string }
+      required: [id, bookingId, provider, amount, currency, status, createdAt]
     Page:
       type: object
       properties:
@@ -957,4 +3176,579 @@ components:
         data: { type: object, additionalProperties: true }
         status: { type: string, enum: [draft, published] }
       required: [data]
-
+    EnquiryInput:
+      type: object
+      properties:
+        customerName: { type: string }
+        customerEmail: { type: string, nullable: true }
+        customerPhone: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        tourSlug: { type: string, nullable: true }
+        destinationSlug: { type: string, nullable: true }
+        preferredDate: { type: string, nullable: true, description: "YYYY-MM-DD" }
+        numGuests: { type: integer, nullable: true }
+        message: { type: string, nullable: true }
+        source: { type: string, nullable: true, description: "website | corporate | whatsapp | phone | manual" }
+        extra: { type: object, additionalProperties: true }
+        analyticsSessionId: { type: string, nullable: true, description: "Anonymous session id, so the enquiry joins up with the visitor's pageviews" }
+      required: [customerName]
+    EnquiryReceipt:
+      type: object
+      properties:
+        enquiryRef: { type: string }
+      required: [enquiryRef]
+    EnquiryDetail:
+      type: object
+      properties:
+        id: { type: string }
+        enquiryRef: { type: string }
+        customerId: { type: string, nullable: true }
+        customerName: { type: string }
+        customerEmail: { type: string, nullable: true }
+        customerPhone: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        tourId: { type: string, nullable: true }
+        tourTitle: { type: string, nullable: true }
+        destinationId: { type: string, nullable: true }
+        destinationName: { type: string, nullable: true }
+        preferredDate: { type: string, nullable: true }
+        numGuests: { type: integer, nullable: true }
+        message: { type: string, nullable: true }
+        extra: { type: object, additionalProperties: true }
+        source: { type: string }
+        status: { type: string, enum: [new, active, won, lost, archived, spam] }
+        assigneeId: { type: string, nullable: true }
+        assigneeName: { type: string, nullable: true }
+        internalNotes: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        convertedBookingId: { type: string, nullable: true }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, enquiryRef, customerName, source, status, tags, createdAt, updatedAt]
+    EnquiryUpdateInput:
+      type: object
+      properties:
+        status: { type: string, enum: [new, active, won, lost, archived, spam] }
+        assigneeId: { type: string, nullable: true }
+        internalNotes: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        customerName: { type: string }
+        customerEmail: { type: string, nullable: true }
+        customerPhone: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        preferredDate: { type: string, nullable: true }
+        numGuests: { type: integer, nullable: true }
+        message: { type: string, nullable: true }
+    CustomerDetail:
+      type: object
+      properties:
+        id: { type: string }
+        customerRef: { type: string }
+        salutation: { type: string, nullable: true }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        notes: { type: string, nullable: true }
+        totalBookings: { type: integer }
+        totalEnquiries: { type: integer }
+        lastBookingDate: { type: string, nullable: true }
+        lifetimeValue: { type: integer }
+        createdAt: { type: string }
+      required: [id, customerRef, name, tags, totalBookings, totalEnquiries, lifetimeValue, createdAt]
+    CustomerInput:
+      type: object
+      properties:
+        salutation: { type: string, nullable: true }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        notes: { type: string, nullable: true }
+      required: [name]
+    CustomerMergeInput:
+      type: object
+      properties:
+        winnerId: { type: string, description: "The record that survives" }
+        loserId: { type: string, description: "The record folded into the winner" }
+      required: [winnerId, loserId]
+    CustomerProfile:
+      type: object
+      properties:
+        customer: { $ref: "#/components/schemas/CustomerDetail" }
+        bookings: { type: array, items: { $ref: "#/components/schemas/BookingDetail" } }
+        enquiries: { type: array, items: { $ref: "#/components/schemas/EnquiryDetail" } }
+      required: [customer, bookings, enquiries]
+    RazorpaySyncRow:
+      type: object
+      properties:
+        paymentId: { type: string }
+        providerLinkId: { type: string }
+        provider: { type: string }
+        before: { type: string }
+        after: { type: string }
+        razorpayStatus: { type: string, nullable: true }
+        razorpayPaymentId: { type: string, nullable: true }
+        amount: { type: integer, nullable: true }
+        method: { type: string, nullable: true }
+        paidAt: { type: string, nullable: true }
+        outcome: { type: string, enum: [marked_paid, status_updated, unchanged, already_paid, error] }
+        message: { type: string }
+      required: [paymentId, providerLinkId, provider, before, after, outcome, message]
+    RazorpaySyncResult:
+      type: object
+      properties:
+        checkedAt: { type: string }
+        results: { type: array, items: { $ref: "#/components/schemas/RazorpaySyncRow" } }
+        ledger: { $ref: "#/components/schemas/BookingLedger" }
+      required: [checkedAt, results, ledger]
+    LedgerEntry:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [payment, refund] }
+        method: { type: string }
+        methodLabel: { type: string }
+        provider: { type: string, description: "razorpay | razorpay_order | manual" }
+        amount: { type: integer }
+        currency: { type: string }
+        status: { type: string }
+        reference: { type: string, nullable: true }
+        shortUrl: { type: string, nullable: true }
+        providerPaymentId: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        recordedBy: { type: string, nullable: true }
+        receivedAt: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, kind, method, methodLabel, provider, amount, currency, status, createdAt]
+    BookingLedger:
+      type: object
+      properties:
+        bookingId: { type: string }
+        currency: { type: string }
+        total: { type: integer }
+        paid: { type: integer }
+        refunded: { type: integer }
+        net: { type: integer }
+        due: { type: integer }
+        paymentStatus: { type: string, enum: [unpaid, deposit, paid, refunded] }
+        entries: { type: array, items: { $ref: "#/components/schemas/LedgerEntry" } }
+      required: [bookingId, currency, total, paid, refunded, net, due, paymentStatus, entries]
+    ManualPaymentInput:
+      type: object
+      properties:
+        kind: { type: string, enum: [payment, refund] }
+        amount: { type: integer, description: "Whole rupees, always positive" }
+        method: { type: string, enum: [cash, cheque, bank_transfer, upi, card_machine, other, razorpay] }
+        reference: { type: string, nullable: true, description: "Cheque number, UTR, receipt number" }
+        receivedAt: { type: string, nullable: true, description: "When the money actually moved (YYYY-MM-DD)" }
+        notes: { type: string, nullable: true }
+      required: [kind, amount, method]
+    CouponCheckInput:
+      type: object
+      properties:
+        code: { type: string }
+        slotId: { type: string, format: uuid }
+        numGuests: { type: integer }
+      required: [code, slotId, numGuests]
+    CouponCheckResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        reason: { type: string, nullable: true, description: "not_found | inactive | not_yet_valid | expired | usage_limit_reached | customer_limit_reached | tour_not_eligible | weekday_not_eligible | too_late | below_minimum" }
+        code: { type: string, nullable: true }
+        label: { type: string, nullable: true }
+        discount: { type: integer }
+        baseAmount: { type: integer }
+        newTotal: { type: integer, description: "What the booking would cost with the code applied" }
+        currency: { type: string }
+      required: [ok, discount, baseAmount, newTotal, currency]
+    CouponDetail:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        label: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        discountType: { type: string, enum: [percent, flat] }
+        discountValue: { type: integer }
+        maxDiscount: { type: integer, nullable: true }
+        minBookingAmount: { type: integer, nullable: true }
+        tourIds: { type: array, items: { type: string } }
+        weekdayMask: { type: integer, nullable: true }
+        minDaysInAdvance: { type: integer, nullable: true }
+        validFrom: { type: string, nullable: true }
+        validTo: { type: string, nullable: true }
+        usageLimit: { type: integer, nullable: true }
+        usageLimitPerCustomer: { type: integer, nullable: true }
+        usedCount: { type: integer }
+        active: { type: boolean }
+        batchId: { type: string, nullable: true }
+        batchLabel: { type: string, nullable: true }
+        summary: { type: string, description: "Human-readable conditions" }
+        totalDiscounted: { type: integer, description: "Rupees given away by this code so far" }
+        createdAt: { type: string }
+      required: [id, code, discountType, discountValue, tourIds, usedCount, active, summary, totalDiscounted, createdAt]
+    CouponInput:
+      type: object
+      properties:
+        code: { type: string }
+        label: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        discountType: { type: string, enum: [percent, flat] }
+        discountValue: { type: integer }
+        maxDiscount: { type: integer, nullable: true }
+        minBookingAmount: { type: integer, nullable: true }
+        tourIds: { type: array, items: { type: string } }
+        weekdayMask: { type: integer, nullable: true }
+        minDaysInAdvance: { type: integer, nullable: true }
+        validFrom: { type: string, nullable: true }
+        validTo: { type: string, nullable: true }
+        usageLimit: { type: integer, nullable: true }
+        usageLimitPerCustomer: { type: integer, nullable: true }
+        active: { type: boolean }
+    CouponBatchInput:
+      type: object
+      properties:
+        count: { type: integer, description: "How many codes to generate (1–1000)" }
+        prefix: { type: string, nullable: true, description: "Leading text on every code, e.g. GROUPON" }
+        batchLabel: { type: string, nullable: true }
+        discountType: { type: string, enum: [percent, flat] }
+        discountValue: { type: integer }
+        maxDiscount: { type: integer, nullable: true }
+        minBookingAmount: { type: integer, nullable: true }
+        tourIds: { type: array, items: { type: string } }
+        weekdayMask: { type: integer, nullable: true }
+        minDaysInAdvance: { type: integer, nullable: true }
+        validFrom: { type: string, nullable: true }
+        validTo: { type: string, nullable: true }
+        usageLimit: { type: integer, nullable: true, description: "Per generated code; defaults to 1" }
+      required: [count, discountType, discountValue]
+    CouponRedemptionDetail:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        discountAmount: { type: integer }
+        bookingId: { type: string, nullable: true }
+        bookingRef: { type: string, nullable: true }
+        customerName: { type: string, nullable: true }
+        tourTitle: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, code, discountAmount, createdAt]
+    TrackInput:
+      type: object
+      properties:
+        type: { type: string, enum: [pageview, booking_started, booking_created, enquiry_created] }
+        path: { type: string }
+        referrer: { type: string, nullable: true }
+        utmSource: { type: string, nullable: true }
+        utmMedium: { type: string, nullable: true }
+        utmCampaign: { type: string, nullable: true }
+        sessionId: { type: string }
+        tourId: { type: string, nullable: true }
+        destinationId: { type: string, nullable: true }
+        value: { type: integer, nullable: true }
+      required: [type, path, sessionId]
+    AnalyticsTotals:
+      type: object
+      properties:
+        pageviews: { type: integer }
+        visitors: { type: integer }
+        bookingsStarted: { type: integer }
+        bookings: { type: integer }
+        enquiries: { type: integer }
+        revenue: { type: integer }
+      required: [pageviews, visitors, bookingsStarted, bookings, enquiries, revenue]
+    AnalyticsOverview:
+      type: object
+      properties:
+        range:
+          type: object
+          properties:
+            from: { type: string }
+            to: { type: string }
+          required: [from, to]
+        totals: { $ref: "#/components/schemas/AnalyticsTotals" }
+        previous: { $ref: "#/components/schemas/AnalyticsTotals" }
+        liveVisitors: { type: integer }
+        trend:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string }
+              pageviews: { type: integer }
+              visitors: { type: integer }
+              bookings: { type: integer }
+            required: [date, pageviews, visitors, bookings]
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              source: { type: string }
+              medium: { type: string }
+              visitors: { type: integer }
+              bookings: { type: integer }
+            required: [source, medium, visitors, bookings]
+        referrers:
+          type: array
+          items:
+            type: object
+            properties:
+              referrer: { type: string }
+              visitors: { type: integer }
+            required: [referrer, visitors]
+        campaigns:
+          type: array
+          items:
+            type: object
+            properties:
+              campaign: { type: string }
+              visitors: { type: integer }
+              bookings: { type: integer }
+            required: [campaign, visitors, bookings]
+        topPages:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              pageviews: { type: integer }
+              visitors: { type: integer }
+            required: [path, pageviews, visitors]
+        topTours:
+          type: array
+          items:
+            type: object
+            properties:
+              tourId: { type: string }
+              title: { type: string }
+              views: { type: integer }
+              bookings: { type: integer }
+              conversion: { type: number }
+            required: [tourId, title, views, bookings, conversion]
+      required: [range, totals, previous, liveVisitors, trend, sources, referrers, campaigns, topPages, topTours]
+    ReportMeta:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+        dateBasis: { type: string }
+      required: [key, label, description, dateBasis]
+    ReportColumn:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        numeric: { type: boolean }
+        money: { type: boolean }
+      required: [key, label]
+    ReportResult:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        dateBasis: { type: string }
+        columns: { type: array, items: { $ref: "#/components/schemas/ReportColumn" } }
+        rows: { type: array, items: { type: object, additionalProperties: true } }
+        totals: { type: object, additionalProperties: { type: number } }
+      required: [key, label, dateBasis, columns, rows, totals]
+    ScheduledReport:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        reportKey: { type: string }
+        filters: { type: object, additionalProperties: true }
+        cadence: { type: string, enum: [daily, weekly, monthly] }
+        sendHour: { type: integer }
+        recipients: { type: array, items: { type: string } }
+        active: { type: boolean }
+        lastSentOn: { type: string, nullable: true }
+        lastError: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, name, reportKey, cadence, sendHour, recipients, active, createdAt]
+    ScheduledReportInput:
+      type: object
+      properties:
+        name: { type: string }
+        reportKey: { type: string }
+        filters: { type: object, additionalProperties: true }
+        cadence: { type: string, enum: [daily, weekly, monthly] }
+        sendHour: { type: integer }
+        recipients: { type: array, items: { type: string } }
+        active: { type: boolean }
+    SearchResults:
+      type: object
+      properties:
+        query: { type: string }
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [tour, destination, blog, page] }
+              url: { type: string }
+              title: { type: string }
+              blurb: { type: string, nullable: true }
+              image: { type: string, nullable: true }
+            required: [type, url, title]
+      required: [query, results]
+    RoleInfo:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+        capabilities: { type: array, items: { type: string } }
+      required: [key, label, description, capabilities]
+    AdminUserDetail:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string, nullable: true }
+        role: { type: string, enum: [owner, admin, manager, finance, editor, viewer] }
+        roleLabel: { type: string }
+        capabilities: { type: array, items: { type: string } }
+        active: { type: boolean }
+        mustChangePassword: { type: boolean }
+        lastLoginAt: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, email, role, roleLabel, capabilities, active, mustChangePassword, createdAt]
+    AdminUserInput:
+      type: object
+      properties:
+        email: { type: string }
+        name: { type: string, nullable: true }
+        role: { type: string, enum: [owner, admin, manager, finance, editor, viewer] }
+        password: { type: string, description: "At least 10 characters" }
+      required: [email, role, password]
+    AdminUserUpdate:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        role: { type: string, enum: [owner, admin, manager, finance, editor, viewer] }
+        active: { type: boolean }
+        password: { type: string }
+    ChargeDetail:
+      type: object
+      properties:
+        id: { type: string, nullable: true }
+        label: { type: string }
+        type: { type: string, enum: [percent, flat] }
+        value: { type: integer }
+        tourIds: { type: array, items: { type: string } }
+        paymentMethods: { type: array, items: { type: string }, description: "Empty = every method. Otherwise upi | card | netbanking | wallet | cash | bank_transfer | cheque | card_machine | other" }
+        validFrom: { type: string, nullable: true }
+        validTo: { type: string, nullable: true }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+      required: [label, type, value]
+    ChargeHealth:
+      type: object
+      properties:
+        expired:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              validTo: { type: string }
+            required: [id, label, validTo]
+        expiringSoon:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              validTo: { type: string }
+              daysLeft: { type: integer }
+            required: [id, label, validTo, daysLeft]
+        notYetActive:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              validFrom: { type: string }
+            required: [id, label, validFrom]
+      required: [expired, expiringSoon, notYetActive]
+    RedirectDetail:
+      type: object
+      properties:
+        id: { type: string }
+        fromPath: { type: string }
+        toPath: { type: string }
+        statusCode: { type: integer }
+        active: { type: boolean }
+        hits: { type: integer }
+        lastHitAt: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, fromPath, toPath, statusCode, active, hits, createdAt]
+    RedirectInput:
+      type: object
+      properties:
+        fromPath: { type: string }
+        toPath: { type: string }
+        statusCode: { type: integer, enum: [301, 302] }
+        active: { type: boolean }
+      required: [fromPath, toPath]
+    RedirectList:
+      type: object
+      properties:
+        redirects: { type: array, items: { $ref: "#/components/schemas/RedirectDetail" } }
+        chains:
+          type: array
+          items:
+            type: object
+            properties:
+              from: { type: string }
+              to: { type: string }
+              then: { type: string }
+            required: [from, to, then]
+      required: [redirects, chains]
+    MediaAsset:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [image, video] }
+        status: { type: string }
+        url: { type: string, nullable: true }
+        hlsUrl: { type: string, nullable: true }
+        posterUrl: { type: string, nullable: true }
+        filename: { type: string, nullable: true }
+        mime: { type: string, nullable: true }
+        width: { type: integer, nullable: true }
+        height: { type: integer, nullable: true }
+        usageCount: { type: integer, description: "How many tours, pages, posts or gallery items reference this file" }
+        createdAt: { type: string }
+      required: [id, kind, status, usageCount, createdAt]
+    PaymentMethodOptions:
+      type: object
+      properties:
+        methods:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+            required: [key, label]
+        required:
+          type: boolean
+          description: "True when a live charge depends on the payment method, so the customer must choose before the total can be quoted"
+      required: [methods, required]
+    BookingIntentInput:
+      type: object
+      properties:
+        customerName: { type: string }
+        customerPhone: { type: string }
+        tourSlug: { type: string, nullable: true }
+      required: [customerName, customerPhone]

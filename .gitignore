@@ -63,3 +63,11 @@ Thumbs.db
 *.tfstate.*
 crash.log
 infra/terraform/terraform.tfvars
+
+# Terraform plans can embed secret values in plain text
+*.tfplan
+infra/terraform/tfplan
+
+# One-off ECS task definitions exported by hand (config values, not source)
+/task-def.json
+/new-task-def.json

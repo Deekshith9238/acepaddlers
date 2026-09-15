@@ -8,5 +8,18 @@
 import type { BookingStatusInputStatus } from './bookingStatusInputStatus';
 
 export interface BookingStatusInput {
-  status: BookingStatusInputStatus;
+  status?: BookingStatusInputStatus;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  /** Re-checks and adjusts slot capacity */
+  numGuests?: number;
+  /** Move the booking to a different departure */
+  slotId?: string;
+  notes?: string | null;
+  internalNotes?: string | null;
+  tags?: string[];
+  source?: string;
+  /** Credit the booking to an agent, or null to clear it */
+  agentId?: string | null;
 }

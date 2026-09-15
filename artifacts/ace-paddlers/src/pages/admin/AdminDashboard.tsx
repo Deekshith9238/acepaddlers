@@ -1,7 +1,8 @@
 import { Link } from "wouter";
-import AdminLayout from "@/admin/AdminLayout";
 import { RESOURCES } from "@/admin/resources";
-import { useListBookings, useUpdateBookingStatus, type BookingDetail } from "@workspace/api-client-react";
+import { useListBookings, useUpdateBookingStatus, useAdminMe, type BookingDetail } from "@workspace/api-client-react";
+import OperationsDashboard from "@/admin/OperationsDashboard";
+import { StatusBadge } from "@/admin/booking/sections";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function StatCard({ label, value, href, accent }: { label: string; value: number | string; href: string; accent?: boolean }) {
@@ -15,10 +16,6 @@ function StatCard({ label, value, href, accent }: { label: string; value: number
   );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "#b45309", confirmed: "#047857", cancelled: "#b91c1c", completed: "#475569",
-};
-
 function useCount(key: string): number | string {
   const q = RESOURCES[key].hooks.useList();
   return Array.isArray(q.data) ? q.data.length : "—";
@@ -30,7 +27,11 @@ function Inner() {
   const blog = useCount("blog");
   const gallery = useCount("gallery");
 
-  const { data, refetch } = useListBookings();
+  // A role without booking access gets 403s here; showing "0 bookings" would
+  // read as "business is quiet" rather than "you can't see this".
+  const { data: me } = useAdminMe();
+  const seesBookings = me?.role === "viewer" || (me?.capabilities ?? []).includes("bookings");
+  const { data, refetch } = useListBookings(undefined, { query: { enabled: seesBookings } } as never);
   const update = useUpdateBookingStatus();
   const bookings: BookingDetail[] = Array.isArray(data) ? data : [];
   const today = new Date().toISOString().slice(0, 10);
@@ -45,19 +46,27 @@ function Inner() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-6">Dashboard</h1>
+      {/* What is running, and who is on it — the first thing the team needs. */}
+      {seesBookings ? (
+        <div className="mb-8">
+          <OperationsDashboard />
+        </div>
+      ) : (
+        <h1 className="text-2xl font-semibold text-slate-800 mb-6">Dashboard</h1>
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-        <StatCard label="Bookings" value={bookings.length} href="/admin/bookings" />
-        <StatCard label="Pending" value={pending.length} href="/admin/bookings" accent />
-        <StatCard label="Destinations" value={destinations} href="/admin/destinations" />
-        <StatCard label="Tours" value={tours} href="/admin/tours" />
-        <StatCard label="Blog posts" value={blog} href="/admin/blog" />
-        <StatCard label="Gallery" value={gallery} href="/admin/gallery" />
-      </div>
+      {/* Content counts matter to an editor, who has no operations view. */}
+      {!seesBookings && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard label="Destinations" value={destinations} href="/admin/destinations" />
+          <StatCard label="Tours" value={tours} href="/admin/tours" />
+          <StatCard label="Blog posts" value={blog} href="/admin/blog" />
+          <StatCard label="Gallery" value={gallery} href="/admin/gallery" />
+        </div>
+      )}
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+      {seesBookings && (
+      <div className="mb-8">
         {/* Needs attention */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between mb-3">
@@ -81,31 +90,10 @@ function Inner() {
           )}
         </section>
 
-        {/* Upcoming trips */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-slate-800">Upcoming trips</h2>
-            <Link href="/admin/availability" className="text-xs text-cyan-600 no-underline hover:underline">Availability →</Link>
-          </div>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">No confirmed trips scheduled yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {upcoming.map((b) => (
-                <li key={b.id} className="py-2.5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-slate-700 truncate">{b.tourTitle}</div>
-                    <div className="text-xs text-slate-400">{b.customerName} · {b.numGuests} guest(s)</div>
-                  </div>
-                  <div className="shrink-0 text-xs text-slate-500">{b.date} {b.startTime}</div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
+      )}
 
-      {/* Recent bookings */}
+      {seesBookings && (
       <section className="rounded-2xl border border-slate-200 bg-white mb-8 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-800">Recent bookings</h2>
@@ -123,7 +111,7 @@ function Inner() {
                   <td className="px-3 py-3 text-slate-500">{b.customerName}</td>
                   <td className="px-3 py-3 text-slate-500 whitespace-nowrap">{b.date}</td>
                   <td className="px-5 py-3 text-right">
-                    <span className="text-xs font-bold uppercase" style={{ color: STATUS_COLORS[b.status] }}>{b.status}</span>
+                    <StatusBadge status={b.status} />
                   </td>
                 </tr>
               ))}
@@ -131,6 +119,7 @@ function Inner() {
           </table>
         )}
       </section>
+      )}
 
       {/* Quick actions */}
       <section>
@@ -156,8 +145,6 @@ function Inner() {
 
 export default function AdminDashboard() {
   return (
-    <AdminLayout>
-      <Inner />
-    </AdminLayout>
+    <Inner />
   );
 }

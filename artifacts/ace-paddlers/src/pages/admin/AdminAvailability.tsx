@@ -1,10 +1,11 @@
-import { useState } from "react";
-import AdminLayout from "@/admin/AdminLayout";
+import { useEffect, useState } from "react";
 import {
+  useGetTourVariants,
   useListAdminTours,
   useListSlots,
   useGenerateSlots,
   useDeleteSlot,
+  useBulkDeleteSlots,
   type Slot,
 } from "@workspace/api-client-react";
 
@@ -29,6 +30,15 @@ function Inner() {
   const [startTime, setStartTime] = useState("09:00");
   const [capacity, setCapacity] = useState(8);
 
+  // Departures belong to a variant on trips that have them, so generating a day
+  // has to say which. Omitting one opens the day for every active variant.
+  const { data: variantData } = useGetTourVariants(tourId, { query: { enabled: !!tourId } } as never);
+  const variants = (variantData?.variants ?? []).filter((v: any) => v.active);
+  const [variantId, setVariantId] = useState("");
+  useEffect(() => setVariantId(""), [tourId]);
+  const variantLabel = (id: string | null | undefined) =>
+    id ? (variants.find((v: any) => v.id === id)?.label ?? "—") : variants.length > 0 ? "All" : "—";
+
   const slotsQuery = useListSlots(
     { tourId, from, to },
     { query: { enabled: !!tourId } } as never,
@@ -36,6 +46,38 @@ function Inner() {
   const slots: Slot[] = Array.isArray(slotsQuery.data) ? slotsQuery.data : [];
   const generate = useGenerateSlots();
   const del = useDeleteSlot();
+  const bulkDelete = useBulkDeleteSlots();
+
+  // Multi-select for bulk delete. Booked slots can't be selected/deleted.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const deletableSlots = slots.filter((s) => s.bookedCount === 0);
+  const allSelected = deletableSlots.length > 0 && deletableSlots.every((s) => selected.has(s.id));
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const toggleSelectAll = () =>
+    setSelected(allSelected ? new Set() : new Set(deletableSlots.map((s) => s.id)));
+
+  const afterDelete = () => {
+    setSelected(new Set());
+    slotsQuery.refetch();
+  };
+
+  const onDeleteSelected = () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} selected slot(s)?`)) return;
+    bulkDelete.mutate({ data: { ids: [...selected] } }, { onSuccess: afterDelete });
+  };
+
+  const onDeleteAllInRange = () => {
+    if (!tourId) return;
+    if (!confirm(`Delete ALL unbooked slots for this tour from ${from} to ${to}? Booked slots are kept.`)) return;
+    bulkDelete.mutate({ data: { tourId, from, to } }, { onSuccess: afterDelete });
+  };
 
   const toggleDay = (d: number) =>
     setWeekdays((w) => (w.includes(d) ? w.filter((x) => x !== d) : [...w, d]));
@@ -43,7 +85,7 @@ function Inner() {
   const onGenerate = () => {
     if (!tourId) return;
     generate.mutate(
-      { id: tourId, data: { from, to, weekdays, startTime, capacity } },
+      { id: tourId, data: { from, to, weekdays, startTime, capacity, variantId: variantId || null } },
       { onSuccess: () => slotsQuery.refetch() },
     );
   };
@@ -65,6 +107,15 @@ function Inner() {
           <>
             <div className="text-sm font-semibold text-slate-700 mb-3">Generate slots</div>
             <div className="flex flex-wrap items-end gap-4">
+              {variants.length > 0 && (
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Variant</label>
+                  <select className={inputCls} value={variantId} onChange={(e) => setVariantId(e.target.value)}>
+                    <option value="">All variants</option>
+                    {variants.map((v: any) => <option key={v.id} value={v.id}>{v.label}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs text-slate-500 mb-1">From</label>
                 <input type="date" className={inputCls} value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -105,38 +156,73 @@ function Inner() {
       </div>
 
       {tourId && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                {["Date", "Time", "Capacity", "Booked", "Status", ""].map((h) => (
-                  <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {slots.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-6 text-slate-400">No slots in range. Generate some above.</td></tr>
-              ) : slots.map((s) => (
-                <tr key={s.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3">{s.date}</td>
-                  <td className="px-4 py-3">{s.startTime}</td>
-                  <td className="px-4 py-3">{s.capacity}</td>
-                  <td className="px-4 py-3">{s.bookedCount}</td>
-                  <td className="px-4 py-3">{s.status}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => { if (confirm("Delete this slot?")) del.mutate({ id: s.id }, { onSuccess: () => slotsQuery.refetch() }); }}
-                      className="text-red-500 hover:underline" disabled={s.bookedCount > 0}
-                      title={s.bookedCount > 0 ? "Has bookings" : ""}>
-                      Delete
-                    </button>
-                  </td>
+        <>
+          {/* Bulk actions toolbar */}
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            <button
+              onClick={onDeleteSelected}
+              disabled={selected.size === 0 || bulkDelete.isPending}
+              className="rounded-lg border border-red-300 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+              Delete selected ({selected.size})
+            </button>
+            <button
+              onClick={onDeleteAllInRange}
+              disabled={slots.length === 0 || bulkDelete.isPending}
+              className="rounded-lg border border-red-300 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+              Delete all in range ({from} → {to})
+            </button>
+            {bulkDelete.isPending && <span className="text-sm text-slate-500">Deleting…</span>}
+            {bulkDelete.isSuccess && (
+              <span className="text-sm text-emerald-600">
+                Deleted {(bulkDelete.data as any)?.deleted ?? 0}
+                {((bulkDelete.data as any)?.skipped ?? 0) > 0 && `, kept ${(bulkDelete.data as any).skipped} booked`}.
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+                      title="Select all unbooked" />
+                  </th>
+                  {[...(variants.length > 0 ? ["Variant"] : []), "Date", "Time", "Capacity", "Booked", "Status", ""].map((h) => (
+                    <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {slots.length === 0 ? (
+                  <tr><td colSpan={variants.length > 0 ? 8 : 7} className="px-4 py-6 text-slate-400">No slots in range. Generate some above.</td></tr>
+                ) : slots.map((s) => (
+                  <tr key={s.id} className="border-t border-slate-100">
+                    <td className="px-4 py-3">
+                      <input type="checkbox" checked={selected.has(s.id)} disabled={s.bookedCount > 0}
+                        onChange={() => toggleSelect(s.id)}
+                        title={s.bookedCount > 0 ? "Has bookings — can't delete" : ""} />
+                    </td>
+                    {variants.length > 0 && <td className="px-4 py-3">{variantLabel((s as any).variantId)}</td>}
+                    <td className="px-4 py-3">{s.date}</td>
+                    <td className="px-4 py-3">{s.startTime}</td>
+                    <td className="px-4 py-3">{s.capacity}</td>
+                    <td className="px-4 py-3">{s.bookedCount}</td>
+                    <td className="px-4 py-3">{s.status}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => { if (confirm("Delete this slot?")) del.mutate({ id: s.id }, { onSuccess: afterDelete }); }}
+                        className="text-red-500 hover:underline" disabled={s.bookedCount > 0}
+                        title={s.bookedCount > 0 ? "Has bookings" : ""}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </>
   );
@@ -144,8 +230,6 @@ function Inner() {
 
 export default function AdminAvailability() {
   return (
-    <AdminLayout>
-      <Inner />
-    </AdminLayout>
+    <Inner />
   );
 }

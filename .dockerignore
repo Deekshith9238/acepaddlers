@@ -8,3 +8,9 @@ artifacts/ace-paddlers/public/videos
 .DS_Store
 infra
 docs
+
+# Local tooling and hand-exported config never belongs in the production image
+.claude
+*.tfplan
+task-def.json
+new-task-def.json

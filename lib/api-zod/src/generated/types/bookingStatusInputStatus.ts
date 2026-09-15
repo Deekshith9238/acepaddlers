@@ -14,4 +14,5 @@ export const BookingStatusInputStatus = {
   confirmed: 'confirmed',
   cancelled: 'cancelled',
   completed: 'completed',
+  cart_abandoned: 'cart_abandoned',
 } as const;

@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AddonSelection } from './addonSelection';
 import type { GuestDetail } from './guestDetail';
+import type { ParticipantSelection } from './participantSelection';
 
 export interface BookingInput {
   slotId: string;
@@ -15,4 +17,13 @@ export interface BookingInput {
   numGuests: number;
   guestDetails?: GuestDetail[];
   notes?: string | null;
+  /** Discount code; ignored if it fails validation */
+  couponCode?: string | null;
+  /** Per-type counts; when given, numGuests is derived from these */
+  participants?: ParticipantSelection[];
+  /** Anonymous session id, so the booking joins up with the visitor's pageviews */
+  analyticsSessionId?: string | null;
+  addons?: AddonSelection[];
+  /** How the customer intends to pay; decides which method-scoped charges apply */
+  paymentMethod?: string | null;
 }

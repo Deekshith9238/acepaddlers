@@ -7,6 +7,8 @@
  */
 
 export interface GenerateSlotsInput {
+  /** Which variant to open. Omit on a trip with variants and one departure is opened for each of them. */
+  variantId?: string | null;
   from: string;
   to: string;
   /** 0=Sun … 6=Sat */

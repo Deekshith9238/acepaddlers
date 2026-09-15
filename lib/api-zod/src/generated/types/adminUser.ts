@@ -12,4 +12,7 @@ export interface AdminUser {
   email: string;
   name?: string | null;
   role: AdminUserRole;
+  /** What this role may change — the UI hides anything absent here */
+  capabilities?: string[];
+  token?: string | null;
 }

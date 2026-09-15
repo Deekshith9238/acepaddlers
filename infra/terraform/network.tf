@@ -36,18 +36,11 @@ resource "aws_subnet" "private" {
   tags              = { Name = "${local.name}-private-${count.index}" }
 }
 
-# Single NAT gateway (cost-optimised) for private-subnet egress (App Runner → internet).
-resource "aws_eip" "nat" {
-  domain = "vpc"
-  tags   = { Name = "${local.name}-nat" }
-}
-
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-  tags          = { Name = local.name }
-  depends_on    = [aws_internet_gateway.main]
-}
+# No NAT gateway. The only thing that needed egress was the API task, and a NAT
+# costs ~$41/month in this region whether or not it is used — it was carrying
+# under 1 GB a month. The task now sits in a public subnet and reaches the
+# internet through the internet gateway directly. It stays unreachable from
+# outside because aws_security_group.ecs_tasks admits nothing but the ALB.
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -66,11 +59,12 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
-  tags = { Name = "${local.name}-private" }
+  # Explicitly empty, not merely omitted: leaving the block out means "don't
+  # manage routes", which would strand the old 0.0.0.0/0 → NAT entry as a
+  # blackhole once the gateway is gone. Only RDS lives here and it has no
+  # outbound need, so local routing is all it should have.
+  route = []
+  tags  = { Name = "${local.name}-private" }
 }
 
 resource "aws_route_table_association" "private" {
@@ -88,6 +82,13 @@ resource "aws_security_group" "alb" {
   ingress {
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

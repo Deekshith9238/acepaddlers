@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { requireAdmin } from "../../middlewares/requireAdmin";
+import { requireCapability } from "../../middlewares/requireCapability";
 import {
   googleEnv,
   buildAuthUrl,
@@ -8,9 +9,21 @@ import {
   saveConnection,
   clearConnection,
 } from "../../lib/google";
+import { razorpayConfigured } from "../../lib/razorpay";
+import { whatsappConfigured } from "../../lib/whatsapp";
 
 const router: IRouter = Router();
-router.use(requireAdmin);
+router.use(requireAdmin, requireCapability("settings"));
+
+// Read-only config status for the admin Payments page — never exposes the
+// actual key/secret, just whether the server has them set.
+router.get("/integrations/razorpay", async (_req, res) => {
+  res.json({ configured: razorpayConfigured(), keyId: process.env.RAZORPAY_KEY_ID ?? null });
+});
+
+router.get("/integrations/whatsapp", async (_req, res) => {
+  res.json({ configured: whatsappConfigured() });
+});
 
 // Status (JSON, for the admin Settings UI)
 router.get("/integrations/google", async (_req, res) => {

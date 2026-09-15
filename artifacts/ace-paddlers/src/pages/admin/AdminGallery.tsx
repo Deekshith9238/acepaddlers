@@ -3,7 +3,6 @@ import GridLayout, { WidthProvider, type Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Trash2, X } from "lucide-react";
-import AdminLayout from "@/admin/AdminLayout";
 import { uploadMedia } from "@/admin/upload";
 import {
   useListAdminGallery,
@@ -227,8 +226,6 @@ function Inner() {
 
 export default function AdminGallery() {
   return (
-    <AdminLayout>
-      <Inner />
-    </AdminLayout>
+    <Inner />
   );
 }
