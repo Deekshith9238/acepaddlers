@@ -127,13 +127,21 @@ export function TripItinerary({ tourId }: { tourId: string }) {
             itinerary: days
               .map((d) => ({
                 title: d.title,
+                // Keep any line with something in it. This used to drop every
+                // line whose first box was empty — so a line typed only into
+                // "Detail" vanished on save without a word. A detail-only line
+                // is promoted to the line's title rather than lost.
                 items: (d.items ?? [])
-                  .filter((i) => (i.title ?? "").trim())
-                  .map((i) => ({
-                    time: i.time || null,
-                    title: (i.title ?? "").trim(),
-                    description: (i.description ?? "").trim() || null,
-                  })),
+                  .map((i) => {
+                    const title = (i.title ?? "").trim();
+                    const description = (i.description ?? "").trim();
+                    return {
+                      time: (i.time ?? "").trim() || null,
+                      title: title || description,
+                      description: title ? description || null : null,
+                    };
+                  })
+                  .filter((i) => i.title),
               }))
               .filter((d) => (d.title ?? "").trim() && d.items.length > 0),
           })
