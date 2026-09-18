@@ -9,6 +9,28 @@ import { EDITABLE_PAGES } from "@/builder/pages";
 import { PAGE_TEMPLATES, buildTourTemplate, buildDestinationTemplate } from "@/builder/templates";
 import { useAdminMe, useGetAdminPage, useSavePage, useGetTour, useGetDestination } from "@workspace/api-client-react";
 import { adaptTour } from "@/lib/content";
+import { TripPageProvider } from "@/builder/tripPage";
+
+type Trip = ReturnType<typeof adaptTour>;
+
+/**
+ * Trip content that only shows if the page carries the matching section.
+ *
+ * A trip page built by hand can quietly omit one — which is how a trip's
+ * itinerary was saved, correct, and invisible on the website for weeks. The
+ * editor now says so instead of leaving it to be discovered.
+ */
+const TRIP_SECTIONS: { type: string; label: string; describe: (t: Trip) => string | null }[] = [
+  { type: "TripAbout", label: "Trip overview", describe: (t) => (t.description?.trim() ? "a description" : null) },
+  { type: "TripItinerary", label: "Trip itinerary", describe: (t) => ((t.itinerary?.length ?? 0) > 0 || t.itineraryText?.trim() ? "an itinerary" : null) },
+  { type: "TripHighlights", label: "Trip highlights", describe: (t) => (t.highlights?.length ? `${t.highlights.length} highlights` : null) },
+  { type: "TripInclusions", label: "What's included", describe: (t) => (t.included?.length || t.excluded?.length ? "inclusions" : null) },
+  { type: "TripFaq", label: "Trip FAQs", describe: (t) => (t.faqs?.length ? `${t.faqs.length} FAQs` : null) },
+  { type: "TripGrades", label: "Rapid grades", describe: (t) => (t.rapidGrades?.length ? `${t.rapidGrades.length} rapid grades` : null) },
+  { type: "TripActivities", label: "Trip activities", describe: (t) => (t.activities?.length ? `${t.activities.length} activities` : null) },
+  { type: "TripTerms", label: "Trip terms", describe: (t) => (t.terms?.trim() ? "terms & conditions" : null) },
+  { type: "TripLocation", label: "Trip location", describe: (t) => (t.shortAddress || t.detailedAddress || t.directions ? "a location" : null) },
+];
 
 /**
  * Subscribe to one slice of Puck's store at a time.
@@ -44,6 +66,10 @@ interface EditorMeta {
   livePath: string;
   replacesBuiltIn: boolean;
   save: SaveState;
+  /** "Standard trip layout" or "Custom layout · saved 17 Jul 2026". */
+  layoutLabel: string;
+  /** The trip this page belongs to, for the hidden-content warning. */
+  trip: Trip | null;
 }
 
 const EditorContext = createContext<EditorMeta>({
@@ -51,6 +77,8 @@ const EditorContext = createContext<EditorMeta>({
   livePath: "/",
   replacesBuiltIn: false,
   save: { status: "idle" },
+  layoutLabel: "",
+  trip: null,
 });
 
 /** A block's human label ("Card grid"), not its internal type name ("Cards"). */
@@ -74,7 +102,7 @@ const btn =
  * the same state, and `actions` carries Puck's own Publish button through.
  */
 function EditorToolbar({ actions }: { actions: React.ReactNode }) {
-  const { title, livePath } = useContext(EditorContext);
+  const { title, livePath, layoutLabel } = useContext(EditorContext);
   const dispatch = usePuckState((s) => s.dispatch);
   const leftSideBarVisible = usePuckState((s) => s.appState.ui.leftSideBarVisible);
   const rightSideBarVisible = usePuckState((s) => s.appState.ui.rightSideBarVisible);
@@ -121,6 +149,13 @@ function EditorToolbar({ actions }: { actions: React.ReactNode }) {
       <div className="flex min-w-0 items-baseline gap-2 overflow-hidden">
         <span className="truncate text-sm font-semibold text-white">{title}</span>
         <code className="hidden truncate text-[11px] text-slate-400 lg:inline">{livePath}</code>
+        {layoutLabel && (
+          <span
+            title="Which layout this page uses"
+            className="hidden shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-300 xl:inline">
+            {layoutLabel}
+          </span>
+        )}
       </div>
 
       <span className="w-px h-5 shrink-0 bg-white/15 ml-2" />
@@ -256,12 +291,35 @@ function EmptyCanvasHint({ replacesBuiltIn }: { replacesBuiltIn: boolean }) {
 }
 
 function Canvas() {
-  const { replacesBuiltIn } = useContext(EditorContext);
+  const { replacesBuiltIn, trip } = useContext(EditorContext);
   const isEmpty = usePuckState((s) => s.appState.data.content.length === 0);
+  // A string, not an array: a selector returning a fresh array re-renders the
+  // canvas on every store tick.
+  const types = usePuckState((s) => s.appState.data.content.map((b) => b.type).join(","));
+
+  const missing = trip
+    ? TRIP_SECTIONS.filter((sec) => !types.split(",").includes(sec.type) && sec.describe(trip))
+    : [];
+
   return (
-    <div className="relative h-full">
-      <Puck.Preview />
-      {isEmpty && <EmptyCanvasHint replacesBuiltIn={replacesBuiltIn} />}
+    <div className="relative h-full flex flex-col">
+      {missing.length > 0 && (
+        <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] leading-relaxed text-amber-900">
+          <strong className="font-semibold">Not shown on this page:</strong>{" "}
+          {missing.map((m, i) => (
+            <span key={m.type}>
+              {i > 0 && (i === missing.length - 1 ? " and " : ", ")}
+              {m.describe(trip as Trip)} (<em>{m.label}</em>)
+            </span>
+          ))}
+          . Add {missing.length === 1 ? "that section" : "those sections"} from <strong>Live content</strong> on the
+          left, or leave them off deliberately.
+        </div>
+      )}
+      <div className="relative flex-1 min-h-0">
+        <Puck.Preview />
+        {isEmpty && <EmptyCanvasHint replacesBuiltIn={replacesBuiltIn} />}
+      </div>
     </div>
   );
 }
@@ -323,6 +381,16 @@ function Editor({ slug }: { slug: string }) {
   // detail route; admin-created pages serve at /p/<slug>.
   const livePath = tourSlug ? `/tours/${tourSlug}` : destSlug ? `/destinations/${destSlug}` : (meta?.path ?? `/p/${slug}`);
 
+  const trip = tourQ.data ? adaptTour(tourQ.data) : null;
+  const savedAt = page.data?.updatedAt ? new Date(page.data.updatedAt) : null;
+  const layoutLabel = tourSlug
+    ? savedAt
+      ? `Custom layout · saved ${savedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+      : "Standard trip layout"
+    : savedAt
+      ? "Custom layout"
+      : "Built-in design";
+
   const onPublish = (data: Data) => {
     setSave({ status: "saving" });
     saveMutation.mutate(
@@ -340,7 +408,9 @@ function Editor({ slug }: { slug: string }) {
          it does not remount them. It must NOT be a useMemo down here — every
          hook in this component sits above the loading early-return, and adding
          one below it changes the hook count between renders. */
-      value={{ title, livePath, replacesBuiltIn: !hasSavedLayout, save }}>
+      value={{ title, livePath, replacesBuiltIn: !hasSavedLayout, save, layoutLabel, trip }}>
+      {/* On a trip's page, live sections read that trip without being told. */}
+      <TripPageProvider slug={tourSlug}>
       <div className="h-full flex flex-col">
         <Puck
         config={builderConfig}
@@ -354,6 +424,7 @@ function Editor({ slug }: { slug: string }) {
         overrides={OVERRIDES}
         />
       </div>
+      </TripPageProvider>
     </EditorContext.Provider>
   );
 }

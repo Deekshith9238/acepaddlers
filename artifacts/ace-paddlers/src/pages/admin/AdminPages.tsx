@@ -68,7 +68,8 @@ const STATUS_COLOR: Record<string, string> = { published: "#047857", draft: "#b4
 
 /** Table of tour/destination detail pages, editable with the same builder as
  *  the main pages via namespaced slugs (`tour:<slug>` / `destination:<slug>`).
- *  "Reset" deletes the builder doc so the page falls back to the default layout. */
+ *  "Use standard layout" deletes this page's own layout, so it falls back to
+ *  the standard one built from the trip's content. */
 function EntityPagesTable({ heading, rows, onReset }: {
   heading: string;
   rows: { editorSlug: string; title: string; path: string; status: string; hasDoc: boolean }[];
@@ -99,7 +100,7 @@ function EntityPagesTable({ heading, rows, onReset }: {
                   <Link href={`/admin/pages/${p.editorSlug}`} className="text-cyan-600 no-underline hover:underline">Open builder →</Link>
                   {p.hasDoc && (
                     <button onClick={() => onReset(p.editorSlug, p.title)} className="ml-4 text-red-500 hover:underline">
-                      Reset
+                      Use standard layout
                     </button>
                   )}
                 </td>
@@ -156,12 +157,12 @@ function Inner() {
   const destRows = entityRows("destination", (destinations ?? []).map((d: any) => ({ slug: d.slug, title: d.name })), "/destinations");
 
   const onReset = async (editorSlug: string, title: string) => {
-    if (!confirm(`Reset “${title}” to the default layout? This page's own layout will be deleted.`)) return;
+    if (!confirm(`Put “${title}” back on the standard layout? Its own custom layout will be deleted — the trip's own content is untouched.`)) return;
     try {
       await deletePage(editorSlug);
       refetch();
     } catch {
-      setError("Reset failed. Please try again.");
+      setError("Couldn't switch back to the standard layout. Please try again.");
     }
   };
 

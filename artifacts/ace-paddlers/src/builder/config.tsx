@@ -15,6 +15,7 @@ import { adaptTour, adaptBlogSummary, useTourTypeLabels } from "@/lib/content";
 import { useOpenBookingModal } from "@/lib/bookingModalContext";
 import { fetchSiteConfig, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
+import { useTripSlug, getPageTripSlug } from "@/builder/tripPage";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -855,7 +856,7 @@ const withSourceNote = (tab: string, feeds: string, missing?: boolean) =>
     source: {
       type: "custom" as const,
       render: () => (
-        <LiveSourceNote slug={data?.props?.tourSlug} tab={tab} feeds={feeds} missing={missing} />
+        <LiveSourceNote slug={data?.props?.tourSlug || getPageTripSlug()} tab={tab} feeds={feeds} missing={missing} />
       ),
     },
     ...fields,
@@ -1345,7 +1346,8 @@ export const builderConfig: Config<BuilderComponents> = {
         background: "", padY: "",
       },
       render: ({ tourSlug, phone, startingFrom, perPerson, ctaLabel, disclaimer, noAvailability, callButton, trustBadges, background, padY }: TourBookingProps) => {
-        const { data: apiTour } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data: apiTour } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = apiTour ? adaptTour(apiTour) : null;
         const badges = (trustBadges ?? "").split("\n").map((b) => b.trim()).filter(Boolean);
         return (
@@ -1823,9 +1825,10 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Guest reviews", background: "muted", padY: "", headingSize: "" },
       render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { reviews, rating } = useReviews(tourSlug || undefined);
-        if (!tourSlug) return <TripBlockPrompt what="reviews" slug={tourSlug} />;
-        if (reviews.length === 0) return <TripBlockPrompt what="reviews" slug={tourSlug} empty />;
+        const slug = useTripSlug(tourSlug);
+        const { reviews, rating } = useReviews(slug || undefined);
+        if (!slug) return <TripBlockPrompt what="reviews" slug={slug} />;
+        if (reviews.length === 0) return <TripBlockPrompt what="reviews" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
@@ -1884,9 +1887,10 @@ export const builderConfig: Config<BuilderComponents> = {
         titleSize: "", eyebrowSize: "", taglineSize: "", priceSize: "",
       },
       render: ({ tourSlug, heading, titleSize, eyebrowSize, taglineSize, priceSize, background, padY }: TripHeroProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="hero" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="hero" slug={slug} />;
         const dk = bgIsDark(background, true);
         // The advertised price is a display override; the rate card still does
         // the arithmetic once a date is picked.
@@ -1934,9 +1938,10 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "", background: "", padY: "", headingSize: "" },
       render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="facts" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="facts" slug={slug} />;
         const dk = bgIsDark(background, false);
         const party =
           t.minParticipants && t.maxParticipants ? `${t.minParticipants}–${t.maxParticipants}`
@@ -1951,7 +1956,7 @@ export const builderConfig: Config<BuilderComponents> = {
           ["Minimum age", t.minAge],
           ["Maximum weight", t.maxWeight],
         ].filter(([, v]) => v) as [string, string][];
-        if (facts.length === 0) return <TripBlockPrompt what="facts" slug={tourSlug} empty />;
+        if (facts.length === 0) return <TripBlockPrompt what="facts" slug={slug} empty />;
         return (
           <section className="px-6 py-12" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-5xl mx-auto">
@@ -1984,14 +1989,15 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Itinerary", background: "", padY: "", headingSize: "" },
       render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="itinerary" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="itinerary" slug={slug} />;
         // Drop the empty rows the day builder leaves behind.
         const days = (t.itinerary ?? []).filter(
           (d) => d?.title || (d?.items ?? []).some((i) => i?.title || i?.description || i?.text),
         );
-        if (days.length === 0 && !t.itineraryText) return <TripBlockPrompt what="itinerary" slug={tourSlug} empty />;
+        if (days.length === 0 && !t.itineraryText) return <TripBlockPrompt what="itinerary" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
@@ -2038,16 +2044,17 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Getting there", background: "", padY: "", headingSize: "" },
       render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="location" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="location" slug={slug} />;
         const addr = t.detailedAddress || t.shortAddress;
         // Coordinates beat an address search: these are put-in points on
         // rivers, and a text search lands on the nearest village.
         const map = t.latitude && t.longitude
           ? `https://www.google.com/maps/search/?api=1&query=${t.latitude},${t.longitude}`
           : addr ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}` : null;
-        if (!addr && !t.directions && !map) return <TripBlockPrompt what="location" slug={tourSlug} empty />;
+        if (!addr && !t.directions && !map) return <TripBlockPrompt what="location" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
@@ -2078,10 +2085,11 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Terms & conditions", background: "", padY: "", headingSize: "" },
       render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="terms" slug={tourSlug} />;
-        if (!t.terms) return <TripBlockPrompt what="terms" slug={tourSlug} empty />;
+        if (!t) return <TripBlockPrompt what="terms" slug={slug} />;
+        if (!t.terms) return <TripBlockPrompt what="terms" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
@@ -2125,10 +2133,11 @@ export const builderConfig: Config<BuilderComponents> = {
         background: "", padY: "",
       },
       render: ({ tourSlug, heading, titleSize, taglineSize, height, overlayOpacity, showBackLink, showBadges, showRating }: TripBannerProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
-        const { rating } = useReviews(tourSlug || undefined);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
+        const { rating } = useReviews(slug || undefined);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="banner" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="banner" slug={slug} />;
         const gallery = ((data as { images?: string[] } | undefined)?.images ?? []).filter(Boolean);
         const images = gallery.length > 0 ? gallery : [t.heroImg].filter(Boolean);
         const pct = overlayOpacity ?? 55;
@@ -2200,11 +2209,12 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "About this experience", background: "", padY: "", headingSize: "", bodySize: "" },
       render: ({ headingSize, bodySize, tourSlug, heading, background, padY }: TripBlockProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="overview" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="overview" slug={slug} />;
         const paras = (t.description ?? "").split(/\n\n+/).map((x) => x.trim()).filter(Boolean);
-        if (paras.length === 0) return <TripBlockPrompt what="overview" slug={tourSlug} empty />;
+        if (paras.length === 0) return <TripBlockPrompt what="overview" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
@@ -2237,11 +2247,12 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Highlights", columns: "1", background: "", padY: "", headingSize: "", itemSize: "" },
       render: ({ headingSize, itemSize, columns, tourSlug, heading, background, padY }: TripListProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="highlights" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="highlights" slug={slug} />;
         const items = (t.highlights ?? []).filter(Boolean);
-        if (items.length === 0) return <TripBlockPrompt what="highlights" slug={tourSlug} empty />;
+        if (items.length === 0) return <TripBlockPrompt what="highlights" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
@@ -2282,12 +2293,13 @@ export const builderConfig: Config<BuilderComponents> = {
         background: "", padY: "", headingSize: "", itemSize: "",
       },
       render: ({ headingSize, itemSize, tourSlug, heading, excludedHeading, background, padY }: TripInclusionsProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="inclusions" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="inclusions" slug={slug} />;
         const inc = (t.included ?? []).filter(Boolean);
         const exc = (t.excluded ?? []).filter(Boolean);
-        if (inc.length === 0 && exc.length === 0) return <TripBlockPrompt what="inclusions" slug={tourSlug} empty />;
+        if (inc.length === 0 && exc.length === 0) return <TripBlockPrompt what="inclusions" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         const col = (title: string | undefined, rows: string[], ok: boolean) =>
           rows.length === 0 ? null : (
@@ -2332,11 +2344,12 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Activities", background: "", padY: "", headingSize: "", titleSize: "", bodySize: "" },
       render: ({ headingSize, titleSize, bodySize, tourSlug, heading, background, padY }: TripActivitiesProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="activities" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="activities" slug={slug} />;
         const acts = (t.activities ?? []).filter(Boolean);
-        if (acts.length === 0) return <TripBlockPrompt what="activities" slug={tourSlug} empty />;
+        if (acts.length === 0) return <TripBlockPrompt what="activities" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
@@ -2383,11 +2396,12 @@ export const builderConfig: Config<BuilderComponents> = {
         background: "", padY: "", headingSize: "", titleSize: "", bodySize: "",
       },
       render: ({ headingSize, titleSize, bodySize, tourSlug, heading, intro, background, padY }: TripGradesProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="rapid grades" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="rapid grades" slug={slug} />;
         const grades = (t.rapidGrades ?? []).filter((g) => g?.grade || g?.title);
-        if (grades.length === 0) return <TripBlockPrompt what="rapid grades" slug={tourSlug} empty />;
+        if (grades.length === 0) return <TripBlockPrompt what="rapid grades" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         const SWATCH = ["#16a34a", C.riverTeal, "#d97706", "#c94f28"];
         return (
@@ -2433,11 +2447,12 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { tourSlug: "", heading: "Frequently asked questions", background: "", padY: "", headingSize: "", questionSize: "", answerSize: "" },
       render: ({ headingSize, questionSize, answerSize, tourSlug, heading, background, padY }: TripFaqProps) => {
-        const { data } = useGetTour(tourSlug || "", { query: { enabled: !!tourSlug, retry: false } } as never);
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
-        if (!t) return <TripBlockPrompt what="FAQs" slug={tourSlug} />;
+        if (!t) return <TripBlockPrompt what="FAQs" slug={slug} />;
         const faqs = (t.faqs ?? []).filter((f) => f?.q || f?.a);
-        if (faqs.length === 0) return <TripBlockPrompt what="FAQs" slug={tourSlug} empty />;
+        if (faqs.length === 0) return <TripBlockPrompt what="FAQs" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
           <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>

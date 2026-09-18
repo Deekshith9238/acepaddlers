@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { useSetCurrentTour } from "@/components/CurrentTourContext";
 import { useGetPage } from "@workspace/api-client-react";
+import { TripPageProvider } from "./tripPage";
 
 const BuilderRender = lazy(() => import("./BuilderRender"));
 
@@ -29,9 +30,12 @@ export default function EditablePage({
 
   if (data?.content && data.content.length > 0) {
     return (
-      <Suspense fallback={<div className="min-h-screen" />}>
-        <BuilderRender data={data} />
-      </Suspense>
+      // A trip page announces its trip, so live sections on it need no slug.
+      <TripPageProvider slug={slug.startsWith("tour:") ? slug.slice("tour:".length) : ""}>
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <BuilderRender data={data} />
+        </Suspense>
+      </TripPageProvider>
     );
   }
   return <>{children}</>;
