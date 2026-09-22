@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useListMedia, useDeleteMedia, useForceDeleteMedia, type MediaAsset, type ListMediaKind } from "@workspace/api-client-react";
 import { uploadMedia } from "@/admin/upload";
+import { useCropExisting } from "@/admin/useCropUpload";
 
 function bytesLabel(m: MediaAsset): string {
   return [m.width && m.height ? `${m.width}×${m.height}` : null, m.mime].filter(Boolean).join(" · ");
@@ -20,6 +21,7 @@ function Inner() {
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
     if (files.length === 0) return;
     setUploading(true);
     setError(null);
@@ -30,9 +32,14 @@ function Inner() {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
+  // Cropping a library image adds the cropped copy as a new asset, so anything
+  // already using the original keeps working.
+  const { startCrop, cropper, cropBusy } = useCropExisting(async (file) => {
+    await uploadMedia(file);
+    refetch();
+  });
 
   const del = (m: MediaAsset, force: boolean) => {
     setError(null);
@@ -113,6 +120,10 @@ function Inner() {
                       className="text-[10px] font-semibold text-cyan-600 hover:underline">
                       {copied === m.id ? "Copied" : "Copy URL"}
                     </button>
+                    {m.url && m.kind === "image" && (
+                      <button type="button" disabled={cropBusy} onClick={() => void startCrop(m.url!)}
+                        className="text-[10px] font-semibold text-slate-600 hover:underline disabled:opacity-50">Crop</button>
+                    )}
                     <button type="button" onClick={() => del(m, confirmId === m.id)} className="text-[10px] font-semibold text-red-600 hover:underline">
                       {confirmId === m.id ? "Really?" : "Delete"}
                     </button>
@@ -123,6 +134,7 @@ function Inner() {
           ))}
         </div>
       )}
+      {cropper}
     </>
   );
 }

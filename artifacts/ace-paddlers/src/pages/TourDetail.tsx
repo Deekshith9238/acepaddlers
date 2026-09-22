@@ -246,20 +246,8 @@ function TourDetailContent({ slug }: { slug: string }) {
           </Animate>
         </section>
 
-        {/* Book Now bar — prominent, right below the hero image */}
-        <div className="sticky top-[77px] z-20 px-6 py-3 flex items-center justify-between gap-4 flex-wrap"
-          style={{ backgroundColor: C.bgCard, borderBottom: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 12px rgba(13,45,64,0.08)" }}>
-          <div className="text-sm" style={{ color: C.text }}>
-            {priceLabel(tour, { after: "per person" }).before && <span style={{ color: "#3f6f88" }}>{priceLabel(tour).before} </span>}
-            <span className="font-semibold" style={{ color: C.deepOcean }}>{tour.price}</span>
-            {priceLabel(tour, { after: "per person" }).after && <span style={{ color: "#3f6f88" }}> {priceLabel(tour, { after: "per person" }).after}</span>}
-          </div>
-          <button type="button" onClick={() => setShowBooking(true)}
-            className="rounded-full px-6 py-2.5 text-sm font-semibold no-underline transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: C.riverTeal, color: "white" }}>
-            Book Now
-          </button>
-        </div>
+        {/* The price + Book Now bar now lives in the site header (TripBookingBar),
+            so it stays in reach on every trip page, not just this layout. */}
 
         {/* Main content */}
         <section className="py-16 px-6 max-w-7xl mx-auto">

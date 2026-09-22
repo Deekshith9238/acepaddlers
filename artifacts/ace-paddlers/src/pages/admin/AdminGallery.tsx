@@ -4,6 +4,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Trash2, X } from "lucide-react";
 import { uploadMedia } from "@/admin/upload";
+import { useCropExisting } from "@/admin/useCropUpload";
 import {
   useListAdminGallery,
   useCreateGalleryItem,
@@ -81,22 +82,32 @@ function Inner() {
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
     setUploading(true);
     try {
-      const m = await uploadMedia(file);
-      const maxSort = items.reduce((mx, x) => Math.max(mx, x.sortOrder), -1);
-      const maxY = layout.reduce((mx, l) => Math.max(mx, l.y + l.h), 0);
-      await create.mutateAsync({
-        data: { src: m.url ?? "", category: "Rafting", tall: false, sortOrder: maxSort + 1, published: true, layoutX: 0, layoutY: maxY, layoutW: 4, layoutH: 5 },
-      });
+      let maxSort = items.reduce((mx, x) => Math.max(mx, x.sortOrder), -1);
+      let maxY = layout.reduce((mx, l) => Math.max(mx, l.y + l.h), 0);
+      for (const file of files) {
+        const m = await uploadMedia(file);
+        await create.mutateAsync({
+          data: { src: m.url ?? "", category: "Rafting", tall: false, sortOrder: ++maxSort, published: true, layoutX: 0, layoutY: maxY, layoutW: 4, layoutH: 5 },
+        });
+        maxY += 5;
+      }
       refetch();
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
+  // Crop the selected gallery image; the cropped copy replaces its source.
+  const { startCrop, cropper, cropBusy } = useCropExisting(async (file) => {
+    const m = await uploadMedia(file);
+    const it = items.find((x) => x.id === selected);
+    if (m.url && it) await update.mutateAsync({ id: it.id, data: toInput(it, { src: m.url }) });
+    refetch();
+  });
 
   const remove = (id: string) => {
     if (!confirm("Delete this image?")) return;
@@ -129,7 +140,7 @@ function Inner() {
           </button>
           <label className="cursor-pointer rounded-lg bg-cyan-600 text-white px-4 py-2 text-sm font-semibold hover:bg-cyan-700">
             {uploading ? "Uploading…" : "+ Add image"}
-            <input type="file" accept="image/*" className="hidden" onChange={onUpload} disabled={uploading} />
+            <input type="file" accept="image/*" multiple className="hidden" onChange={onUpload} disabled={uploading} />
           </label>
         </div>
       </div>
@@ -212,6 +223,10 @@ function Inner() {
                 <input type="checkbox" checked={sel.published ?? true} onChange={(e) => patch(sel.id, { published: e.target.checked })} />
                 Published (visible on the site)
               </label>
+              <button onClick={() => void startCrop(sel.src)} disabled={cropBusy}
+                className="w-full mt-2 rounded-lg border border-slate-300 text-slate-700 px-3 py-2 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60">
+                {cropBusy ? "Opening…" : "Crop image"}
+              </button>
               <button onClick={() => remove(sel.id)}
                 className="w-full mt-2 rounded-lg border border-red-300 text-red-600 px-3 py-2 text-sm font-semibold hover:bg-red-50">
                 Delete image
@@ -220,6 +235,7 @@ function Inner() {
           )}
         </div>
       </div>
+      {cropper}
     </>
   );
 }

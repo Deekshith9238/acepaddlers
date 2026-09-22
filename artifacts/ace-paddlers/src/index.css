@@ -416,3 +416,14 @@ body { font-weight: var(--brand-bodyWeight, 400); }
 [data-header-style="center"] .ap-header-inner > * { order: 2; }
 [data-header-style="center"] .ap-header-inner > a:first-child { order: 0; }
 [data-header-style="center"] .ap-header-inner::after { content: ""; flex-basis: 100%; order: 1; }
+
+/* Trip booking bar: one attention pulse when a trip page is first opened. */
+@keyframes ap-trip-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 127, 166, 0); }
+  30%      { box-shadow: 0 0 0 8px rgba(26, 127, 166, 0.28); }
+  60%      { box-shadow: 0 0 0 14px rgba(26, 127, 166, 0); }
+}
+.ap-trip-bar-cta { animation: ap-trip-cta-pulse 1.6s ease-out 0.35s 2; }
+@media (prefers-reduced-motion: reduce) {
+  .ap-trip-bar, .ap-trip-bar-cta { animation: none !important; transition: none !important; }
+}

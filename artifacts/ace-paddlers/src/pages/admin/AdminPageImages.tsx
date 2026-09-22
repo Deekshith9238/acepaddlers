@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { uploadMedia } from "@/admin/upload";
+import { useCropExisting } from "@/admin/useCropUpload";
 import {
   PAGE_IMAGE_KEYS,
   fetchAdminPageImages,
@@ -47,17 +48,27 @@ function Inner() {
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
     setUploading(true);
     try {
-      const m = await uploadMedia(file);
-      if (m.url) setImages([...images, m.url]);
+      const urls: string[] = [];
+      for (const file of files) {
+        const m = await uploadMedia(file);
+        if (m.url) urls.push(m.url);
+      }
+      if (urls.length) setImages([...images, ...urls]);
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const { startCrop, cropper, cropBusy } = useCropExisting(async (file) => {
+    const m = await uploadMedia(file);
+    if (m.url && cropIndex != null) setImages(images.map((src, i) => (i === cropIndex ? m.url! : src)));
+    setCropIndex(null);
+  });
 
   const onSave = async () => {
     if (!map) return;
@@ -128,6 +139,8 @@ function Inner() {
                         onClick={() => moveAt(i, -1)} disabled={i === 0}>↑</button>
                       <button className="rounded-md border border-slate-300 text-slate-600 px-2 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-40"
                         onClick={() => moveAt(i, 1)} disabled={i === images.length - 1}>↓</button>
+                      <button className="rounded-md border border-slate-300 text-slate-600 px-2 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-40"
+                        disabled={cropBusy} onClick={() => { setCropIndex(i); void startCrop(src); }}>Crop</button>
                       <button className="rounded-md border border-red-300 text-red-600 px-2 py-1 text-xs font-semibold hover:bg-red-50"
                         onClick={() => removeAt(i)}>Remove</button>
                     </div>
@@ -146,12 +159,13 @@ function Inner() {
               </button>
               <label className="shrink-0 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 {uploading ? "Uploading…" : "Upload image"}
-                <input type="file" accept="image/*" className="hidden" onChange={onUpload} disabled={uploading} />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={onUpload} disabled={uploading} />
               </label>
             </div>
           </div>
         )}
       </div>
+      {cropper}
     </>
   );
 }

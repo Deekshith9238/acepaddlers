@@ -13,10 +13,11 @@ import { fetchSiteConfig, telHref, waHref, BOOKING_TEXT_DEFAULTS, type BookingTe
 import { useBusiness } from "@/lib/useBusiness";
 import { BookingModalContext } from "@/lib/bookingModalContext";
 import BookingModal from "./BookingModal";
+import TripBookingBar from "./TripBookingBar";
 
 function DropMenu({ items, visible }: { items: DropItem[]; visible: boolean }) {
   return (
-    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
+    <div className="absolute top-full left-1/2 pt-3 z-50"
       style={{ pointerEvents: visible ? "auto" : "none", opacity: visible ? 1 : 0,
         transform: `translateX(-50%) translateY(${visible ? 0 : -8}px)`,
         transition: "opacity 0.22s ease, transform 0.22s ease" }}>
@@ -69,11 +70,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     fetchSiteConfig().then((c) => { setFloaterTxt(c.bookingText); setFloaterShowSeatCount(c.showSeatCount); });
   }, [currentTour]);
 
+  /**
+   * On a trip page the menu folds away as soon as you scroll down, leaving the
+   * booking bar alone at the top; scrolling back up brings the menu back. Tied
+   * to direction rather than depth so the menu is always one flick away.
+   */
+  const [navFolded, setNavFolded] = useState(false);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 60);
+      if (Math.abs(y - lastY) > 6) {
+        setNavFolded(y > 140 && y > lastY);
+        lastY = y;
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  // Only trip pages have a booking bar to fold the menu away for.
+  const foldNav = navFolded && !!currentTour && !menuOpen && !openDrop;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -108,6 +125,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           pill that sizes to its content (and compacts on scroll), and the
           Book CTA in the top corner. */}
       <header className="ap-header fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className={`relative z-10 grid transition-[grid-template-rows,opacity] duration-300 ${foldNav ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
+        {/* Clipped only while folding — an open dropdown must be free to hang below. */}
+        <div className={foldNav ? "overflow-hidden" : "overflow-visible"}>
         <div className={`ap-header-inner w-full px-2 md:px-3 flex items-center justify-between gap-3 transition-all duration-300 ${scrolled ? "pt-2" : "pt-3 md:pt-4"}`}>
 
           {/* Logo — freestanding chip, top left. Background is theme-controlled (default white). */}
@@ -182,6 +202,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+        </div>
+        </div>
+
+        {/* Trip pages: the price + Book Now bar, always in reach under the menu. */}
+        {currentTour && (
+          <div className="relative z-0">
+            <TripBookingBar slug={currentTour.slug} onBook={() => setShowFloaterBooking(true)} />
+          </div>
+        )}
       </header>
 
       {/* ── Mobile menu ── */}

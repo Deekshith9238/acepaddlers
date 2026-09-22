@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useListAdminTourTypes, useListAdminTourCategories } from "@workspace/api-client-react";
 import type { FieldDef } from "./resources";
 import { uploadMedia } from "./upload";
+import { useCropExisting } from "./useCropUpload";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const inputCls =
@@ -11,9 +12,7 @@ function MediaField({ value, onChange }: { value: string; onChange: (v: string) 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const upload = async (file: File) => {
     setUploading(true);
     setError(null);
     try {
@@ -25,6 +24,12 @@ function MediaField({ value, onChange }: { value: string; onChange: (v: string) 
       setUploading(false);
     }
   };
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f) void upload(f);
+  };
+  const { startCrop, cropper, cropBusy, cropError } = useCropExisting(upload);
 
   const isVideo = !!value && /\.(mp4|webm|mov|m4v|m3u8)$/i.test(value);
   return (
@@ -44,13 +49,20 @@ function MediaField({ value, onChange }: { value: string; onChange: (v: string) 
             {uploading ? "Uploading…" : value ? "Replace" : "Upload"}
             <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} disabled={uploading} />
           </label>
+          {value && !isVideo && (
+            <button type="button" onClick={() => startCrop(value)} disabled={cropBusy}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+              {cropBusy ? "Opening…" : "Crop"}
+            </button>
+          )}
           {value && (
             <button type="button" onClick={() => onChange("")}
               className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">Remove</button>
           )}
         </div>
       </div>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {(error || cropError) && <p className="mt-1 text-xs text-red-600">{error ?? cropError}</p>}
+      {cropper}
     </div>
   );
 }
@@ -63,6 +75,7 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
     if (files.length === 0) return;
     setUploading(true);
     setError(null);
@@ -77,9 +90,15 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
+  // Crop replaces the picked image in place, keeping its position in the list.
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const { startCrop, cropper, cropBusy } = useCropExisting(async (file) => {
+    const m = await uploadMedia(file);
+    if (m.url && cropIndex != null) onChange(images.map((src, i) => (i === cropIndex ? m.url! : src)));
+    setCropIndex(null);
+  });
 
   const removeAt = (i: number) => onChange(images.filter((_, idx) => idx !== i));
   const moveAt = (i: number, dir: -1 | 1) => {
@@ -102,6 +121,9 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
                 className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 disabled:opacity-40">←</button>
               <button type="button" title="Move later" onClick={() => moveAt(i, 1)} disabled={i === images.length - 1}
                 className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 disabled:opacity-40">→</button>
+              <button type="button" title="Crop" disabled={cropBusy}
+                onClick={() => { setCropIndex(i); void startCrop(src); }}
+                className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 disabled:opacity-60">Crop</button>
               <button type="button" title="Remove" onClick={() => removeAt(i)}
                 className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-red-600">✕</button>
             </div>
@@ -113,6 +135,7 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
           <input type="file" accept="image/*" multiple className="hidden" onChange={onFiles} disabled={uploading} />
         </label>
       </div>
+      {cropper}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
