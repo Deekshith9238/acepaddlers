@@ -127,7 +127,7 @@ function SafetyContent() {
           <div className="max-w-7xl mx-auto">
             <Animate variant="up">
               <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Our <span className="italic" style={{ color: C.riverTeal }}>Certifications</span>
                 </h2>
                 <p className="max-w-2xl mx-auto text-lg" style={{ color: "#2e5a74" }}>
@@ -163,7 +163,7 @@ function SafetyContent() {
           <div className="max-w-7xl mx-auto">
             <Animate variant="up">
               <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Safety <span className="italic" style={{ color: C.riverTeal }}>Protocols</span>
                 </h2>
                 <p className="max-w-2xl mx-auto" style={{ color: "#2e5a74" }}>

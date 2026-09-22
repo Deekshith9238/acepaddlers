@@ -134,14 +134,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {item.href ? (
                     <Link href={item.href}
                       className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-colors"
-                      style={{ color: active ? "white" : C.deepOcean, backgroundColor: active ? C.riverTeal : "transparent" }}
+                      style={{ color: active ? "white" : C.secondary, backgroundColor: active ? C.riverTeal : "transparent" }}
                       onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}
-                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.deepOcean; }}>
+                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.secondary; }}>
                       {item.label}
                     </Link>
                   ) : (
                     <button className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-transparent border-none cursor-pointer"
-                      style={{ color: active ? "white" : C.deepOcean, backgroundColor: active ? C.riverTeal : "transparent" }}>
+                      style={{ color: active ? "white" : C.secondary, backgroundColor: active ? C.riverTeal : "transparent" }}>
                       {item.label}
                       <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200"
                         style={{ transform: openDrop === item.label ? "rotate(180deg)" : "rotate(0deg)",
@@ -263,7 +263,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="mb-6">
                 <img src="/images/logo.png" alt="Ace Paddlers" className="h-20 w-auto" />
               </div>
-              <p className="mb-8 max-w-sm" style={{ color: "#6b8fa0" }}>
+              <p className="mb-8 max-w-sm" style={{ color: C.footerText }}>
                 The pioneers of South Indian adventure tourism. Crafting unforgettable rafting, camping,
                 and homestay experiences in the Western Ghats for over two decades.
               </p>
@@ -271,7 +271,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {biz.phones.map((num, i) => (
                   <a key={i} href={telHref(num)}
                     className="flex items-center gap-3 hover:text-white transition-colors no-underline"
-                    style={{ color: "#6b8fa0" }}>
+                    style={{ color: C.footerText }}>
                     <Phone className="w-4 h-4 shrink-0" style={{ color: C.riverTeal }} />
                     <span>{num}</span>
                   </a>
@@ -292,7 +292,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       {label}
                     </Link>
                   </li>
@@ -313,7 +313,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       {label}
                     </Link>
                   </li>
@@ -328,7 +328,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       <MapPin className="w-3.5 h-3.5 inline mr-1.5 opacity-60" />{label}
                     </Link>
                   </li>
@@ -339,26 +339,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* NAP — Name, Address, Phone */}
           <div className="py-6 px-6 mb-4 rounded-xl text-center" style={{ backgroundColor: "rgba(26,127,166,0.08)", border: "1px solid rgba(26,127,166,0.15)" }}>
-            <p className="text-sm" style={{ color: "#5a8ea8" }}>
+            <p className="text-sm" style={{ color: C.footerText }}>
               <strong className="text-white">{biz.name}</strong>
               {biz.addressLine && <> &nbsp;|&nbsp; {biz.addressLine}</>}
               {biz.phones.length > 0 && <> &nbsp;|&nbsp; </>}
               {biz.phones.map((num, i) => (
                 <span key={num}>
                   {i > 0 && " · "}
-                  <a href={telHref(num)} className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>{num}</a>
+                  <a href={telHref(num)} className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>{num}</a>
                 </span>
               ))}
             </p>
           </div>
 
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm"
-            style={{ borderTop: "1px solid rgba(26,127,166,0.15)", color: "#4a7080" }}>
+            style={{ borderTop: "1px solid rgba(26,127,166,0.15)", color: C.footerText }}>
             <div className="flex items-center gap-4 flex-wrap justify-center">
               <span>© 2026, Ace Paddlers. All rights reserved.</span>
-              <Link href="/privacy-policy" className="no-underline hover:text-white transition-colors" style={{ color: "#4a7080" }}>Privacy Policy</Link>
-              <Link href="/cancellation-policy" className="no-underline hover:text-white transition-colors" style={{ color: "#4a7080" }}>Cancellation Policy</Link>
-              <Link href="/data-deletion" className="no-underline hover:text-white transition-colors" style={{ color: "#4a7080" }}>Data Deletion</Link>
+              <Link href="/privacy-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Privacy Policy</Link>
+              <Link href="/cancellation-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Cancellation Policy</Link>
+              <Link href="/data-deletion" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Data Deletion</Link>
             </div>
             <div className="flex gap-6">
               {/* Only what is set. These used to be three links all pointing at
@@ -367,7 +367,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 .filter(([k]) => biz[k])
                 .map(([k, label]) => (
                   <a key={k} href={biz[k]} target="_blank" rel="noopener noreferrer"
-                    className="hover:text-white transition-colors no-underline" style={{ color: "#4a7080" }}>
+                    className="hover:text-white transition-colors no-underline" style={{ color: C.footerText }}>
                     {label}
                   </a>
                 ))}

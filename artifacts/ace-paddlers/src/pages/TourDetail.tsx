@@ -10,9 +10,10 @@ import BookingWidget from "@/components/BookingWidget";
 import BookingModal from "@/components/BookingModal";
 import LocationModal from "@/components/LocationModal";
 import { useGetTour, useListTours } from "@workspace/api-client-react";
-import { adaptTour, useTourTypeLabels } from "@/lib/content";
+import { adaptTour, useTourTypeLabels, priceLabel } from "@/lib/content";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
 import { C } from "@/data/constants";
+import { richTextHtml, richTextPlain, itineraryHtml, listItemHtml } from "@/lib/richText";
 import { fetchSiteConfig, BOOKING_TEXT_DEFAULTS, BUSINESS_DEFAULTS, type BookingText } from "@/lib/site-config";
 
 const BADGE: Record<string, string> = { Easy: "#16a34a", Moderate: C.riverTeal, Challenging: "#c94f28" };
@@ -124,14 +125,13 @@ function TourDetailContent({ slug }: { slug: string }) {
   const allTours = (apiTours ?? []).map((t) => adaptTour(t, typeLabels));
   // Rotate through every image the admin added for this tour; fall back to the single hero image.
   const heroImages = (apiTour.images?.length ? apiTour.images : [tour.heroImg]).filter(Boolean);
-  const paragraphs = tour.description.split("\n\n");
   const avgRating = rating.value;
 
   const touristSchema = {
     "@context": "https://schema.org",
     "@type": "TouristAttraction",
     name: tour.title,
-    description: tour.description.split("\n\n")[0],
+    description: richTextPlain(tour.description).split("\n\n")[0],
     url: `https://acepaddlers.com/tours/${tour.slug}`,
     image: `https://acepaddlers.com${tour.heroImg}`,
     address: {
@@ -207,7 +207,7 @@ function TourDetailContent({ slug }: { slug: string }) {
         />
 
         {/* Hero */}
-        <section className="relative h-[60vh] min-h-[420px] flex items-end overflow-hidden">
+        <section className="relative min-h-screen flex items-end overflow-hidden">
           <HeroCarousel images={heroImages} alt={`${tour.title} — white water rafting in ${tour.location.split(",")[0]}`} />
           <div className="absolute inset-0"
             style={{ background: "linear-gradient(to top, rgba(6,24,32,0.90) 0%, rgba(6,24,32,0.30) 60%, transparent 100%)" }} />
@@ -250,8 +250,9 @@ function TourDetailContent({ slug }: { slug: string }) {
         <div className="sticky top-[77px] z-20 px-6 py-3 flex items-center justify-between gap-4 flex-wrap"
           style={{ backgroundColor: C.bgCard, borderBottom: `1px solid ${C.mutedBorder}`, boxShadow: "0 2px 12px rgba(13,45,64,0.08)" }}>
           <div className="text-sm" style={{ color: C.text }}>
+            {priceLabel(tour, { after: "per person" }).before && <span style={{ color: "#3f6f88" }}>{priceLabel(tour).before} </span>}
             <span className="font-semibold" style={{ color: C.deepOcean }}>{tour.price}</span>
-            <span style={{ color: "#5a8ea8" }}> per person</span>
+            {priceLabel(tour, { after: "per person" }).after && <span style={{ color: "#3f6f88" }}> {priceLabel(tour, { after: "per person" }).after}</span>}
           </div>
           <button type="button" onClick={() => setShowBooking(true)}
             className="rounded-full px-6 py-2.5 text-sm font-semibold no-underline transition-transform hover:-translate-y-0.5"
@@ -329,14 +330,10 @@ function TourDetailContent({ slug }: { slug: string }) {
               {/* Description */}
               <Animate variant="up">
                 <div>
-                  <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                  <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                     About this Experience
                   </h2>
-                  <div className="space-y-4">
-                    {paragraphs.map((p, i) => (
-                      <p key={i} className="leading-relaxed text-base" style={{ color: "#2e5a74" }}>{p}</p>
-                    ))}
-                  </div>
+                  <div className="ace-richtext leading-relaxed text-base" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(tour.description) }} />
                 </div>
               </Animate>
 
@@ -344,7 +341,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {tour.activities && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Water Sports Activities
                     </h2>
                     <div className="grid sm:grid-cols-2 gap-4">
@@ -366,7 +363,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {tour.rapidGrades && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Understanding River Rapid Grades
                     </h2>
                     <p className="mb-6 text-base" style={{ color: "#2e5a74" }}>
@@ -398,7 +395,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {/* Highlights */}
               <Animate variant="up">
                 <div>
-                  <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                  <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                     Highlights
                   </h2>
                   <ul className="space-y-3 list-none p-0 m-0">
@@ -409,7 +406,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                           style={{ backgroundColor: C.riverTeal }}>
                           <Check className="w-3 h-3 text-white" />
                         </div>
-                        <span style={{ color: "#2e5a74" }}>{h}</span>
+                        <span className="ace-inline" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: listItemHtml(h) }} />
                       </li>
                     ))}
                   </ul>
@@ -425,7 +422,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                       {tour.included.map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
-                          <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
+                          <span className="ace-inline text-sm" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                         </li>
                       ))}
                     </ul>
@@ -436,7 +433,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                       {tour.excluded.map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />
-                          <span className="text-sm" style={{ color: "#2e5a74" }}>{item}</span>
+                          <span className="ace-inline text-sm" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                         </li>
                       ))}
                     </ul>
@@ -449,7 +446,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {(itineraryDays.length > 0 || tour.itineraryText) && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Itinerary
                     </h2>
                     {itineraryDays.length > 0 ? (
@@ -479,7 +476,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                         ))}
                       </ol>
                     ) : (
-                      <p className="text-slate-600 whitespace-pre-line">{tour.itineraryText}</p>
+                      <div className="ace-richtext text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: richTextHtml(itineraryHtml(tour.itineraryText)) }} />
                     )}
                   </div>
                 </Animate>
@@ -489,7 +486,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {(tour.shortAddress || tour.detailedAddress || tour.directions || mapHref) && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Getting there
                     </h2>
                     {(tour.detailedAddress || tour.shortAddress) && (
@@ -520,7 +517,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {tour.terms && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Terms &amp; conditions
                     </h2>
                     <p className="text-slate-600 whitespace-pre-line m-0">{tour.terms}</p>
@@ -532,7 +529,7 @@ function TourDetailContent({ slug }: { slug: string }) {
               {tour.faqs && tour.faqs.length > 0 && (
                 <Animate variant="up">
                   <div>
-                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                    <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                       Frequently Asked Questions
                     </h2>
                     <div className="space-y-3">
@@ -549,7 +546,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                 <Animate variant="up">
                   <div>
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                      <h2 className="text-2xl" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                         Guest Reviews
                       </h2>
                       {avgRating && (
@@ -606,7 +603,7 @@ function TourDetailContent({ slug }: { slug: string }) {
             {/* Right: booking card */}
             <Animate variant="right" className="lg:col-span-1">
               <div id="book" style={{ scrollMarginTop: "140px" }}>
-                <BookingWidget tourSlug={tour.slug} price={tour.price} priceValue={tour.priceValue} />
+                <BookingWidget tourSlug={tour.slug} price={tour.price} priceValue={tour.priceValue} tour={tour} />
               </div>
 
               {/* Other tours */}

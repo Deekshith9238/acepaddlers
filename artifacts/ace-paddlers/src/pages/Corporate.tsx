@@ -144,7 +144,7 @@ function CorporateContent() {
           <div className="max-w-7xl mx-auto">
             <Animate variant="up">
               <div className="text-center mb-16">
-                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Why Choose <span className="italic" style={{ color: C.riverTeal }}>Acepaddlers</span>?
                 </h2>
               </div>
@@ -170,7 +170,7 @@ function CorporateContent() {
           <div className="max-w-7xl mx-auto">
             <Animate variant="up">
               <div className="text-center mb-16">
-                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Group <span className="italic" style={{ color: C.riverTeal }}>Packages</span>
                 </h2>
                 <p style={{ color: "#2e5a74" }}>All packages are customisable. Contact us to build exactly what your team needs.</p>
@@ -219,7 +219,7 @@ function CorporateContent() {
           <div className="max-w-3xl mx-auto">
             <Animate variant="up">
               <div className="text-center mb-12">
-                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Request a <span className="italic" style={{ color: C.riverTeal }}>Quote</span>
                 </h2>
                 <p style={{ color: "#2e5a74" }}>Fill in your details and we'll get back to you within 4 hours with a custom package quote.</p>

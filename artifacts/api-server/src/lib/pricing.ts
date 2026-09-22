@@ -75,17 +75,21 @@ export async function loadRateCard(tourId: string, variantId?: string | null): P
  *    "children are 600 in a group of 30+" sits alongside a general group rate.
  *    A scoped tier is an explicit statement about that type and is applied
  *    exactly as written.
- * 2. A tour-wide tier only applies where it is *cheaper* than the type's own
- *    price. Volume pricing exists to reward bigger groups, so a general band
- *    must never raise a price — without this, a ₹0 infant or a discounted
- *    child rate gets swept up to the adult group rate and the family is
- *    overcharged.
+ * 2. A tour-wide tier is Vacation Labs' slab pricing: for full-price guests
+ *    it *is* the per-head rate, applied exactly as written — so "1–5 guests
+ *    ₹1,500, 6+ ₹1,200" charges a couple ₹1,500 even though the base price
+ *    says ₹1,200. (It used to apply only when cheaper, which silently ignored
+ *    every small-group slab.) For a discounted type — a child, a ₹0 infant —
+ *    it still only applies when cheaper, so a family is never swept up to
+ *    the adult group rate.
  */
 export function resolveTierPrice(
   tiers: TourPriceTier[],
   participantTypeId: string | null,
   totalGuests: number,
   listPrice: number,
+  /** The highest list price on the trip; a guest paying it is "full price". */
+  fullPrice: number = listPrice,
 ): number | null {
   const matches = tiers.filter(
     (t) => totalGuests >= t.minGuests && (t.maxGuests == null || totalGuests <= t.maxGuests),
@@ -95,7 +99,7 @@ export function resolveTierPrice(
   if (specific) return specific.price;
   const general = matches.find((t) => !t.participantTypeId);
   if (!general) return null;
-  return general.price < listPrice ? general.price : null;
+  return listPrice >= fullPrice || general.price < listPrice ? general.price : null;
 }
 
 export interface QuoteInput {
@@ -168,9 +172,10 @@ export async function quoteBooking(input: QuoteInput): Promise<Quote> {
     0,
   );
 
+  const fullPrice = types.length ? Math.max(...types.map((t) => t.price)) : tour.priceValue;
   const participantLines: ParticipantLine[] = selections.map(({ type, count }) => {
     const listPrice = type ? type.price : tour.priceValue;
-    const tierPrice = resolveTierPrice(rateCard.tiers, type?.id ?? null, numGuests, listPrice);
+    const tierPrice = resolveTierPrice(rateCard.tiers, type?.id ?? null, numGuests, listPrice, fullPrice);
     const unitPrice = tierPrice ?? listPrice;
     return {
       typeId: type?.id ?? null,

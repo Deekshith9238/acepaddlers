@@ -2278,7 +2278,9 @@ components:
         terms: { type: string, nullable: true, description: "Terms for this trip only" }
         advertisedPrice: { type: integer, nullable: true, description: "Headline price for display; the rate card does the maths" }
         priceLabelPosition: { type: string, enum: [before, after, none] }
+        priceLabel: { type: string, nullable: true, description: "The label's own words, e.g. Starting from / Per Person. Null = site defaults." }
         showAdvertisedPrice: { type: boolean }
+        showGroupRates: { type: boolean, description: "List the group rates on the trip page" }
         allowPartialDeposit: { type: boolean }
         depositPercent: { type: integer, description: "Percent of the total accepted as a deposit" }
         seatSharing: { type: string, enum: [independent, reduces, closes] }
@@ -2397,7 +2399,9 @@ components:
         terms: { type: string, nullable: true, description: "Terms for this trip only" }
         advertisedPrice: { type: integer, nullable: true, description: "Headline price for display; the rate card does the maths" }
         priceLabelPosition: { type: string, enum: [before, after, none] }
+        priceLabel: { type: string, nullable: true, description: "The label's own words, e.g. Starting from / Per Person. Null = site defaults." }
         showAdvertisedPrice: { type: boolean }
+        showGroupRates: { type: boolean, description: "List the group rates on the trip page" }
         allowPartialDeposit: { type: boolean }
         depositPercent: { type: integer, description: "Percent of the total accepted as a deposit" }
         seatSharing: { type: string, enum: [independent, reduces, closes] }

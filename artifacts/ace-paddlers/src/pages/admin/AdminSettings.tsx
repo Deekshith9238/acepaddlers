@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TrustBadgeList } from "@/admin/TrustBadgeList";
 import { useGetGoogleIntegration, useDisconnectGoogleIntegration } from "@workspace/api-client-react";
 import {
   fetchAdminSiteConfig, saveAdminSiteConfig,
@@ -134,6 +135,66 @@ function BusinessCard() {
   );
 }
 
+/**
+ * Booking text and trust badges are edited on separate cards but stored as one
+ * `bookingText` object, which the server replaces whole. Re-read it and merge
+ * just this card's part, so saving one card never undoes the other.
+ */
+async function saveBookingText(patch: Partial<BookingText>, extra: Record<string, unknown> = {}) {
+  const current = await fetchAdminSiteConfig();
+  await saveAdminSiteConfig({ ...extra, bookingText: { ...current.bookingText, ...patch } });
+}
+
+/** The reassurance lines under every trip's Book Now button. A trip can set its own under Trips → Basic details. */
+function TrustBadgesCard() {
+  const [badges, setBadges] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetchAdminSiteConfig()
+      .then((c) => { setBadges(c.bookingText.trustBadges); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  const change = (next: string[]) => { setBadges(next); setSaved(false); setError(false); };
+  const onSave = async () => {
+    setSaving(true);
+    setError(false);
+    try {
+      await saveBookingText({ trustBadges: badges.map((b) => b.trim()).filter(Boolean) });
+      setSaved(true);
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 max-w-xl mt-6">
+      <h2 className="text-lg font-semibold text-slate-800">Trust badges</h2>
+      <p className="text-sm text-slate-500 mt-1">
+        Short reassurances with a shield icon, shown wherever a page has a “Trust badges” section (add it in the page
+        editor under Live content). A trip can replace them with its own under Trips → Basic details.
+      </p>
+      <div className="mt-5">
+        <TrustBadgeList value={badges} onChange={change} disabled={!loaded} />
+      </div>
+      <div className="mt-5 flex items-center gap-3">
+        <button onClick={onSave} disabled={saving || !loaded}
+          className="rounded-lg bg-cyan-600 text-white px-5 py-2 text-sm font-semibold hover:bg-cyan-700 disabled:opacity-60">
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {saved && <span className="text-sm text-emerald-600">Saved.</span>}
+        {error && <span className="text-sm text-red-600">Save failed. Please try again.</span>}
+      </div>
+    </div>
+  );
+}
+
 function BookingCard() {
   const [showSeatCount, setShowSeatCount] = useState(true);
   const [notifyOnFormStart, setNotifyOnFormStart] = useState(false);
@@ -154,15 +215,14 @@ function BookingCard() {
   }, []);
 
   const setT = (patch: Partial<BookingText>) => { setTxt((t) => ({ ...t, ...patch })); setSaved(false); };
-  const setBadge = (i: number, v: string) => setT({ trustBadges: txt.trustBadges.map((b, idx) => (idx === i ? v : b)) });
-  const addBadge = () => setT({ trustBadges: [...txt.trustBadges, ""] });
-  const removeBadge = (i: number) => setT({ trustBadges: txt.trustBadges.filter((_, idx) => idx !== i) });
 
   const onSave = async () => {
     setSaving(true);
     setSaved(false);
     try {
-      await saveAdminSiteConfig({ showSeatCount, notifyOnFormStart, bookingText: { ...txt, trustBadges: txt.trustBadges.filter((b) => b.trim()) } });
+      // Trust badges have their own card now; keep whatever it last saved.
+      const { trustBadges: _keep, ...mine } = txt;
+      await saveBookingText(mine, { showSeatCount, notifyOnFormStart });
       setSaved(true);
     } finally {
       setSaving(false);
@@ -219,18 +279,6 @@ function BookingCard() {
         <div><label className={lbl}>Submit button</label><input className={inp} value={txt.ctaLabel} onChange={(e) => setT({ ctaLabel: e.target.value })} /></div>
         <div><label className={lbl}>Disclaimer (under the button)</label><input className={inp} value={txt.disclaimer} onChange={(e) => setT({ disclaimer: e.target.value })} /></div>
         <div><label className={lbl}>“No availability” message</label><input className={inp} value={txt.noAvailability} onChange={(e) => setT({ noAvailability: e.target.value })} /></div>
-        <div>
-          <label className={lbl}>Trust badges</label>
-          <div className="space-y-2">
-            {txt.trustBadges.map((b, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input className={inp} value={b} onChange={(e) => setBadge(i, e.target.value)} />
-                <button type="button" onClick={() => removeBadge(i)} className="shrink-0 rounded-md border border-red-300 text-red-600 px-2 py-1.5 text-xs font-semibold hover:bg-red-50">✕</button>
-              </div>
-            ))}
-            <button type="button" onClick={addBadge} className="text-sm text-cyan-700 font-semibold hover:underline">+ Add badge</button>
-          </div>
-        </div>
       </div>
 
       <div className="mt-5 flex items-center gap-3">
@@ -311,6 +359,7 @@ function Inner() {
 
       <BusinessCard />
       <BookingCard />
+      <TrustBadgesCard />
     </>
   );
 }

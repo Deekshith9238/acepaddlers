@@ -9,6 +9,7 @@ html {
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --container-9xl: 96rem;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-border: hsl(var(--border));
@@ -220,6 +221,8 @@ img {
 
 /* Rich text block (builder RichText): base typography for admin-authored
    HTML content, including floated inline images. */
+/* flow-root contains floated (wrap-text) images, so they never spill into the next section. */
+.ace-richtext { display: flow-root; }
 .ace-richtext p { margin-bottom: 1rem; }
 .ace-richtext h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; font-family: var(--app-font-serif); }
 .ace-richtext h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: var(--app-font-serif); }
@@ -227,6 +230,7 @@ img {
 .ace-richtext ul { list-style: disc; }
 .ace-richtext ol { list-style: decimal; }
 .ace-richtext li { margin-bottom: 0.25rem; }
+.ace-richtext li > p { margin: 0; }
 .ace-richtext a { color: var(--brand-riverTeal, #1a7fa6); text-decoration: underline; }
 .ace-richtext img { height: auto; }
 .ace-richtext strong { font-weight: 700; }
@@ -392,3 +396,23 @@ body { font-weight: var(--brand-bodyWeight, 400); }
 .ap-team-accordion { display: none; }
 [data-team-members-style="accordion"] .ap-team-grid { display: none; }
 [data-team-members-style="accordion"] .ap-team-accordion { display: block; }
+
+/* Builder pages: sections sharing a background used to run into one long
+   block. A hairline marks where one ends and the next begins. */
+.ap-builder section + section {
+  border-top: 1px solid rgba(13, 58, 94, 0.08);
+}
+
+/* Rich text editor: make a clicked image obviously selected (resize/align bar is showing). */
+.ProseMirror img { cursor: pointer; }
+.ProseMirror img.ProseMirror-selectednode { outline: 3px solid #0ea5e9; outline-offset: 2px; }
+
+/* A single formatted list item (inclusions, highlights): no paragraph gaps. */
+.ace-inline p { display: inline; margin: 0; }
+
+/* Header "Center aligned" (VL): logo centred on its own row, the menu centred beneath it.
+   An invisible full-width spacer forces the break, so the logo chip keeps its own size. */
+[data-header-style="center"] .ap-header-inner { flex-wrap: wrap; justify-content: center; row-gap: 0.5rem; }
+[data-header-style="center"] .ap-header-inner > * { order: 2; }
+[data-header-style="center"] .ap-header-inner > a:first-child { order: 0; }
+[data-header-style="center"] .ap-header-inner::after { content: ""; flex-basis: 100%; order: 1; }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
-import { Phone, ShieldCheck, Minus, Plus, ChevronLeft, ChevronRight, ArrowLeft, X, CheckCircle2 } from "lucide-react";
+import { Phone, Minus, Plus, ChevronLeft, ChevronRight, ArrowLeft, X, CheckCircle2 } from "lucide-react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -16,7 +17,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { useGetAvailability, useCreateBooking, useGetBooking, useGetTour, useGetTourRateCard, useVerifyBookingPayment, useValidateCoupon, type Slot, type BookingDetail } from "@workspace/api-client-react";
+import { useGetAvailability, useCreateBooking, useGetBooking, useGetTour, useGetTourRateCard, useVerifyBookingPayment, useValidateCoupon, quoteBooking, type QuoteResult, type Slot, type BookingDetail } from "@workspace/api-client-react";
 import { C } from "@/data/constants";
 import { formatINR } from "@/lib/content";
 import { fetchCharges, fetchPaymentMethods, computeCharges, type Charge, type PaymentMethodOption } from "@/lib/charges";
@@ -227,13 +228,39 @@ export default function BookingModal({
     setGuests((g) => (g < minGuests ? minGuests : g));
   }, [minGuests]);
 
-  const baseAmount = unitPrice * guests;
+  // Once a departure is picked, the server prices the booking — the same code
+  // that charges it — so group rates, per-type prices, the coupon and fees
+  // shown here are exactly what gets billed. This used to be worked out here
+  // as base price × guests, which never saw a group rate: six guests on a
+  // "6+ at ₹1,200" trip were shown the full price.
+  const [quote, setQuote] = useState<QuoteResult | null>(null);
+  useEffect(() => {
+    if (!slotId) { setQuote(null); return; }
+    let live = true;
+    quoteBooking({ slotId, numGuests: guests, couponCode: appliedCode, paymentMethod: payMethod })
+      .then((q) => { if (live) setQuote(q); })
+      .catch(() => { if (live) setQuote(null); });
+    return () => { live = false; };
+  }, [slotId, guests, appliedCode, payMethod]);
+
+  // Until then (or if the quote fails), a local estimate — including the
+  // trip-wide group rate for this head count, as the server applies it to a
+  // full-price guest, so the number doesn't jump when a time is picked.
+  const groupTier = (rateCard?.tiers ?? []).find(
+    (t) => !t.participantTypeId && guests >= t.minGuests && (t.maxGuests == null || guests <= t.maxGuests),
+  );
+  const estimateUnit = groupTier ? groupTier.price : unitPrice;
+  const localBase = estimateUnit * guests;
   // Charges are computed on the base after any discount, matching how the
-  // server prices the booking — otherwise the quote here wouldn't match the
-  // amount actually charged.
-  const discountedBase = Math.max(0, baseAmount - discount);
-  const breakdown = useMemo(() => computeCharges(discountedBase, charges), [discountedBase, charges]);
-  const total = discountedBase + breakdown.reduce((sum, c) => sum + c.amount, 0);
+  // server prices the booking.
+  const localBreakdown = useMemo(() => computeCharges(Math.max(0, localBase - discount), charges), [localBase, discount, charges]);
+  const lines = quote?.participantLines ?? [];
+  const shownUnit = lines.length === 1 ? lines[0].unitPrice : estimateUnit;
+  const groupRateApplied = quote ? lines.some((l) => l.tierApplied) : !!groupTier && groupTier.price !== unitPrice;
+  const baseAmount = quote?.baseAmount ?? localBase;
+  const shownDiscount = quote ? quote.discountAmount : discount;
+  const breakdown = quote?.chargesBreakdown ?? localBreakdown;
+  const total = quote?.totalAmount ?? Math.max(0, localBase - discount) + localBreakdown.reduce((sum, c) => sum + c.amount, 0);
 
   const COUPON_MESSAGES: Record<string, string> = {
     not_found: "We don't recognise that code.",
@@ -348,7 +375,10 @@ export default function BookingModal({
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
   const today = startOfDay(new Date());
 
-  return (
+  // Portalled to <body>: the booking box that opens this is `sticky`, which
+  // traps a child's z-index inside it — sections further down the page then
+  // painted over the popup.
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: "rgba(6,18,28,0.6)" }} onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl my-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -617,7 +647,7 @@ export default function BookingModal({
                   <div className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
                     style={{ backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0" }}>
                     <span style={{ color: "#047857" }}>
-                      <strong className="font-mono">{appliedCode}</strong> applied — you save {formatINR(discount)}
+                      <strong className="font-mono">{appliedCode}</strong> applied — you save {formatINR(shownDiscount)}
                     </span>
                     <button type="button" onClick={removeCoupon} className="text-xs font-semibold" style={{ color: "#047857" }}>
                       Remove
@@ -646,13 +676,16 @@ export default function BookingModal({
               {/* Price breakdown */}
               <div className="rounded-lg p-3 space-y-1.5 text-sm" style={{ backgroundColor: C.muted }}>
                 <div className="flex justify-between" style={{ color: "#2e5a74" }}>
-                  <span>{formatINR(unitPrice)} × {guests} guest{guests > 1 ? "s" : ""}</span>
+                  <span>
+                    {formatINR(shownUnit)} × {guests} guest{guests > 1 ? "s" : ""}
+                    {groupRateApplied && <span className="ml-1 text-xs font-semibold" style={{ color: "#047857" }}>group rate</span>}
+                  </span>
                   <span>{formatINR(baseAmount)}</span>
                 </div>
-                {discount > 0 && (
+                {shownDiscount > 0 && (
                   <div className="flex justify-between" style={{ color: "#047857" }}>
                     <span>Discount ({appliedCode})</span>
-                    <span>−{formatINR(discount)}</span>
+                    <span>−{formatINR(shownDiscount)}</span>
                   </div>
                 )}
                 {breakdown.map((c, i) => (
@@ -684,19 +717,10 @@ export default function BookingModal({
             </>
           )}
 
-          {!bookingRef && txt.trustBadges.length > 0 && (
-            <div className="pt-4 mt-4 space-y-3" style={{ borderTop: `1px solid ${C.muted}` }}>
-              {txt.trustBadges.map((text, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm" style={{ color: "#2e5a74" }}>
-                  <span style={{ color: C.riverTeal }}><ShieldCheck className="w-4 h-4" /></span>
-                  {text}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

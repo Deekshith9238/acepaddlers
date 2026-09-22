@@ -80,7 +80,7 @@ export default function DestinationSection({
                 Destination
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+            <h2 className="text-4xl md:text-5xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
               {dest.name}
             </h2>
             <div className="text-sm mb-6" style={{ color: "#5a8ea8" }}>{dest.fullName}</div>

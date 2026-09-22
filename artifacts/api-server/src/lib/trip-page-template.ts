@@ -46,7 +46,7 @@ export function tripPageDocument(tourSlug: string): PageDocument {
     zones: {},
     content: [
       live("TripBanner", tourSlug, "banner", {
-        heading: "", titleSize: "", taglineSize: "", height: "compact",
+        heading: "", titleSize: "", taglineSize: "",
         overlayOpacity: 55, showBackLink: true, showBadges: true, showRating: true,
       }),
       live("TripFacts", tourSlug, "facts", { heading: "", headingSize: "", background: "muted" }),

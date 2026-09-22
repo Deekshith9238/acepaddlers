@@ -34,6 +34,19 @@ export const FONT_CHOICES = [
   "Rubik",
   "Work Sans",
   "Lato",
+  // Keep in step with FONT_OPTIONS in the web app's lib/typography.ts — a
+  // family missing here is silently dropped on save.
+  "Open Sans",
+  "Roboto",
+  "Raleway",
+  "Oswald",
+  "Josefin Sans",
+  "Libre Baskerville",
+  "Cormorant Garamond",
+  "Bebas Neue",
+  "Dancing Script",
+  "Pacifico",
+  "Caveat",
 ];
 
 export function sanitizeTypography(input: unknown): Typography {

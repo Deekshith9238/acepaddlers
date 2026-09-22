@@ -154,6 +154,7 @@ function RatesCard({ tourId }: { tourId: string }) {
   const { data: variantData } = useGetTourVariants(tourId);
   const save = useSaveTourRateCard();
   const variants = (variantData?.variants ?? []) as TourVariant[];
+  const display = useTourSection(tourId, GROUP_KEYS);
 
   const [types, setTypes] = useState<PType[]>([]);
   const [tiers, setTiers] = useState<Tier[]>([]);
@@ -189,7 +190,18 @@ function RatesCard({ tourId }: { tourId: string }) {
         onError: (err: any) => setError(ERRORS[err?.data?.error] ?? "Save failed."),
       },
     );
+    display.save();
   };
+
+  // A new slab starts where the last one ends, like VL's "up to N guests" rows.
+  const addTier = () => {
+    const last = [...tiers].sort((a, b) => a.minGuests - b.minGuests).at(-1);
+    const from = last ? (last.maxGuests ?? last.minGuests) + 1 : 1;
+    setTiers((t) => [...t, { id: newId(), participantTypeId: null, minGuests: from, maxGuests: null, price: 0 } as any]);
+    dirty();
+  };
+  const sortedTiers = [...tiers].sort((a, b) => a.minGuests - b.minGuests);
+  const tierSize = (t: Tier) => (t.maxGuests == null ? `${t.minGuests}+ guests` : `${t.minGuests}–${t.maxGuests} guests`);
 
   const variantName = (id?: string | null) => variants.find((v) => v.id === id)?.label ?? "All variants";
 
@@ -268,12 +280,9 @@ function RatesCard({ tourId }: { tourId: string }) {
 
       <Card
         title="Group rates"
-        hint="A cheaper per-head rate once the whole booking reaches a size. Matched on the booking's total head count, not the count within one type."
+        hint="Like Vacation Labs' slab pricing: the per-person rate depends on how many people are in the booking — e.g. 1–5 guests ₹1,500, 6+ guests ₹1,200. It is charged exactly as written, even when it is above the base price."
         right={
-          <button
-            type="button"
-            className={ghostBtnCls}
-            onClick={() => { setTiers((t) => [...t, { id: newId(), participantTypeId: null, minGuests: 1, maxGuests: null, price: 0 } as any]); dirty(); }}>
+          <button type="button" className={ghostBtnCls} onClick={addTier}>
             + Add group rate
           </button>
         }>
@@ -304,8 +313,26 @@ function RatesCard({ tourId }: { tourId: string }) {
           </div>
         )}
         <p className="text-xs text-slate-400 mt-3">
-          A rate that applies to everyone only takes effect when it is cheaper than the list price, so a group rate can never raise what a ₹0 infant is charged.
+          Matched on the whole booking's head count. A rate for "Everyone" is charged as written to full-price guests; a cheaper type (child, infant) only gets it when it lowers their price. Pick a type under "Applies to" to set that type's group rate exactly.
         </p>
+        {sortedTiers.length > 0 && (
+          <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Customers see</div>
+            {sortedTiers.map((t) => (
+              <div key={t.id} className="flex justify-between max-w-sm">
+                <span>{tierSize(t)}{t.participantTypeId ? ` · ${types.find((x) => x.id === t.participantTypeId)?.label ?? ""}` : ""}</span>
+                <span className="font-semibold">{rupees(t.price)} / person</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <label className="mt-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={display.values.showGroupRates === true} onChange={(e) => { display.set({ showGroupRates: e.target.checked }); dirty(); }} />
+          <span className="text-sm text-slate-700">
+            <span className="font-medium">Show group rates on the trip page</span>
+            <span className="block text-xs text-slate-400">Lists them in the booking box, under the price.</span>
+          </span>
+        </label>
       </Card>
 
       <div className="mb-8">
@@ -315,7 +342,8 @@ function RatesCard({ tourId }: { tourId: string }) {
   );
 }
 
-const PRICE_KEYS = ["advertisedPrice", "priceLabelPosition", "showAdvertisedPrice", "priceValue", "currency"] as const;
+const GROUP_KEYS = ["showGroupRates"] as const;
+const PRICE_KEYS = ["advertisedPrice", "priceLabel", "priceLabelPosition", "showAdvertisedPrice", "priceValue", "currency"] as const;
 
 function AdvertisedPriceCard({ tourId }: { tourId: string }) {
   const s = useTourSection(tourId, PRICE_KEYS);
@@ -331,12 +359,28 @@ function AdvertisedPriceCard({ tourId }: { tourId: string }) {
         <Field label="Advertised price (₹)" help="Leave empty to advertise the base price.">
           <input type="number" min={0} className={inputCls} value={v.advertisedPrice ?? ""} onChange={(e) => s.set({ advertisedPrice: e.target.value === "" ? null : Number(e.target.value) })} />
         </Field>
-        <Field label="Price label">
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3 mt-4">
+        <Field label="Price label" help="Your own words, as in Vacation Labs — e.g. Starting from, Per Person, Per night.">
+          <input className={inputCls} value={v.priceLabel ?? ""} placeholder="Starting from" onChange={(e) => s.set({ priceLabel: e.target.value || null })} />
+        </Field>
+        <Field label="Label position">
           <select className={inputCls} value={v.priceLabelPosition ?? "before"} onChange={(e) => s.set({ priceLabelPosition: e.target.value })}>
-            <option value="before">Before — “From ₹2,600”</option>
-            <option value="after">After — “₹2,600 onwards”</option>
-            <option value="none">None — “₹2,600”</option>
+            <option value="before">Before the price</option>
+            <option value="after">After the price</option>
+            <option value="none">Don't show a label</option>
           </select>
+        </Field>
+        <Field label="Customers see">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {v.showAdvertisedPrice === false ? "Price on request" : (() => {
+              const n = rupees(v.advertisedPrice ?? v.priceValue ?? 0);
+              const text = (v.priceLabel ?? "").trim();
+              if (v.priceLabelPosition === "none") return <b>{n}</b>;
+              if (!text) return <><b>{n}</b> <span className="text-slate-400">(each spot's usual wording)</span></>;
+              return v.priceLabelPosition === "after" ? <><b>{n}</b> {text}</> : <>{text} <b>{n}</b></>;
+            })()}
+          </div>
         </Field>
       </div>
       <div className="mt-4">

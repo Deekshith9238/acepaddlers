@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { Check, X } from "lucide-react";
+import { Check, X, ShieldCheck } from "lucide-react";
 import type { Config, Field, SelectField, TextField } from "@measured/puck";
-import DOMPurify from "dompurify";
+import { richTextHtml, itineraryHtml, listItemHtml } from "@/lib/richText";
 import SmartImage from "@/components/SmartImage";
 import TripCard from "@/components/TripCard";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -11,7 +11,7 @@ import RichTextField from "@/builder/RichTextField";
 import { uploadMedia } from "@/admin/upload";
 import { C } from "@/data/constants";
 import { useListTours, useListDestinations, useListGallery, useListBlogPosts, useGetTour } from "@workspace/api-client-react";
-import { adaptTour, adaptBlogSummary, useTourTypeLabels } from "@/lib/content";
+import { adaptTour, adaptBlogSummary, useTourTypeLabels, priceLabel } from "@/lib/content";
 import { useOpenBookingModal } from "@/lib/bookingModalContext";
 import { fetchSiteConfig, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
@@ -117,17 +117,6 @@ const richTextField = (label: string): Field<string> => ({
   render: ({ value, onChange }: any) => <RichTextField value={value} onChange={onChange} />,
 });
 
-/** Renders a RichText block's stored body, sanitized. Supports both the new
- *  HTML documents (from RichTextField) and legacy plain-text bodies saved
- *  before this field existed (rendered as \n\n-separated paragraphs). */
-function richTextHtml(body: string | undefined): string {
-  const raw = body ?? "";
-  const looksLikeHtml = /^\s*</.test(raw);
-  const html = looksLikeHtml
-    ? raw
-    : raw.split("\n\n").filter(Boolean).map((p) => `<p>${p.replace(/</g, "&lt;")}</p>`).join("");
-  return DOMPurify.sanitize(html, { ADD_ATTR: ["data-align", "data-width", "style"] });
-}
 
 // Puck doesn't auto-render a caption for `type: "custom"` fields (unlike its
 // built-in text/select/etc. fields) — custom fields must draw their own.
@@ -351,7 +340,7 @@ const bodyFont = (size: TextScale | undefined): string =>
 
 /** Vertical padding presets. "" = keep the block's original spacing. */
 type PadY = "" | "none" | "sm" | "md" | "lg" | "xl";
-const PAD_Y: Record<Exclude<PadY, "">, number> = { none: 0, sm: 24, md: 48, lg: 80, xl: 128 };
+const PAD_Y: Record<Exclude<PadY, "">, number> = { none: 0, sm: 16, md: 32, lg: 56, xl: 88 };
 const padField: Field<any> = {
   type: "select", label: "Vertical padding",
   options: [
@@ -370,8 +359,9 @@ const sectionStyle = (bg: SectionBg | undefined, fallback: string, padY?: PadY) 
 });
 
 // Text colours that adapt to light/dark section backgrounds.
-const headingColor = (dark: boolean) => (dark ? "#ffffff" : C.text);
-const subColor = (dark: boolean) => (dark ? "rgba(168,223,240,0.8)" : "#5a8ea8");
+// Section headings take the theme's Secondary colour, as in Vacation Labs.
+const headingColor = (dark: boolean) => (dark ? "#ffffff" : C.secondary);
+const subColor = (dark: boolean) => (dark ? "rgba(168,223,240,0.8)" : "#3f6f88");
 const bodyColor = (dark: boolean) => (dark ? "rgba(255,255,255,0.85)" : "#2e5a74");
 
 // ── Buttons ──
@@ -539,7 +529,7 @@ type ToursStripProps = StripProps & { destination: string; exclude?: string };
 type TourBookingProps = {
   tourSlug: string; phone: string;
   startingFrom: string; perPerson: string; ctaLabel: string; disclaimer: string;
-  noAvailability: string; callButton: string; trustBadges: string;
+  noAvailability: string; callButton: string; trustBadges?: string;
   background?: SectionBg; padY?: PadY;
 };
 type RichTextProps = {
@@ -601,11 +591,6 @@ const TEXT_SIZE: Record<"sm" | "md" | "lg", string> = {
   md: "text-base",
   lg: "text-lg",
 };
-const HERO_HEIGHT: Record<HeroHeight, string> = {
-  compact: "min-h-[60vh]",
-  standard: "min-h-[88vh]",
-  full: "min-h-screen",
-};
 // Legacy fixed overlay presets, kept only to translate old saved Hero blocks
 // (that stored `overlay` before the darkness slider existed) into an opacity %.
 const LEGACY_OVERLAY_PCT: Record<HeroOverlay, number> = { none: 0, light: 25, medium: 40, dark: 60 };
@@ -638,6 +623,7 @@ type BuilderComponents = {
   TripBanner: TripBannerProps;
   TripAbout: TripBlockProps;
   TripHighlights: TripListProps;
+  TrustBadges: TrustBadgesProps;
   TripInclusions: TripInclusionsProps;
   TripFaq: TripFaqProps;
   TripActivities: TripActivitiesProps;
@@ -739,6 +725,13 @@ export interface TripListProps extends TripBlockProps {
   columns?: "1" | "2";
 }
 
+export interface TrustBadgesProps extends TripBlockProps {
+  /** One per line; blank = the trip's own badges, else Settings → Trust badges. */
+  badges?: string;
+  layout?: "row" | "cards";
+  itemSize?: TextScale;
+}
+
 export interface TripInclusionsProps extends TripBlockProps {
   excludedHeading?: string;
   itemSize?: TextScale;
@@ -770,8 +763,8 @@ function TripBlockPrompt({ what, slug, empty }: { what: string; slug?: string; e
   const editing = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   if (!editing) return null;
   return (
-    <section className="px-6 py-10">
-      <div className="max-w-3xl mx-auto rounded-xl border-2 border-dashed p-5 text-center text-sm" style={{ borderColor: C.mutedBorder, color: "#5a8ea8" }}>
+    <section className="px-6 py-6 md:py-8">
+      <div className="max-w-3xl mx-auto rounded-xl border-2 border-dashed p-5 text-center text-sm" style={{ borderColor: C.mutedBorder, color: "#3f6f88" }}>
         {empty
           ? <>Nothing to show for the <strong>{what}</strong> yet — fill it in under Products → Trips, and it appears here.</>
           : slug
@@ -862,6 +855,11 @@ const withSourceNote = (tab: string, feeds: string, missing?: boolean) =>
     ...fields,
   })) as any;
 
+/** A free-text itinerary: rich text from the editor, or legacy pasted text. */
+function FreeTextItinerary({ text, color }: { text: string; color: string }) {
+  return <div className="ace-richtext leading-relaxed" style={{ color }} dangerouslySetInnerHTML={{ __html: richTextHtml(itineraryHtml(text)) }} />;
+}
+
 export const builderConfig: Config<BuilderComponents> = {
   /**
    * Twenty blocks in one alphabet-soup list meant scrolling to find anything.
@@ -887,7 +885,7 @@ export const builderConfig: Config<BuilderComponents> = {
       title: "Live content",
       components: [
         "TripBanner", "TripHero", "TripFacts", "TripAbout", "TripHighlights", "TripInclusions",
-        "TripActivities", "TripGrades", "TripItinerary", "TripLocation", "TripTerms",
+        "TripActivities", "TripGrades", "TripItinerary", "TripLocation", "TripTerms", "TrustBadges",
         "TripFaq", "TripReviews",
         "ToursStrip", "DestinationsStrip", "GalleryStrip", "BlogStrip", "TourBooking",
       ],
@@ -920,10 +918,6 @@ export const builderConfig: Config<BuilderComponents> = {
           arrayFields: { image: imageField("Image") },
         },
         videoUrl: videoField("Background video (optional, overrides image)"),
-        height: {
-          type: "select", label: "Height",
-          options: [{ label: "Compact", value: "compact" }, { label: "Standard", value: "standard" }, { label: "Full screen", value: "full" }],
-        },
         overlayOpacity: sliderField("Image darkening overlay", 0, 100, 5),
         titleSize: { type: "select", label: "Title font size", options: [{ label: "Small", value: "sm" }, { label: "Medium", value: "md" }, { label: "Large", value: "lg" }, { label: "Extra large", value: "xl" }] },
         align: { type: "radio", label: "Align", options: [{ label: "Left", value: "left" }, { label: "Center", value: "center" }] },
@@ -973,7 +967,7 @@ export const builderConfig: Config<BuilderComponents> = {
           </div>
         );
         return (
-          <section className={`relative ${HERO_HEIGHT[height ?? "standard"]} flex items-center justify-center overflow-hidden`}>
+          <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
             <div className="absolute inset-0 z-0">
               {videoUrl
                 ? <video autoPlay muted loop playsInline poster={image} className="w-full h-full object-cover object-center"><source src={videoUrl} /></video>
@@ -1071,7 +1065,7 @@ export const builderConfig: Config<BuilderComponents> = {
         }],
       },
       render: ({ columns, imageHeight, background, padY, titleSize, bodySize, items }: CardsProps) => (
-        <section className="px-6 py-12" style={sectionStyle(background, C.bg, padY)}>
+        <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
           <div className={`max-w-7xl mx-auto grid gap-6 sm:grid-cols-2 ${columns === "4" ? "lg:grid-cols-4" : columns === "2" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
             {(items ?? []).map((it, i) => (
               <Link key={i} href={it.href || "#"} className="group rounded-2xl overflow-hidden bg-white border no-underline block" style={{ borderColor: C.mutedBorder }}>
@@ -1095,7 +1089,7 @@ export const builderConfig: Config<BuilderComponents> = {
                   </h3>
                   <p
                     className={bodyFont(it.bodySize || bodySize) || "text-sm"}
-                    style={{ color: colorOr(it.textColor, "#5a8ea8") }}
+                    style={{ color: colorOr(it.textColor, "#3f6f88") }}
                   >
                     {it.text}
                   </p>
@@ -1139,7 +1133,7 @@ export const builderConfig: Config<BuilderComponents> = {
       render: ({ background, padY, align, valueSize, labelSize, items }: StatsProps) => {
         const dk = bgIsDark(background, true);
         return (
-          <section className="px-6 py-16" style={sectionStyle(background, C.deepOcean, padY)}>
+          <section className="px-6 py-8 md:py-10" style={sectionStyle(background, C.deepOcean, padY)}>
             <div className={`max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 ${align === "left" ? "text-left" : "text-center"}`}>
               {(items ?? []).map((s, i) => (
                 <div key={i}>
@@ -1151,7 +1145,7 @@ export const builderConfig: Config<BuilderComponents> = {
                   </div>
                   <div
                     className={bodyFont(s.labelSize || labelSize) || "text-sm"}
-                    style={{ color: colorOr(s.labelColor, dk ? "rgba(168,223,240,0.75)" : "#5a8ea8") }}
+                    style={{ color: colorOr(s.labelColor, dk ? "rgba(168,223,240,0.75)" : "#3f6f88") }}
                   >
                     {s.label}
                   </div>
@@ -1185,8 +1179,8 @@ export const builderConfig: Config<BuilderComponents> = {
         const dk = bgIsDark(background, true);
         const biz = useBusiness();
         return (
-          <section className="px-6 py-20 text-center" style={sectionStyle(background, C.midOcean, padY)}>
-            <div className="max-w-2xl mx-auto">
+          <section className="px-6 py-6 md:py-8 md:py-14 text-center" style={sectionStyle(background, C.midOcean, padY)}>
+            <div className="max-w-7xl mx-auto">
               <h2 className="mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), fontSize: HEADING_SIZE[titleSize ?? "md"] }}>{fillTokens(title, biz)} {accent && <span className="italic" style={{ color: dk ? "#a8dff0" : C.riverTeal }}>{accent}</span>}</h2>
               {text && <p className="mb-8" style={{ color: dk ? "rgba(168,223,240,0.8)" : "#2e5a74" }}>{fillTokens(text, biz)}</p>}
               {ctaLabel && <BuilderButton b={{ label: ctaLabel, href: ctaHref, variant: ctaVariant ?? "primary", color: ctaColor ?? "primary", size: ctaSize ?? "lg", newTab: false }} />}
@@ -1221,7 +1215,7 @@ export const builderConfig: Config<BuilderComponents> = {
           .slice(0, limit || 3);
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
@@ -1255,7 +1249,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const dests = (data ?? []).slice(0, limit || 3);
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
@@ -1302,7 +1296,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const imgs = (data ?? []).filter((g) => g.published !== false).slice(0, limit || 8);
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
@@ -1336,7 +1330,6 @@ export const builderConfig: Config<BuilderComponents> = {
         disclaimer: { type: "text", label: "Disclaimer under the button (blank = Settings → Booking)" },
         noAvailability: { type: "textarea", label: "“No availability” message (blank = Settings → Booking)" },
         callButton: { type: "text", label: "“Call to Book” button (blank = default)" },
-        trustBadges: { type: "textarea", label: "Trust badges, one per line (blank = Settings → Booking)" },
         background: bgField(),
         padY: padField,
       },
@@ -1351,17 +1344,18 @@ export const builderConfig: Config<BuilderComponents> = {
         const t = apiTour ? adaptTour(apiTour) : null;
         const badges = (trustBadges ?? "").split("\n").map((b) => b.trim()).filter(Boolean);
         return (
-          <section className="px-6 py-12" style={sectionStyle(background, C.bg, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-md mx-auto" id="book" style={{ scrollMarginTop: "140px" }}>
               {t
                 ? <BookingWidget
                     tourSlug={t.slug}
                     price={t.price}
                     priceValue={t.priceValue}
+                    tour={t}
                     phone={phone?.trim() ? phone : undefined}
                     overrides={{ startingFrom, perPerson, ctaLabel, disclaimer, noAvailability, callButton, trustBadges: badges }}
                   />
-                : <div className="rounded-2xl border bg-white p-8 text-center text-sm" style={{ borderColor: C.mutedBorder, color: "#5a8ea8" }}>
+                : <div className="rounded-2xl border bg-white p-8 text-center text-sm" style={{ borderColor: C.mutedBorder, color: "#3f6f88" }}>
                     Enter a valid tour slug in the panel to show the live booking widget.
                   </div>}
             </div>
@@ -1387,7 +1381,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const posts = (data ?? []).map(adaptBlogSummary).slice(0, limit || 6);
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
@@ -1401,9 +1395,9 @@ export const builderConfig: Config<BuilderComponents> = {
                       {p.category && <span className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(6,24,32,0.72)", color: "#a8dff0" }}>{p.category}</span>}
                     </div>
                     <div className="p-5">
-                      <div className="text-xs mb-2" style={{ color: "#8aabb8" }}>{[p.readTime, p.date].filter(Boolean).join(" · ")}</div>
+                      <div className="text-xs mb-2" style={{ color: "#3f6f88" }}>{[p.readTime, p.date].filter(Boolean).join(" · ")}</div>
                       <h3 className="text-lg font-semibold mb-1 leading-snug" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>{p.title}</h3>
-                      <p className="text-sm" style={{ color: "#5a8ea8" }}>{p.excerpt}</p>
+                      <p className="text-sm" style={{ color: "#3f6f88" }}>{p.excerpt}</p>
                     </div>
                   </Link>
                 ))}
@@ -1434,8 +1428,8 @@ export const builderConfig: Config<BuilderComponents> = {
         // one that follows Settings → Business details.
         const biz = useBusiness();
         return (
-          <section className="px-6 py-12" style={sectionStyle(background, C.bg, padY)}>
-            <div className={`max-w-3xl mx-auto ${align === "center" ? "text-center" : ""}`} style={{ overflow: "auto" }}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className={`max-w-7xl mx-auto ${align === "center" ? "text-center" : ""}`} style={{ overflow: "auto" }}>
               {heading && <h2 className="ap-section-heading text-3xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{fillTokens(heading, biz)}</h2>}
               <div
                 className={`ace-richtext leading-relaxed ${TEXT_SIZE[size ?? "md"]}`}
@@ -1488,7 +1482,7 @@ export const builderConfig: Config<BuilderComponents> = {
       },
       defaultProps: { columns: "3", height: "md", rounded: true, background: "", padY: "", items: [{ image: "/images/barpole-rafting-1.jpg" }, { image: "/images/badra-rafting-2.jpg" }, { image: "/images/harangi-1.jpg" }] },
       render: ({ columns, height, rounded, background, padY, items }: GalleryBlockProps) => (
-        <section className="px-6 py-10" style={sectionStyle(background, C.bg, padY)}>
+        <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
           <div className={`max-w-6xl mx-auto grid gap-4 grid-cols-2 ${columns === "4" ? "lg:grid-cols-4" : columns === "2" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
             {(items ?? []).map((it, i) => (
               <div key={i} className={`relative ${IMG_HEIGHT[height ?? "md"]} overflow-hidden ${(rounded ?? true) ? "rounded-xl" : ""}`}>
@@ -1519,7 +1513,7 @@ export const builderConfig: Config<BuilderComponents> = {
               ? (autoplay
                 ? <video autoPlay muted loop playsInline preload="metadata" poster={poster || undefined} className="w-full"><source src={videoUrl} /></video>
                 : <video controls controlsList="nodownload noremoteplayback" disablePictureInPicture playsInline preload="metadata" poster={poster || undefined} className="w-full" onContextMenu={(e) => e.preventDefault()}><source src={videoUrl} /></video>)
-              : <div className="py-16 text-center text-sm" style={{ color: "#5a8ea8" }}>Upload a video in the panel →</div>}
+              : <div className="py-16 text-center text-sm" style={{ color: "#3f6f88" }}>Upload a video in the panel →</div>}
           </div>
         </section>
       ),
@@ -1573,8 +1567,8 @@ export const builderConfig: Config<BuilderComponents> = {
       render: ({ headingSize, questionSize, answerSize, heading, background, padY, items }: FaqProps) => {
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading && <h2 className="ap-section-heading text-3xl mb-8 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>}
               <div className="space-y-3">
                 {(items ?? []).map((f, i) => (
@@ -1609,8 +1603,8 @@ export const builderConfig: Config<BuilderComponents> = {
       render: ({ bodySize, quote, name, role, image, background, padY }: TestimonialProps) => {
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
-            <div className="max-w-3xl mx-auto text-center">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
+            <div className="max-w-5xl mx-auto text-center">
               <div className="text-5xl mb-4" style={{ color: dk ? "#a8dff0" : C.riverTeal, fontFamily: "var(--app-font-serif)" }}>“</div>
               <p className={`${bodyFont(bodySize) || "text-xl"} leading-relaxed mb-6`} style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) }}>{quote}</p>
               {image && <img src={image} alt={name} className="w-14 h-14 rounded-full object-cover mx-auto mb-3" />}
@@ -1670,7 +1664,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const dk = bgIsDark(background, false);
         const biz = useBusiness();
         return (
-          <section className="px-6 py-12" style={sectionStyle(background, C.muted, padY)}>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="ap-coupon max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 rounded-2xl overflow-hidden border bg-white" style={{ borderColor: C.mutedBorder }}>
               {image && (
                 <div className="ap-coupon-media w-full md:w-64 shrink-0 self-stretch relative min-h-[180px]">
@@ -1747,8 +1741,8 @@ export const builderConfig: Config<BuilderComponents> = {
           return <TripBlockPrompt what="team" empty />;
         }
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-5xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading && (
                 <div className="text-center mb-8">
                   <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
@@ -1831,8 +1825,8 @@ export const builderConfig: Config<BuilderComponents> = {
         if (reviews.length === 0) return <TripBlockPrompt what="reviews" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
-            <div className="max-w-4xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
+            <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
                 <h2 className="ap-section-heading text-3xl m-0" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
                 {rating.value != null && (
@@ -1850,7 +1844,7 @@ export const builderConfig: Config<BuilderComponents> = {
                       </span>
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold" style={{ color: C.text }}>{r.authorName}</span>
-                        <span className="block text-xs" style={{ color: "#8aabb8" }}>
+                        <span className="block text-xs" style={{ color: "#3f6f88" }}>
                           {[r.authorLocation, reviewDate(r.reviewedOn)].filter(Boolean).join(" · ")}
                           {r.source !== "website" && <span> · via {r.source}</span>}
                         </span>
@@ -1895,10 +1889,11 @@ export const builderConfig: Config<BuilderComponents> = {
         // The advertised price is a display override; the rate card still does
         // the arithmetic once a date is picked.
         const showPrice = t.showAdvertisedPrice !== false;
-        const price = t.advertisedPrice != null ? `₹${t.advertisedPrice.toLocaleString("en-IN")}` : t.price;
+        const price = t.price;
+        const label = priceLabel(t, t.priceLabelPosition === "after" ? { after: "per person" } : { before: "from" });
         return (
-          <section className="px-6 py-16" style={sectionStyle(background, C.deepOcean, padY)}>
-            <div className="max-w-5xl mx-auto text-center">
+          <section className="px-6 py-8 md:py-10" style={sectionStyle(background, C.deepOcean, padY)}>
+            <div className="max-w-7xl mx-auto text-center">
               {t.location && (
                 <p className={`uppercase tracking-[0.2em] mb-3 ${bodyFont(eyebrowSize) || "text-xs"}`} style={{ color: subColor(dk) }}>{t.location}</p>
               )}
@@ -1911,13 +1906,9 @@ export const builderConfig: Config<BuilderComponents> = {
               {t.tagline && <p className={`mb-5 ${bodyFont(taglineSize) || "text-lg"}`} style={{ color: subColor(dk) }}>{t.tagline}</p>}
               {showPrice && price && (
                 <p className={`font-semibold m-0 ${statValueClass(priceSize) || "text-2xl"}`} style={{ color: headingColor(dk) }}>
-                  {t.priceLabelPosition !== "none" && t.priceLabelPosition !== "after" && (
-                    <span className="text-sm font-normal mr-2" style={{ color: subColor(dk) }}>from</span>
-                  )}
+                  {label.before && <span className="text-sm font-normal mr-2" style={{ color: subColor(dk) }}>{label.before}</span>}
                   {price}
-                  {t.priceLabelPosition === "after" && (
-                    <span className="text-sm font-normal ml-2" style={{ color: subColor(dk) }}>per person</span>
-                  )}
+                  {label.after && <span className="text-sm font-normal ml-2" style={{ color: subColor(dk) }}>{label.after}</span>}
                 </p>
               )}
             </div>
@@ -1958,8 +1949,8 @@ export const builderConfig: Config<BuilderComponents> = {
         ].filter(([, v]) => v) as [string, string][];
         if (facts.length === 0) return <TripBlockPrompt what="facts" slug={slug} empty />;
         return (
-          <section className="px-6 py-12" style={sectionStyle(background, C.muted, padY)}>
-            <div className="max-w-5xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
                 <h2 className="ap-section-heading text-2xl mb-6 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
               )}
@@ -2000,9 +1991,9 @@ export const builderConfig: Config<BuilderComponents> = {
         if (days.length === 0 && !t.itineraryText) return <TripBlockPrompt what="itinerary" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
-              <h2 className="ap-section-heading text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
+              <h2 className="ap-section-heading text-3xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
               {days.length > 0 ? (
                 <ol className="space-y-6 list-none p-0 m-0">
                   {days.map((day, i) => (
@@ -2024,7 +2015,7 @@ export const builderConfig: Config<BuilderComponents> = {
                   ))}
                 </ol>
               ) : (
-                <p className="whitespace-pre-line m-0" style={{ color: subColor(dk) }}>{t.itineraryText}</p>
+                <FreeTextItinerary text={t.itineraryText ?? ""} color={bodyColor(dk)} />
               )}
             </div>
           </section>
@@ -2057,8 +2048,8 @@ export const builderConfig: Config<BuilderComponents> = {
         if (!addr && !t.directions && !map) return <TripBlockPrompt what="location" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.muted, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
+            <div className="max-w-7xl mx-auto">
               <h2 className="ap-section-heading text-3xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
               {addr && <p className="whitespace-pre-line m-0" style={{ color: headingColor(dk) }}>{addr}</p>}
               {t.directions && <p className="whitespace-pre-line mt-3 m-0" style={{ color: subColor(dk) }}>{t.directions}</p>}
@@ -2092,8 +2083,8 @@ export const builderConfig: Config<BuilderComponents> = {
         if (!t.terms) return <TripBlockPrompt what="terms" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
               <p className="whitespace-pre-line m-0 text-sm" style={{ color: subColor(dk) }}>{t.terms}</p>
             </div>
@@ -2118,10 +2109,6 @@ export const builderConfig: Config<BuilderComponents> = {
         heading: { type: "text", label: "Override title (blank = the trip's own)" },
         titleSize: scaleField("Title size"),
         taglineSize: scaleField("Tagline size", false),
-        height: {
-          type: "select", label: "Height",
-          options: [{ label: "Compact", value: "compact" }, { label: "Standard", value: "standard" }, { label: "Full screen", value: "full" }],
-        },
         overlayOpacity: sliderField("Image darkening overlay", 0, 100, 5),
         showBackLink: { type: "radio", label: "“All Tours” link", options: [{ label: "Show", value: true }, { label: "Hide", value: false }] },
         showBadges: { type: "radio", label: "Type / difficulty badges", options: [{ label: "Show", value: true }, { label: "Hide", value: false }] },
@@ -2142,7 +2129,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const images = gallery.length > 0 ? gallery : [t.heroImg].filter(Boolean);
         const pct = overlayOpacity ?? 55;
         return (
-          <section className={`relative ${HERO_HEIGHT[height ?? "compact"]} flex items-end overflow-hidden`}>
+          <section className="relative min-h-screen flex items-end overflow-hidden">
             <div className="absolute inset-0 z-0">
               {images.length > 0
                 ? <HeroCarousel images={images} alt={t.title} className="absolute inset-0" />
@@ -2213,20 +2200,77 @@ export const builderConfig: Config<BuilderComponents> = {
         const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
         if (!t) return <TripBlockPrompt what="overview" slug={slug} />;
-        const paras = (t.description ?? "").split(/\n\n+/).map((x) => x.trim()).filter(Boolean);
-        if (paras.length === 0) return <TripBlockPrompt what="overview" slug={slug} empty />;
+        if (!(t.description ?? "").trim()) return <TripBlockPrompt what="overview" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
               )}
-              <div className="space-y-4">
-                {paras.map((x, i) => (
-                  <p key={i} className={`leading-relaxed m-0 ${bodyFont(bodySize) || "text-base"}`} style={{ color: subColor(dk) }}>{x}</p>
-                ))}
-              </div>
+              <div
+                className={`ace-richtext leading-relaxed ${bodyFont(bodySize) || "text-base"}`}
+                style={{ color: subColor(dk) }}
+                dangerouslySetInnerHTML={{ __html: richTextHtml(t.description) }}
+              />
+            </div>
+          </section>
+        );
+      },
+    },
+
+    TrustBadges: {
+      label: "Trust badges (live)",
+      fields: {
+        tourSlug: { type: "text", label: "Trip slug (blank = this page's trip)" },
+        heading: { type: "text", label: "Heading (optional)" },
+        badges: { type: "textarea", label: "Badges, one per line (blank = the trip's own, else Settings → Trust badges)" },
+        layout: { type: "select", label: "Layout", options: [{ label: "Row of badges", value: "row" }, { label: "Cards", value: "cards" }] },
+        headingSize: headingSizeField,
+        itemSize: scaleField("Badge text size", false),
+        background: bgField(),
+        padY: padField,
+      },
+      defaultProps: { tourSlug: "", heading: "", badges: "", layout: "row", background: "", padY: "", headingSize: "", itemSize: "" },
+      render: ({ tourSlug, heading, badges, layout, headingSize, itemSize, background, padY }: TrustBadgesProps) => {
+        // Same order as the booking box: this section's own list, the trip's, then site-wide.
+        const slug = useTripSlug(tourSlug);
+        const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
+        const [site, setSite] = useState<string[]>([]);
+        useEffect(() => { fetchSiteConfig().then((c) => setSite(c.bookingText.trustBadges)); }, []);
+        const own = (badges ?? "").split("\n").map((b) => b.trim()).filter(Boolean);
+        const trip = data ? adaptTour(data).trustBadges ?? [] : [];
+        const items = own.length ? own : trip.length ? trip : site;
+        if (items.length === 0) return <></>;
+        const dk = bgIsDark(background, false);
+        const text = bodyFont(itemSize) || "text-sm";
+        return (
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
+              {heading?.trim() && (
+                <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+              )}
+              {layout === "cards" ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {items.map((b, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-xl border p-4" style={{ borderColor: C.mutedBorder, backgroundColor: dk ? "rgba(255,255,255,0.06)" : C.bgCard }}>
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ backgroundColor: C.riverTeal }}>
+                        <ShieldCheck className="h-5 w-5 text-white" />
+                      </span>
+                      <span className={`font-medium ${text}`} style={{ color: headingColor(dk) }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ul className="m-0 flex list-none flex-wrap items-center justify-center gap-x-8 gap-y-3 p-0">
+                  {items.map((b, i) => (
+                    <li key={i} className={`flex items-center gap-2 font-medium ${text}`} style={{ color: headingColor(dk) }}>
+                      <ShieldCheck className="h-5 w-5 shrink-0" style={{ color: dk ? C.lightTeal : C.riverTeal }} />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </section>
         );
@@ -2255,10 +2299,10 @@ export const builderConfig: Config<BuilderComponents> = {
         if (items.length === 0) return <TripBlockPrompt what="highlights" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
               )}
               <ul className={`list-none p-0 m-0 gap-3 ${columns === "2" ? "grid sm:grid-cols-2" : "space-y-3"}`}>
                 {items.map((h, i) => (
@@ -2266,7 +2310,7 @@ export const builderConfig: Config<BuilderComponents> = {
                     <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full grid place-items-center" style={{ backgroundColor: C.riverTeal }}>
                       <Check className="w-3 h-3 text-white" />
                     </span>
-                    <span className={bodyFont(itemSize)} style={{ color: subColor(dk) }}>{h}</span>
+                    <span className={`ace-inline ${bodyFont(itemSize)}`} style={{ color: subColor(dk) }} dangerouslySetInnerHTML={{ __html: listItemHtml(h) }} />
                   </li>
                 ))}
               </ul>
@@ -2313,15 +2357,15 @@ export const builderConfig: Config<BuilderComponents> = {
                     {ok
                       ? <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
                       : <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />}
-                    <span className={bodyFont(itemSize) || "text-sm"} style={{ color: subColor(dk) }}>{item}</span>
+                    <span className={`ace-inline ${bodyFont(itemSize) || "text-sm"}`} style={{ color: subColor(dk) }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                   </li>
                 ))}
               </ul>
             </div>
           );
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-8">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto grid sm:grid-cols-2 gap-8">
               {col(heading, inc, true)}
               {col(excludedHeading, exc, false)}
             </div>
@@ -2352,10 +2396,10 @@ export const builderConfig: Config<BuilderComponents> = {
         if (acts.length === 0) return <TripBlockPrompt what="activities" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-4xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
               )}
               <div className="grid sm:grid-cols-2 gap-4">
                 {acts.map((act, i) => {
@@ -2367,7 +2411,7 @@ export const builderConfig: Config<BuilderComponents> = {
                   return (
                     <div key={i} className="rounded-xl p-5 border bg-white" style={{ borderColor: C.mutedBorder }}>
                       <div className={`font-semibold mb-1 ${cardTitleClass(titleSize)}`} style={{ color: C.text }}>{name}</div>
-                      {desc && <div className={bodyFont(bodySize) || "text-sm"} style={{ color: "#5a8ea8" }}>{desc}</div>}
+                      {desc && <div className={bodyFont(bodySize) || "text-sm"} style={{ color: "#3f6f88" }}>{desc}</div>}
                     </div>
                   );
                 })}
@@ -2405,8 +2449,8 @@ export const builderConfig: Config<BuilderComponents> = {
         const dk = bgIsDark(background, false);
         const SWATCH = ["#16a34a", C.riverTeal, "#d97706", "#c94f28"];
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
                 <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
               )}
@@ -2422,7 +2466,7 @@ export const builderConfig: Config<BuilderComponents> = {
                     </div>
                     <div>
                       <div className={`font-semibold mb-1 ${cardTitleClass(titleSize)}`} style={{ color: C.text }}>{g.title}</div>
-                      <div className={`leading-relaxed ${bodyFont(bodySize) || "text-sm"}`} style={{ color: "#5a8ea8" }}>{g.desc}</div>
+                      <div className={`leading-relaxed ${bodyFont(bodySize) || "text-sm"}`} style={{ color: "#3f6f88" }}>{g.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -2455,10 +2499,10 @@ export const builderConfig: Config<BuilderComponents> = {
         if (faqs.length === 0) return <TripBlockPrompt what="FAQs" slug={slug} empty />;
         const dk = bgIsDark(background, false);
         return (
-          <section className="px-6 py-14" style={sectionStyle(background, C.bg, padY)}>
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
+            <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
               )}
               <div className="space-y-3">
                 {faqs.map((f, i) => (
@@ -2499,7 +2543,7 @@ export const builderConfig: Config<BuilderComponents> = {
         const bg = (background as SectionBg) || "light";
         const dk = bgIsDark(bg, false);
         return (
-          <section className="px-6 py-16" style={sectionStyle(bg, C.bg, padY)}>
+          <section className="px-6 py-8 md:py-10" style={sectionStyle(bg, C.bg, padY)}>
             <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
               <div className={`relative h-72 lg:h-96 rounded-2xl overflow-hidden ${imageSide === "right" ? "lg:order-2" : ""}`}>
                 <SmartImage src={image} alt={heading} wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />

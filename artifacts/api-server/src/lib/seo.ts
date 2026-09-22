@@ -268,7 +268,7 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
       status: 200,
       content: contentBlock(
         `<h1>${esc(t.title)}</h1><p>${esc(facts)}</p>${t.tagline ? `<p>${esc(t.tagline)}</p>` : ""}${
-          t.description ? (t.description.split(/\n\n+/).slice(0, 10).map((par) => `<p>${esc(par)}</p>`).join("")) : ""
+          t.description ? (plainText(t.description).split(/\n\n+/).slice(0, 10).map((par) => `<p>${esc(par)}</p>`).join("")) : ""
         }`,
       ),
     };
@@ -461,3 +461,7 @@ export async function warmSeoCache(): Promise<number> {
   await Promise.all([...paths].map((p) => renderRoute(p)));
   return paths.size;
 }
+
+/** Trip descriptions are rich-text HTML now (older ones plain text); reduce to words. */
+export const plainText = (s: string): string =>
+  s.replace(/<\/(p|h\d|li|div)>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n{3,}/g, "\n\n").trim();

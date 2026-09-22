@@ -3,6 +3,7 @@ import { Clock, MapPin, ArrowRight } from "lucide-react";
 import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
 import type { Tour as LegacyTour } from "@/data/tours";
+import { priceLabel } from "@/lib/content";
 
 /**
  * One trip, in listings and strips.
@@ -56,7 +57,16 @@ export default function TripCard({ tour, typePillColor }: { tour: LegacyTour; ty
           <span
             className="ap-card-price font-bold text-lg ml-3 shrink-0"
             style={{ fontFamily: "var(--app-font-serif)", color: C.deepOcean }}>
-            {tour.price}
+            {(() => {
+              const l = priceLabel(tour);
+              return (
+                <>
+                  {l.before && <span className="block text-[11px] font-normal leading-tight" style={{ fontFamily: "var(--app-font-sans)", color: "#3f6f88" }}>{l.before}</span>}
+                  {tour.price}
+                  {l.after && <span className="block text-[11px] font-normal leading-tight" style={{ fontFamily: "var(--app-font-sans)", color: "#3f6f88" }}>{l.after}</span>}
+                </>
+              );
+            })()}
           </span>
         </div>
 

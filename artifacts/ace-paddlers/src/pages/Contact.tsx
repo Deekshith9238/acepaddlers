@@ -69,7 +69,7 @@ function ContactContent() {
             {/* Info */}
             <Animate variant="left">
               <div>
-                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Contact Details
                 </h2>
 
@@ -142,7 +142,7 @@ function ContactContent() {
             {/* Map */}
             <Animate variant="right">
               <div>
-                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Find Us
                 </h2>
                 <div className="rounded-2xl overflow-hidden border" style={{ borderColor: C.mutedBorder, height: "420px" }}>

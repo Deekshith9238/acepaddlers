@@ -29,7 +29,7 @@ function DataDeletionContent() {
             </div>
 
             <div className="rounded-2xl border bg-white p-6 mb-10" style={{ borderColor: C.mutedBorder }}>
-              <h2 className="text-lg font-semibold mb-3" style={{ color: C.text }}>How to request deletion</h2>
+              <h2 className="text-lg font-semibold mb-3" style={{ color: C.secondary }}>How to request deletion</h2>
               <ol className="list-decimal pl-5 space-y-2 text-sm" style={{ color: "#2e5a74" }}>
                 <li>
                   Email us at{" "}
@@ -49,7 +49,7 @@ function DataDeletionContent() {
             </div>
 
             <div className="space-y-3 text-sm leading-relaxed" style={{ color: "#2e5a74" }}>
-              <h2 className="text-lg font-semibold mb-1" style={{ color: C.text }}>What gets deleted</h2>
+              <h2 className="text-lg font-semibold mb-1" style={{ color: C.secondary }}>What gets deleted</h2>
               <p>
                 Your name, contact details, guest/booking details, and message history with us. Payment records are
                 processed by our payment partner Razorpay and are subject to their own retention and deletion

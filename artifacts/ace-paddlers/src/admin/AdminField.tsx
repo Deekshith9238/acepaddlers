@@ -26,32 +26,39 @@ function MediaField({ value, onChange }: { value: string; onChange: (v: string) 
     }
   };
 
+  const isVideo = !!value && /\.(mp4|webm|mov|m4v|m3u8)$/i.test(value);
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <input type="text" className={inputCls} value={value ?? ""} placeholder="https://… or upload"
-          onChange={(e) => onChange(e.target.value)} />
-        <label className="shrink-0 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          {uploading ? "Uploading…" : "Upload"}
-          <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} disabled={uploading} />
-        </label>
+      <div className="flex items-end gap-3">
+        {value ? (
+          <div className="relative h-32 w-48 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+            {isVideo
+              ? <video src={value} muted playsInline className="h-full w-full object-cover" />
+              : <img src={value} alt="" className="h-full w-full object-cover" />}
+          </div>
+        ) : (
+          <div className="flex h-32 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-xs text-slate-400">No image</div>
+        )}
+        <div className="flex flex-col gap-2">
+          <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+            {uploading ? "Uploading…" : value ? "Replace" : "Upload"}
+            <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} disabled={uploading} />
+          </label>
+          {value && (
+            <button type="button" onClick={() => onChange("")}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">Remove</button>
+          )}
+        </div>
       </div>
-      {value && /\.(jpe?g|png|webp|gif|avif)$/i.test(value) && (
-        <img src={value} alt="preview" className="mt-2 h-24 rounded-lg object-cover border border-slate-200" />
-      )}
-      {value && /\.(mp4|webm|mov|m4v)$/i.test(value) && (
-        <video src={value} controls muted playsInline className="mt-2 h-24 rounded-lg object-cover border border-slate-200" />
-      )}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
 
-/** Multiple images: upload files or paste URLs; reorder and remove. */
+/** Multiple images as a thumbnail gallery: upload, reorder, remove. */
 function MediaListField({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [urlInput, setUrlInput] = useState("");
   const images = Array.isArray(value) ? value : [];
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,12 +81,6 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
     }
   };
 
-  const addUrl = () => {
-    const v = urlInput.trim();
-    if (!v) return;
-    onChange([...images, v]);
-    setUrlInput("");
-  };
   const removeAt = (i: number) => onChange(images.filter((_, idx) => idx !== i));
   const moveAt = (i: number, dir: -1 | 1) => {
     const j = i + dir;
@@ -91,34 +92,24 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
 
   return (
     <div>
-      {images.length > 0 && (
-        <div className="mb-3 space-y-2">
-          {images.map((src, i) => (
-            <div key={src + i} className="flex items-center gap-2">
-              <img src={src} alt="" className="h-12 w-16 rounded-lg object-cover border border-slate-200 shrink-0" />
-              <span className="flex-1 min-w-0 truncate text-xs text-slate-500">{src}</span>
-              <div className="flex gap-1 shrink-0">
-                <button type="button" onClick={() => moveAt(i, -1)} disabled={i === 0}
-                  className="rounded-md border border-slate-300 text-slate-600 px-2 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-40">↑</button>
-                <button type="button" onClick={() => moveAt(i, 1)} disabled={i === images.length - 1}
-                  className="rounded-md border border-slate-300 text-slate-600 px-2 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-40">↓</button>
-                <button type="button" onClick={() => removeAt(i)}
-                  className="rounded-md border border-red-300 text-red-600 px-2 py-1 text-xs font-semibold hover:bg-red-50">✕</button>
-              </div>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
+        {images.map((src, i) => (
+          <div key={src + i} className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+            <img src={src} alt="" className="h-full w-full object-cover" />
+            {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">Cover</span>}
+            <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+              <button type="button" title="Move earlier" onClick={() => moveAt(i, -1)} disabled={i === 0}
+                className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 disabled:opacity-40">←</button>
+              <button type="button" title="Move later" onClick={() => moveAt(i, 1)} disabled={i === images.length - 1}
+                className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 disabled:opacity-40">→</button>
+              <button type="button" title="Remove" onClick={() => removeAt(i)}
+                className="rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-red-600">✕</button>
             </div>
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <input type="text" className={`${inputCls} flex-1 min-w-[160px]`} value={urlInput} placeholder="https://… or upload"
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addUrl(); } }} />
-        <button type="button" onClick={addUrl}
-          className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          Add URL
-        </button>
-        <label className="shrink-0 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          {uploading ? "Uploading…" : "Upload images"}
+          </div>
+        ))}
+        <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-sm text-slate-500 hover:bg-slate-50">
+          <span className="text-2xl leading-none">+</span>
+          <span className="mt-1 text-xs">{uploading ? "Uploading…" : "Add images"}</span>
           <input type="file" accept="image/*" multiple className="hidden" onChange={onFiles} disabled={uploading} />
         </label>
       </div>

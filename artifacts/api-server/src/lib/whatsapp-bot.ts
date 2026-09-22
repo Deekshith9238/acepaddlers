@@ -14,6 +14,7 @@ import {
 import { createBooking, BookingError } from "./booking";
 import { createPaymentLink, razorpayConfigured } from "./razorpay";
 import { notifyStaffNewBooking } from "./notify";
+import { plainText } from "./seo";
 
 const SITE_URL = process.env.PUBLIC_SITE_URL ?? "https://www.acepaddlers.com";
 
@@ -220,7 +221,7 @@ async function askGuests(to: string, tourId: string, data: SessionData): Promise
   const detail = [
     tourCaption(tour),
     tour.minAge ? `Min age: ${tour.minAge}` : undefined,
-    tour.description ? clip(tour.description, 200) : undefined,
+    tour.description ? clip(plainText(tour.description), 200) : undefined,
   ]
     .filter(Boolean)
     .join("\n");

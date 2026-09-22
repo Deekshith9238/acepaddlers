@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { useListAdminTours, useListAdminTourCategories } from "@workspace/api-client-react";
+import { TrustBadgeList } from "@/admin/TrustBadgeList";
 import AdminField from "@/admin/AdminField";
-import { Card, Field, Choice, RadioGroup, SaveBar, LineList, inputCls, labelCls } from "./shell";
+import { Card, Field, Choice, RadioGroup, SaveBar, RichLineList, inputCls, labelCls } from "./shell";
 import { useTourSection } from "./useTour";
+import RichTextField from "@/builder/RichTextField";
+import { isHtml, richTextHtml } from "@/lib/richText";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -16,6 +20,19 @@ export function TripBasics({ tourId }: { tourId: string }) {
   const s = useTourSection(tourId, BASIC_KEYS);
   const { data: categories } = useListAdminTourCategories();
   const v = s.values;
+  // This trip's own trust badges, kept in `details` (a bag other tabs share, so
+  // only this key is sent). Off = the site-wide ones from Settings.
+  const stored = (s.tour as any)?.details?.trustBadges as string[] | undefined;
+  const [ownBadges, setOwnBadges] = useState(false);
+  const [badges, setBadges] = useState<string[]>([]);
+  useEffect(() => {
+    setOwnBadges(Array.isArray(stored) && stored.length > 0);
+    setBadges(Array.isArray(stored) ? stored : []);
+  }, [JSON.stringify(stored)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const saveBasics = () => {
+    const list = badges.map((b) => b.trim()).filter(Boolean);
+    s.save({ details: { trustBadges: ownBadges && list.length ? list : null } });
+  };
 
   return (
     <>
@@ -71,16 +88,16 @@ export function TripBasics({ tourId }: { tourId: string }) {
             <input className={inputCls} value={v.tagline ?? ""} onChange={(e) => s.set({ tagline: e.target.value })} />
           </Field>
           <Field label="Description">
-            <textarea rows={8} className={inputCls} value={v.description ?? ""} onChange={(e) => s.set({ description: e.target.value })} />
+            <RichTextField value={isHtml(v.description ?? "") ? v.description : richTextHtml(v.description)} onChange={(x) => s.set({ description: x === "<p></p>" ? "" : x })} />
           </Field>
         </div>
       </Card>
 
-      <Card title="Inclusions, exclusions & highlights" hint="One line each. These render as lists on the trip page.">
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div><label className={labelCls}>Inclusions</label><LineList value={v.included ?? []} onChange={(x) => s.set({ included: x })} addLabel="Add inclusion" /></div>
-          <div><label className={labelCls}>Exclusions</label><LineList value={v.excluded ?? []} onChange={(x) => s.set({ excluded: x })} addLabel="Add exclusion" /></div>
-          <div><label className={labelCls}>Highlights</label><LineList value={v.highlights ?? []} onChange={(x) => s.set({ highlights: x })} addLabel="Add highlight" /></div>
+      <Card title="Inclusions, exclusions & highlights" hint="One bullet per item. On the trip page each bullet gets a tick (included, highlights) or a cross (not included), and keeps its formatting.">
+        <div className="space-y-6">
+          <div><label className={labelCls}>Inclusions</label><RichLineList value={v.included ?? []} onChange={(x) => s.set({ included: x })} /></div>
+          <div><label className={labelCls}>Exclusions</label><RichLineList value={v.excluded ?? []} onChange={(x) => s.set({ excluded: x })} /></div>
+          <div><label className={labelCls}>Highlights</label><RichLineList value={v.highlights ?? []} onChange={(x) => s.set({ highlights: x })} /></div>
         </div>
       </Card>
 
@@ -95,7 +112,19 @@ export function TripBasics({ tourId }: { tourId: string }) {
         <textarea rows={5} className={inputCls} value={v.terms ?? ""} onChange={(e) => s.set({ terms: e.target.value })} />
       </Card>
 
-      <SaveBar onSave={() => s.save()} saving={s.saving} saved={s.saved} error={s.error} />
+      <Card title="Trust badges" hint="Shown by the Trust badges section on this trip's page (add it in the page editor under Live content).">
+        <label className="mb-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={ownBadges}
+            onChange={(e) => { setOwnBadges(e.target.checked); if (e.target.checked && badges.length === 0) setBadges([""]); }} />
+          <span className="text-sm text-slate-700">
+            <span className="font-medium">Use this trip's own trust badges</span>
+            <span className="block text-xs text-slate-400">Off: the site-wide badges from Settings → Trust badges.</span>
+          </span>
+        </label>
+        {ownBadges && <TrustBadgeList value={badges} onChange={setBadges} />}
+      </Card>
+
+      <SaveBar onSave={saveBasics} saving={s.saving} saved={s.saved} error={s.error} />
     </>
   );
 }

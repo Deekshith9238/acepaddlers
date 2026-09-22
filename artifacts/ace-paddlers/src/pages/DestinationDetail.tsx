@@ -111,7 +111,7 @@ function DestinationDetailContent({ slug }: { slug: string }) {
           return (
             <section key={cat} className="py-12 px-6" style={{ backgroundColor: C.bg }}>
               <div className="max-w-5xl mx-auto">
-                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>{label}</h2>
+                <h2 className="text-3xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>{label}</h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {items.map((t) => (
                     <Link key={t.slug} href={`/tours/${t.slug}`}

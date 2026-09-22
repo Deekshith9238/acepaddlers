@@ -51,6 +51,11 @@ export interface Tour {
   advertisedPrice?: number;
   showAdvertisedPrice?: boolean;
   priceLabelPosition?: "before" | "after" | "none";
+  /** The label's own words ("Starting from", "Per Person"); empty = each spot's default wording. */
+  priceLabel?: string;
+  showGroupRates?: boolean;
+  /** This trip's own trust badges; absent = the site-wide ones. */
+  trustBadges?: string[];
   terms?: string;
   itinerary?: ItineraryDay[];
   itineraryText?: string;

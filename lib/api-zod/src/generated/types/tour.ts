@@ -57,7 +57,11 @@ export interface Tour {
   /** Headline price for display; the rate card does the maths */
   advertisedPrice?: number | null;
   priceLabelPosition?: TourPriceLabelPosition;
+  /** The label's own words, e.g. Starting from / Per Person. Null = site defaults. */
+  priceLabel?: string | null;
   showAdvertisedPrice?: boolean;
+  /** List the group rates on the trip page */
+  showGroupRates?: boolean;
   allowPartialDeposit?: boolean;
   /** Percent of the total accepted as a deposit */
   depositPercent?: number;

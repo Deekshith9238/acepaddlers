@@ -97,7 +97,9 @@ function toTour(r: typeof tours.$inferSelect): Tour {
     //    decide what the visitor is shown before they pick a date. ──
     advertisedPrice: r.advertisedPrice,
     priceLabelPosition: r.priceLabelPosition as "before" | "after" | "none",
+    priceLabel: r.priceLabel,
     showAdvertisedPrice: r.showAdvertisedPrice,
+    showGroupRates: r.showGroupRates,
     allowPartialDeposit: r.allowPartialDeposit,
     depositPercent: r.depositPercent,
 

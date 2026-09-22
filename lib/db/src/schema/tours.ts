@@ -57,6 +57,10 @@ export const tours = pgTable("tours", {
   advertisedPrice: integer("advertised_price"),
   /** Where the price label sits relative to the number: before | after | none. */
   priceLabelPosition: text("price_label_position").default("before").notNull(),
+  /** The label's own words, VL-style — "Starting from", "Per Person". Null = the site-wide defaults. */
+  priceLabel: text("price_label"),
+  /** List the group rates (volume tiers) on the trip page. */
+  showGroupRates: boolean("show_group_rates").default(false).notNull(),
   showAdvertisedPrice: boolean("show_advertised_price").default(true).notNull(),
 
   // ── Storefront behaviour ──

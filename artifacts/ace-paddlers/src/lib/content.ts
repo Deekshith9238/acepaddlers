@@ -34,6 +34,20 @@ export function useTourTypeLabels(): Map<string, string> {
   return useMemo(() => new Map((data ?? []).map((t) => [t.slug, t.label])), [data]);
 }
 
+/**
+ * The words around a trip's price, VL-style: the trip's own label goes before
+ * or after the number as the admin chose; with no label of its own, each spot
+ * keeps its usual wording (`fallback`). "none" hides every label.
+ */
+export function priceLabel(
+  t: Pick<LegacyTour, "priceLabel" | "priceLabelPosition" | "showAdvertisedPrice">,
+  fallback: { before?: string; after?: string } = {},
+): { before?: string; after?: string } {
+  if (t.showAdvertisedPrice === false || t.priceLabelPosition === "none") return {};
+  if (!t.priceLabel) return fallback;
+  return t.priceLabelPosition === "after" ? { after: t.priceLabel } : { before: t.priceLabel };
+}
+
 export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour {
   const d = (t.details ?? {}) as Record<string, unknown>;
   const asStr = (v: unknown): string | undefined =>
@@ -43,7 +57,9 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     title: t.title,
     metaTitle: asStr(d.metaTitle) ?? t.seoTitle ?? undefined,
     metaDescription: t.seoDescription ?? undefined,
-    price: formatINR(t.priceValue),
+    // What visitors see: the advertised price when one is set, and nothing
+    // numeric at all for a trip quoted on request.
+    price: t.showAdvertisedPrice === false ? "Price on request" : formatINR(t.advertisedPrice ?? t.priceValue),
     priceValue: t.priceValue,
     duration: t.duration ?? "",
     location: t.location ?? "",
@@ -71,6 +87,9 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     advertisedPrice: t.advertisedPrice ?? undefined,
     showAdvertisedPrice: t.showAdvertisedPrice ?? undefined,
     priceLabelPosition: (t.priceLabelPosition as LegacyTour["priceLabelPosition"]) ?? undefined,
+    priceLabel: t.priceLabel?.trim() || undefined,
+    showGroupRates: t.showGroupRates ?? undefined,
+    trustBadges: Array.isArray(d.trustBadges) && d.trustBadges.length ? (d.trustBadges as string[]) : undefined,
     terms: t.terms ?? undefined,
     itinerary: (t.itinerary as LegacyTour["itinerary"]) ?? undefined,
     itineraryText: t.itineraryText ?? undefined,

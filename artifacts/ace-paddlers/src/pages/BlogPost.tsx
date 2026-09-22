@@ -92,7 +92,7 @@ export default function BlogPost() {
                   <Animate key={i} variant="up" delay={i * 60}>
                     <div className="mb-10">
                       {section.heading && (
-                        <h2 className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                        <h2 className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                           {section.heading}
                         </h2>
                       )}

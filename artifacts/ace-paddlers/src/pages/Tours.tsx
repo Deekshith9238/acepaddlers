@@ -82,7 +82,7 @@ function ToursContent() {
         {/* CTA */}
         <section className="py-20 px-6" style={{ backgroundColor: C.muted }}>
           <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-3xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+            <h2 className="text-3xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
               Not sure which tour is right for you?
             </h2>
             <p className="mb-8" style={{ color: "#2e5a74" }}>

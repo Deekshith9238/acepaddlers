@@ -10,7 +10,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <>
       <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>{title}</h2>
+        <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>{title}</h2>
         <div className="space-y-3 text-sm leading-relaxed" style={{ color: "#2e5a74" }}>{children}</div>
       </div>
     </>

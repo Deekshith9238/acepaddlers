@@ -258,7 +258,7 @@ export default function Home() {
                 <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
                   Our Heritage
                 </span>
-                <h2 className="text-4xl md:text-5xl mb-8 leading-tight" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl md:text-5xl mb-8 leading-tight" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Pioneers of the{" "}
                   <span className="italic" style={{ color: C.riverTeal }}>South Indian</span> Adventure
                 </h2>
@@ -309,7 +309,7 @@ export default function Home() {
                 <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
                   Curated Journeys
                 </span>
-                <h2 className="text-4xl md:text-5xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                <h2 className="text-4xl md:text-5xl" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                   Most Beloved{" "}
                   <span className="italic" style={{ color: C.riverTeal }}>Tours</span>
                 </h2>
@@ -424,7 +424,7 @@ export default function Home() {
               <div className="flex justify-center mb-6">
                 <Waves className="w-10 h-10" style={{ color: C.riverTeal }} />
               </div>
-              <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+              <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                 Ready to find your flow?
               </h2>
               <p className="text-lg mb-10" style={{ color: "#2e5a74" }}>

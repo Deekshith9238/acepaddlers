@@ -1,5 +1,7 @@
 import { Card, Field, SaveBar, inputCls, ghostBtnCls } from "./shell";
 import { useTourSection } from "./useTour";
+import RichTextField from "@/builder/RichTextField";
+import { itineraryHtml } from "@/lib/richText";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,16 +38,22 @@ export function TripItinerary({ tourId }: { tourId: string }) {
 
   return (
     <>
+      <Card title="Itinerary" hint="What guests do on the trip, shown in the itinerary section of the trip page. Format it like the description: fonts, lists, images.">
+        <Field label="Itinerary">
+          <RichTextField value={itineraryHtml(s.values.itineraryText)} onChange={(x) => s.set({ itineraryText: x === "<p></p>" ? "" : x })} />
+        </Field>
+      </Card>
+
       <Card
-        title="Day-wise itinerary"
-        hint="One block per day, each a list of times and what happens. This is what the trip page shows when it has rows."
+        title="Or build it day by day"
+        hint="Optional, for multi-day trips: one block per day with times. If you add days here, the trip page shows these instead of the itinerary above."
         right={
           <button type="button" className={ghostBtnCls} onClick={() => setDays([...days, { title: `Day ${days.length + 1}`, items: [{ time: "", title: "", description: "" }] }])}>
             + Add day
           </button>
         }>
         {days.length === 0 ? (
-          <p className="text-sm text-slate-400">No days yet — add one, or write the itinerary as free text below.</p>
+          <p className="text-sm text-slate-400">No days added. The itinerary above is what the trip page shows.</p>
         ) : (
           <div className="space-y-6">
             {days.map((d, di) => (
@@ -108,16 +116,6 @@ export function TripItinerary({ tourId }: { tourId: string }) {
         )}
       </Card>
 
-      <Card title="Or write it as free text" hint="Used only when there are no day blocks above.">
-        <Field label="Itinerary">
-          <textarea
-            rows={10}
-            className={inputCls}
-            value={s.values.itineraryText ?? ""}
-            onChange={(e) => s.set({ itineraryText: e.target.value })}
-          />
-        </Field>
-      </Card>
 
       <SaveBar
         onSave={() =>

@@ -127,7 +127,7 @@ function ExperiencesContent() {
                     style={{ backgroundColor: C.riverTeal + "22", color: C.riverTeal }}>
                     {exp.icon}
                   </div>
-                  <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+                  <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                     {exp.title}
                   </h2>
                   <p className="text-lg mb-6 italic" style={{ color: C.riverTeal }}>{exp.tagline}</p>

@@ -54,7 +54,7 @@ export default function BookingConfirmation() {
             </div>
 
             <div className="rounded-2xl border bg-white p-6 shadow-lg" style={{ borderColor: C.mutedBorder }}>
-              <h2 className="text-xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>{booking.tourTitle}</h2>
+              <h2 className="text-xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>{booking.tourTitle}</h2>
               <div className="space-y-3 text-sm" style={{ color: "#2e5a74" }}>
                 <Row icon={<Calendar className="w-4 h-4" />} label="Date" value={formatDate(booking.date)} />
                 <Row icon={<Clock className="w-4 h-4" />} label="Time" value={booking.startTime ?? "—"} />

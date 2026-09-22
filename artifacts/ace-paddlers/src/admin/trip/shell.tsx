@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import RichTextField from "@/builder/RichTextField";
+import { linesToListHtml, listHtmlToLines } from "@/lib/richText";
 
 /**
  * Tabs of the trip editor, in Vacation Labs' order.
@@ -199,5 +202,33 @@ export function LineList({
         + {addLabel}
       </button>
     </div>
+  );
+}
+
+/**
+ * A list (inclusions, highlights…) edited as one formatted bullet list.
+ * Holds its own HTML so the editor isn't reset on every keystroke; re-seeds
+ * only when the stored items change from outside (the trip finishing loading).
+ */
+export function RichLineList({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [html, setHtml] = useState(() => linesToListHtml(value));
+  const emitted = useRef(JSON.stringify(value));
+  useEffect(() => {
+    const incoming = JSON.stringify(value);
+    if (incoming !== emitted.current) {
+      emitted.current = incoming;
+      setHtml(linesToListHtml(value));
+    }
+  }, [value]);
+  return (
+    <RichTextField
+      value={html}
+      onChange={(h) => {
+        setHtml(h);
+        const lines = listHtmlToLines(h);
+        emitted.current = JSON.stringify(lines);
+        onChange(lines);
+      }}
+    />
   );
 }

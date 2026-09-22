@@ -28,7 +28,46 @@ export const FONT_OPTIONS: { family: string; axes: string; serif: boolean }[] = 
   { family: "Rubik", axes: "ital,wght@0,300..900;1,300..900", serif: false },
   { family: "Work Sans", axes: "ital,wght@0,100..900;1,100..900", serif: false },
   { family: "Lato", axes: "ital,wght@0,300;0,400;0,700;1,300;1,400;1,700", serif: false },
+  { family: "Open Sans", axes: "ital,wght@0,300..800;1,300..800", serif: false },
+  { family: "Roboto", axes: "ital,wght@0,100..900;1,100..900", serif: false },
+  { family: "Raleway", axes: "ital,wght@0,100..900;1,100..900", serif: false },
+  { family: "Oswald", axes: "wght@200..700", serif: false },
+  { family: "Josefin Sans", axes: "ital,wght@0,100..700;1,100..700", serif: false },
+  { family: "Libre Baskerville", axes: "ital,wght@0,400;0,700;1,400", serif: true },
+  { family: "Cormorant Garamond", axes: "ital,wght@0,300..700;1,300..700", serif: true },
+  { family: "Bebas Neue", axes: "wght@400", serif: false },
+  { family: "Dancing Script", axes: "wght@400..700", serif: false },
+  { family: "Pacifico", axes: "wght@400", serif: false },
+  { family: "Caveat", axes: "wght@400..700", serif: false },
 ];
+
+/** CSS font-family value for a curated family, with its generic fallback. */
+export const fontStack = (family: string): string =>
+  `'${family}', ${fontMeta(family)?.serif ? "serif" : "sans-serif"}`;
+
+const loadedFamilies = new Set<string>();
+/**
+ * Load extra families on demand, e.g. fonts picked inside rich text. Kept
+ * separate from the theme's own link so switching theme fonts never unloads
+ * a font some description is using.
+ */
+export function loadFontFamilies(families: string[]): void {
+  const fresh = [...new Set(families)].filter((f) => fontMeta(f) && !loadedFamilies.has(f));
+  if (fresh.length === 0) return;
+  fresh.forEach((f) => loadedFamilies.add(f));
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?${fresh.map((f) => `family=${f.replace(/ /g, "+")}:${fontMeta(f)!.axes}`).join("&")}&display=swap`;
+  document.head.appendChild(link);
+}
+
+/** Load whichever curated fonts a piece of stored rich text uses. */
+export function loadFontsUsedIn(html: string): void {
+  // Browsers drop the quotes when serializing, so match the bare name inside a font-family declaration.
+  const decls: string[] = html.match(/font-family:[^;"]*/gi) ?? [];
+  const used = FONT_OPTIONS.filter((f) => decls.some((d) => d.includes(f.family)));
+  if (used.length) loadFontFamilies(used.map((f) => f.family));
+}
 
 const baseUrl = (): string => (import.meta.env.VITE_API_URL as string) || "";
 

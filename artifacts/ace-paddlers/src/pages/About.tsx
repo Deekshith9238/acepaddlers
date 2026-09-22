@@ -119,7 +119,7 @@ function AboutContent() {
             </div>
 
             <div>
-              <h2 className="text-4xl md:text-5xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+              <h2 className="text-4xl md:text-5xl mb-8" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                 Our Story
               </h2>
               <div className="space-y-5 text-lg leading-relaxed" style={{ color: "#2e5a74" }}>
@@ -174,7 +174,7 @@ function AboutContent() {
         <section className="py-24 px-6" style={{ backgroundColor: C.muted }}>
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                 What we stand for
               </h2>
               <div className="w-16 h-1 rounded-full mx-auto" style={{ backgroundColor: C.riverTeal }} />
@@ -201,7 +201,7 @@ function AboutContent() {
               <span className="uppercase tracking-widest text-xs font-bold mb-4 block" style={{ color: C.riverTeal }}>
                 The People
               </span>
-              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
+              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                 Meet the team behind{" "}
                 <span className="italic" style={{ color: C.riverTeal }}>every adventure</span>
               </h2>

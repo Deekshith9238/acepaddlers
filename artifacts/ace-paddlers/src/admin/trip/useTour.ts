@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useListAdminTours, useUpdateTour, type Tour } from "@workspace/api-client-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -19,9 +19,12 @@ export function useTourSection(tourId: string, keys: readonly string[]) {
   const [values, setValues] = useState<Record<string, any>>({});
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Unsaved edits. Saving *another* card on the same tab refetches the tour,
+  // and re-seeding then would silently throw these away.
+  const dirty = useRef(false);
 
   useEffect(() => {
-    if (!tour) return;
+    if (!tour || dirty.current) return;
     const next: Record<string, any> = {};
     for (const k of keys) next[k] = (tour as any)[k];
     setValues(next);
@@ -31,6 +34,7 @@ export function useTourSection(tourId: string, keys: readonly string[]) {
   }, [tour, keys.join(",")]);
 
   const set = useCallback((patch: Record<string, any>) => {
+    dirty.current = true;
     setValues((v) => ({ ...v, ...patch }));
     setSaved(false);
     setError(null);
@@ -43,6 +47,7 @@ export function useTourSection(tourId: string, keys: readonly string[]) {
         { id: tourId, data: { ...values, ...extra } as any },
         {
           onSuccess: () => {
+            dirty.current = false;
             setSaved(true);
             refetch();
           },

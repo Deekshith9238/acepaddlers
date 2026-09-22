@@ -23,8 +23,8 @@ export type ThemeKey = keyof typeof THEME_DEFAULTS;
 
 /** Editable colours shown in the admin Theme page, with human labels. */
 export const THEME_FIELDS: { key: ThemeKey; label: string; help: string }[] = [
-  { key: "riverTeal", label: "Primary", help: "Buttons, links, key accents" },
-  { key: "deepOcean", label: "Secondary", help: "Headings & dark accents" },
+  { key: "riverTeal", label: "Brand colour", help: "Buttons, links, key accents" },
+  { key: "deepOcean", label: "Dark accent", help: "Page titles, dark panels and the booking box" },
   { key: "midOcean", label: "Accent", help: "Secondary accent tone" },
   { key: "lightTeal", label: "Highlight", help: "Bright highlight tone" },
   { key: "bg", label: "Page background", help: "Main page background" },
