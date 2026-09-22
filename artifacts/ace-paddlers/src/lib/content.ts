@@ -90,6 +90,8 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     priceLabel: t.priceLabel?.trim() || undefined,
     showGroupRates: t.showGroupRates ?? undefined,
     trustBadges: Array.isArray(d.trustBadges) && d.trustBadges.length ? (d.trustBadges as string[]) : undefined,
+    ownFacts: Array.isArray(d.facts) ? (d.facts as { label?: string; value?: string }[]) : undefined,
+    ownFactsReplace: d.factsReplace === true,
     terms: t.terms ?? undefined,
     itinerary: (t.itinerary as LegacyTour["itinerary"]) ?? undefined,
     itineraryText: t.itineraryText ?? undefined,

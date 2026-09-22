@@ -1,5 +1,7 @@
 import { Card, Field, SaveBar, inputCls, ghostBtnCls } from "./shell";
 import { useTourSection } from "./useTour";
+import RichTextField from "@/builder/RichTextField";
+import { richTextPlain } from "@/lib/richText";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -22,7 +24,7 @@ type Activity = { name: string; desc: string };
 const KEYS = ["difficulty", "season", "minAge", "maxWeightKg", "details"] as const;
 
 /** Keys inside `details` that this tab owns. */
-const OWNED = ["groupSize", "minAge", "maxWeight", "stretchLength", "faqs", "rapidGrades", "activities"] as const;
+const OWNED = ["groupSize", "minAge", "maxWeight", "stretchLength", "faqs", "rapidGrades", "activities", "facts", "factsReplace"] as const;
 
 /** Activities are stored as "Name — description", which is what the page splits on. */
 const splitActivity = (line: string): Activity => {
@@ -58,6 +60,9 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
   const setDetail = (patch: Record<string, unknown>) => s.set({ details: { ...d, ...patch } });
 
   const faqs: Faq[] = Array.isArray(d.faqs) ? d.faqs : [];
+  /** Facts written by hand for this trip — each a formatted label and value. */
+  const facts: { label?: string; value?: string }[] = Array.isArray(d.facts) ? d.facts : [];
+  const setFacts = (next: { label?: string; value?: string }[]) => setDetail({ facts: next });
   const grades: Grade[] = Array.isArray(d.rapidGrades) ? d.rapidGrades : [];
   const activities: Activity[] = (Array.isArray(d.activities) ? d.activities : []).map(splitActivity);
 
@@ -84,10 +89,15 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
         .map((g) => ({ grade: (g.grade ?? "").trim(), title: (g.title ?? "").trim(), desc: (g.desc ?? "").trim() }))
         .filter((g) => g.grade || g.title || g.desc),
       activities: activities.map(joinActivity).filter(Boolean),
+      facts: facts
+        .map((f) => ({ label: (f.label ?? "").trim(), value: (f.value ?? "").trim() }))
+        .filter((f) => richTextPlain(f.label) || richTextPlain(f.value)),
+      factsReplace: d.factsReplace === true,
     };
     // Empty lists are removed rather than stored, so a trip without FAQs looks
     // exactly like one that never had them.
-    for (const k of ["faqs", "rapidGrades", "activities"]) {
+    if (!(details.facts as unknown[]).length) details.factsReplace = null;
+    for (const k of ["faqs", "rapidGrades", "activities", "facts"]) {
       if ((details[k] as unknown[]).length === 0) details[k] = null;
     }
     s.save({
@@ -145,6 +155,44 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
             Make them agree.
           </p>
         )}
+      </Card>
+
+      <Card
+        title="Your own facts"
+        hint="Extra facts for this trip, written the way you want them. They appear in the facts band wherever this trip is shown."
+        right={
+          <button type="button" className={ghostBtnCls} onClick={() => setFacts([...facts, { label: "", value: "" }])}>
+            + Add fact
+          </button>
+        }>
+        {facts.length === 0 ? (
+          <p className="text-sm text-slate-400">None — the band shows the quick facts above.</p>
+        ) : (
+          <div className="space-y-3">
+            {facts.map((f, i) => (
+              <RowShell key={i} onRemove={() => setFacts(facts.filter((_, idx) => idx !== i))}>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Label</div>
+                    <RichTextField value={f.label ?? ""} onChange={(x) => setFacts(patchAt(facts, i, { label: x === "<p></p>" ? "" : x }))} />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Value</div>
+                    <RichTextField value={f.value ?? ""} onChange={(x) => setFacts(patchAt(facts, i, { value: x === "<p></p>" ? "" : x }))} />
+                  </div>
+                </div>
+              </RowShell>
+            ))}
+          </div>
+        )}
+        <label className="mt-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={d.factsReplace === true}
+            onChange={(e) => setDetail({ factsReplace: e.target.checked })} />
+          <span className="text-sm text-slate-700">
+            <span className="font-medium">Show only these facts</span>
+            <span className="block text-xs text-slate-400">Off: they are added after the quick facts above.</span>
+          </span>
+        </label>
       </Card>
 
       <Card

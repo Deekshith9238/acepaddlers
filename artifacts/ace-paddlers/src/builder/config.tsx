@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Check, X, ShieldCheck } from "lucide-react";
 import type { Config, Field, SelectField, TextField } from "@measured/puck";
-import { richTextHtml, itineraryHtml, listItemHtml } from "@/lib/richText";
+import { richTextHtml, itineraryHtml, listItemHtml, richTextPlain } from "@/lib/richText";
 import SmartImage from "@/components/SmartImage";
 import TripCard from "@/components/TripCard";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -117,6 +117,33 @@ const richTextField = (label: string): Field<string> => ({
   render: ({ value, onChange }: any) => <RichTextField value={value} onChange={onChange} />,
 });
 
+
+/**
+ * A section field's rich text, rendered where a plain string used to sit.
+ *
+ * Block tags become spans that behave like blocks, so a paragraph list can live
+ * inside the <h2> or <p> the block already renders without making invalid HTML,
+ * and a single paragraph is unwrapped so short text stays truly inline.
+ */
+function Rt({ html }: { html?: string }) {
+  const raw = (html ?? "").trim();
+  if (!raw) return null;
+  let clean = richTextHtml(raw);
+  // A single unstyled paragraph is unwrapped so short text stays truly inline.
+  const single = clean.match(/^<p>([\s\S]*)<\/p>$/);
+  if (single && !single[1].includes("<p")) clean = single[1];
+  else {
+    // Otherwise keep each block on its own line, but as spans: the block this
+    // text sits in is often a <h2> or <p>, where a nested <p> is invalid HTML.
+    clean = clean
+      .replace(/<(?:p|h2|h3|div|ul|ol|li)(\s[^>]*)?>/g, (_m, attrs: string | undefined) => {
+        const style = /style="([^"]*)"/.exec(attrs ?? "")?.[1] ?? "";
+        return `<span style="display:block;${style}">`;
+      })
+      .replace(/<\/(?:p|h2|h3|div|ul|ol|li)>/g, "</span>");
+  }
+  return <span className="ace-richtext" style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: clean }} />;
+}
 
 // Puck doesn't auto-render a caption for `type: "custom"` fields (unlike its
 // built-in text/select/etc. fields) — custom fields must draw their own.
@@ -631,7 +658,7 @@ type BuilderComponents = {
   TripItinerary: TripBlockProps;
   TripTerms: TripBlockProps;
   TripLocation: TripBlockProps;
-  TripFacts: TripBlockProps;
+  TripFacts: TripFactsProps;
   TwoColumn: TwoColumnProps;
   Spacer: SpacerProps;
   Divider: DividerProps;
@@ -723,6 +750,19 @@ export interface TripBannerProps extends TripBlockProps {
 export interface TripListProps extends TripBlockProps {
   itemSize?: TextScale;
   columns?: "1" | "2";
+}
+
+export interface TripFactsProps extends TripBlockProps {
+  /** Rows typed here replace the trip's own facts, and are fully editable text. */
+  facts?: { label?: string; value?: string }[];
+  /** "" = as many as fit the width. */
+  factColumns?: string;
+  /** "" = as many rows as the facts need; a number fills down each column first. */
+  factRows?: string;
+  /** Even columns, or columns only as wide as their text. */
+  factWidth?: "even" | "fit";
+  labelSize?: TextScale;
+  valueSize?: TextScale;
 }
 
 export interface TrustBadgesProps extends TripBlockProps {
@@ -906,11 +946,11 @@ export const builderConfig: Config<BuilderComponents> = {
     Hero: {
       label: "Hero",
       fields: {
-        eyebrow: { type: "text", label: "Eyebrow" },
-        title: { type: "text", label: "Title" },
-        accent: { type: "text", label: "Title (accent)" },
-        subtitle: { type: "text", label: "Subtitle" },
-        description: { type: "textarea", label: "Description" },
+        eyebrow: richTextField("Eyebrow"),
+        title: richTextField("Title"),
+        accent: richTextField("Title (accent)"),
+        subtitle: richTextField("Subtitle"),
+        description: richTextField("Description"),
         image: imageField("Background image"),
         images: {
           type: "array", label: "Gallery images (optional — adds more photos that rotate behind the hero, with ‹ › arrows)",
@@ -954,12 +994,12 @@ export const builderConfig: Config<BuilderComponents> = {
         const JUSTIFY = { left: "justify-start", center: "justify-center", right: "justify-end" } as const;
         const content = (
           <div className={textPosition ? "" : `max-w-3xl ${hAlign === "center" ? "mx-auto text-center" : "text-left"}`}>
-            {eyebrow && <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-4 block">{eyebrow}</span>}
+            {eyebrow && <span className="uppercase tracking-[0.22em] text-cyan-300 text-xs font-bold mb-4 block"><Rt html={eyebrow} /></span>}
             <h1 className="font-medium mb-6 text-white" style={{ fontFamily: "var(--app-font-serif)", fontSize: HERO_TITLE_SIZE[titleSize ?? "xl"] }}>
-              {title} {accent && <span className="italic" style={{ color: "#a8dff0" }}>{accent}</span>}
+              <Rt html={title} /> {accent && <span className="italic" style={{ color: "#a8dff0" }}><Rt html={accent} /></span>}
             </h1>
-            {subtitle && <p className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: "rgba(255,255,255,0.85)" }}>{subtitle}</p>}
-            {description && <p className={`text-lg mb-10 max-w-2xl ${!textPosition && hAlign === "center" ? "mx-auto" : ""}`} style={{ color: "rgba(255,255,255,0.8)" }}>{description}</p>}
+            {subtitle && <p className="text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: "rgba(255,255,255,0.85)" }}><Rt html={subtitle} /></p>}
+            {description && <p className={`text-lg mb-10 max-w-2xl ${!textPosition && hAlign === "center" ? "mx-auto" : ""}`} style={{ color: "rgba(255,255,255,0.8)" }}><Rt html={description} /></p>}
             <div className={`flex flex-col sm:flex-row gap-4 ${JUSTIFY[hAlign]}`}>
               {primaryLabel && <BuilderButton b={{ label: primaryLabel, href: primaryHref, variant: primaryVariant ?? "primary", color: primaryColor ?? "primary", size: primarySize ?? "lg", newTab: false }} />}
               {secondaryLabel && <BuilderButton b={{ label: secondaryLabel, href: secondaryHref, variant: secondaryVariant ?? "outline", color: secondaryColor ?? "white", size: secondarySize ?? "lg", newTab: false }} />}
@@ -972,7 +1012,7 @@ export const builderConfig: Config<BuilderComponents> = {
               {videoUrl
                 ? <video autoPlay muted loop playsInline poster={image} className="w-full h-full object-cover object-center"><source src={videoUrl} /></video>
                 : galleryImages.length > 0
-                  ? <HeroCarousel images={galleryImages} alt={title} className="absolute inset-0" />
+                  ? <HeroCarousel images={galleryImages} alt={richTextPlain(title)} className="absolute inset-0" />
                   : <img src={image} alt="" className="w-full h-full object-cover object-center" />}
               <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${overlayPct / 100})` }} />
             </div>
@@ -996,10 +1036,10 @@ export const builderConfig: Config<BuilderComponents> = {
     Heading: {
       label: "Section heading",
       fields: {
-        eyebrow: { type: "text", label: "Eyebrow" },
-        title: { type: "text", label: "Title" },
-        accent: { type: "text", label: "Title (accent)" },
-        subtitle: { type: "textarea", label: "Subtitle" },
+        eyebrow: richTextField("Eyebrow"),
+        title: richTextField("Title"),
+        accent: richTextField("Title (accent)"),
+        subtitle: richTextField("Subtitle"),
         align: { type: "radio", label: "Align", options: [{ label: "Left", value: "left" }, { label: "Center", value: "center" }] },
         theme: { type: "radio", label: "Theme", options: [{ label: "Light", value: "light" }, { label: "Dark", value: "dark" }] },
         size: { type: "select", label: "Font size", options: [{ label: "Small", value: "sm" }, { label: "Medium", value: "md" }, { label: "Large", value: "lg" }, { label: "Extra large", value: "xl" }] },
@@ -1014,11 +1054,11 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 pt-16 pb-6" style={sectionStyle(background, fallbackBg, padY)}>
             <div className={`max-w-3xl ${align === "center" ? "mx-auto text-center" : ""}`}>
-              {eyebrow && <span className="uppercase tracking-widest text-xs font-bold mb-3 block" style={{ color: dk ? "#a8dff0" : C.riverTeal }}>{eyebrow}</span>}
+              {eyebrow && <span className="uppercase tracking-widest text-xs font-bold mb-3 block" style={{ color: dk ? "#a8dff0" : C.riverTeal }}><Rt html={eyebrow} /></span>}
               <h2 className="mb-3" style={{ fontSize: HEADING_SIZE[size ?? "lg"], fontFamily: FONT_VAR[font ?? "heading"], color: headingColor(dk) }}>
-                {title} {accent && <span className="italic" style={{ color: dk ? "#a8dff0" : C.riverTeal }}>{accent}</span>}
+                <Rt html={title} /> {accent && <span className="italic" style={{ color: dk ? "#a8dff0" : C.riverTeal }}><Rt html={accent} /></span>}
               </h2>
-              {subtitle && <p className="text-lg" style={{ color: subColor(dk) }}>{subtitle}</p>}
+              {subtitle && <p className="text-lg" style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
             </div>
           </section>
         );
@@ -1039,8 +1079,8 @@ export const builderConfig: Config<BuilderComponents> = {
           getItemSummary: (i: CardItem) => i.title || "Card",
           arrayFields: {
             image: imageField("Image"),
-            title: { type: "text", label: "Title" },
-            text: { type: "textarea", label: "Text" },
+            title: richTextField("Title"),
+            text: richTextField("Text"),
             tag: { type: "text", label: "Tag / price" },
             href: { type: "text", label: "Link" },
             titleSize: scaleField("Title size (this card)"),
@@ -1160,9 +1200,9 @@ export const builderConfig: Config<BuilderComponents> = {
     CTABanner: {
       label: "CTA banner",
       fields: {
-        title: { type: "text", label: "Title" },
-        accent: { type: "text", label: "Title (accent)" },
-        text: { type: "textarea", label: "Text" },
+        title: richTextField("Title"),
+        accent: richTextField("Title (accent)"),
+        text: richTextField("Text"),
         titleSize: { type: "select", label: "Title font size", options: [{ label: "Small", value: "sm" }, { label: "Medium", value: "md" }, { label: "Large", value: "lg" }, { label: "Extra large", value: "xl" }] },
         ctaLabel: { type: "text", label: "Button" },
         ctaHref: { type: "text", label: "Link" },
@@ -1181,8 +1221,8 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8 md:py-14 text-center" style={sectionStyle(background, C.midOcean, padY)}>
             <div className="max-w-7xl mx-auto">
-              <h2 className="mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), fontSize: HEADING_SIZE[titleSize ?? "md"] }}>{fillTokens(title, biz)} {accent && <span className="italic" style={{ color: dk ? "#a8dff0" : C.riverTeal }}>{accent}</span>}</h2>
-              {text && <p className="mb-8" style={{ color: dk ? "rgba(168,223,240,0.8)" : "#2e5a74" }}>{fillTokens(text, biz)}</p>}
+              <h2 className="mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), fontSize: HEADING_SIZE[titleSize ?? "md"] }}><Rt html={fillTokens(title, biz)} /> {accent && <span className="italic" style={{ color: dk ? "#a8dff0" : C.riverTeal }}><Rt html={accent} /></span>}</h2>
+              {text && <p className="mb-8" style={{ color: dk ? "rgba(168,223,240,0.8)" : "#2e5a74" }}><Rt html={fillTokens(text, biz)} /></p>}
               {ctaLabel && <BuilderButton b={{ label: ctaLabel, href: ctaHref, variant: ctaVariant ?? "primary", color: ctaColor ?? "primary", size: ctaSize ?? "lg", newTab: false }} />}
             </div>
           </section>
@@ -1193,8 +1233,8 @@ export const builderConfig: Config<BuilderComponents> = {
     ToursStrip: {
       label: "Tours (live)",
       fields: {
-        heading: { type: "text", label: "Heading" },
-        subtitle: { type: "text", label: "Subtitle" },
+        heading: richTextField("Heading"),
+        subtitle: richTextField("Subtitle"),
         limit: { type: "number", label: "Max tours" },
         destination: { type: "text", label: "Only from destination (slug, optional)" },
         exclude: { type: "text", label: "Hide this trip (slug, optional — use on a trip's own page)" },
@@ -1218,8 +1258,8 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
-                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}>{subtitle}</p>}
+                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
+                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {tours.map((t) => (
@@ -1235,8 +1275,8 @@ export const builderConfig: Config<BuilderComponents> = {
     DestinationsStrip: {
       label: "Destinations (live)",
       fields: {
-        heading: { type: "text", label: "Heading" },
-        subtitle: { type: "text", label: "Subtitle" },
+        heading: richTextField("Heading"),
+        subtitle: richTextField("Subtitle"),
         limit: { type: "number", label: "Max" },
         headingSize: headingSizeField,
         bodySize: bodySizeField,
@@ -1252,8 +1292,8 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
-                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}>{subtitle}</p>}
+                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
+                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {dests.map((d) => (
@@ -1282,8 +1322,8 @@ export const builderConfig: Config<BuilderComponents> = {
     GalleryStrip: {
       label: "Gallery (live)",
       fields: {
-        heading: { type: "text", label: "Heading" },
-        subtitle: { type: "text", label: "Subtitle" },
+        heading: richTextField("Heading"),
+        subtitle: richTextField("Subtitle"),
         limit: { type: "number", label: "Max images" },
         headingSize: headingSizeField,
         bodySize: bodySizeField,
@@ -1299,8 +1339,8 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
-                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}>{subtitle}</p>}
+                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
+                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {imgs.map((g) => (
@@ -1367,8 +1407,8 @@ export const builderConfig: Config<BuilderComponents> = {
     BlogStrip: {
       label: "Blog posts (live)",
       fields: {
-        heading: { type: "text", label: "Heading" },
-        subtitle: { type: "text", label: "Subtitle" },
+        heading: richTextField("Heading"),
+        subtitle: richTextField("Subtitle"),
         limit: { type: "number", label: "Max posts" },
         headingSize: headingSizeField,
         bodySize: bodySizeField,
@@ -1384,8 +1424,8 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
-                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}>{subtitle}</p>}
+                <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
+                {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {posts.map((p) => (
@@ -1411,7 +1451,7 @@ export const builderConfig: Config<BuilderComponents> = {
     RichText: {
       label: "Text block",
       fields: {
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         body: richTextField("Body (drag images in, or use the toolbar)"),
         size: { type: "select", label: "Font size", options: [{ label: "Small", value: "sm" }, { label: "Normal", value: "md" }, { label: "Large", value: "lg" }] },
         font: { type: "select", label: "Font style", options: [{ label: "Body font", value: "body" }, { label: "Heading font", value: "heading" }] },
@@ -1430,7 +1470,7 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className={`max-w-7xl mx-auto ${align === "center" ? "text-center" : ""}`} style={{ overflow: "auto" }}>
-              {heading && <h2 className="ap-section-heading text-3xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{fillTokens(heading, biz)}</h2>}
+              {heading && <h2 className="ap-section-heading text-3xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={fillTokens(heading, biz)} /></h2>}
               <div
                 className={`ace-richtext leading-relaxed ${TEXT_SIZE[size ?? "md"]}`}
                 style={{ color: bodyColor(dk), fontFamily: FONT_VAR[font ?? "body"] }}
@@ -1551,7 +1591,7 @@ export const builderConfig: Config<BuilderComponents> = {
     FAQ: {
       label: "FAQ accordion",
       fields: {
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         questionSize: scaleField("Question size", false),
         answerSize: scaleField("Answer size", false),
@@ -1569,7 +1609,7 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
-              {heading && <h2 className="ap-section-heading text-3xl mb-8 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>}
+              {heading && <h2 className="ap-section-heading text-3xl mb-8 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>}
               <div className="space-y-3">
                 {(items ?? []).map((f, i) => (
                   <details key={i} className="group rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.mutedBorder }}>
@@ -1590,7 +1630,7 @@ export const builderConfig: Config<BuilderComponents> = {
     Testimonial: {
       label: "Testimonial",
       fields: {
-        quote: { type: "textarea", label: "Quote" },
+        quote: richTextField("Quote"),
         name: { type: "text", label: "Name" },
         role: { type: "text", label: "Role / place" },
         image: imageField("Photo (optional)"),
@@ -1606,7 +1646,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-5xl mx-auto text-center">
               <div className="text-5xl mb-4" style={{ color: dk ? "#a8dff0" : C.riverTeal, fontFamily: "var(--app-font-serif)" }}>“</div>
-              <p className={`${bodyFont(bodySize) || "text-xl"} leading-relaxed mb-6`} style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) }}>{quote}</p>
+              <p className={`${bodyFont(bodySize) || "text-xl"} leading-relaxed mb-6`} style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) }}><Rt html={quote} /></p>
               {image && <img src={image} alt={name} className="w-14 h-14 rounded-full object-cover mx-auto mb-3" />}
               <div className="font-semibold" style={{ color: dk ? "#a8dff0" : C.deepOcean }}>{name}</div>
               {role && <div className="text-sm" style={{ color: subColor(dk) }}>{role}</div>}
@@ -1644,8 +1684,8 @@ export const builderConfig: Config<BuilderComponents> = {
     CouponStrip: {
       label: "Coupon strip",
       fields: {
-        heading: { type: "text", label: "Headline" },
-        text: { type: "textarea", label: "Description" },
+        heading: richTextField("Headline"),
+        text: richTextField("Description"),
         code: { type: "text", label: "Coupon code (shown to the visitor)" },
         terms: { type: "text", label: "Small print" },
         image: imageField("Image (hidden by the “Without image” theme style)"),
@@ -1672,8 +1712,8 @@ export const builderConfig: Config<BuilderComponents> = {
                 </div>
               )}
               <div className="ap-coupon-body flex-1 p-6 md:py-8 md:pr-8">
-                {heading && <h2 className="ap-section-heading text-2xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{fillTokens(heading, biz)}</h2>}
-                {text && <p className="text-sm mb-4 m-0" style={{ color: subColor(dk) }}>{fillTokens(text, biz)}</p>}
+                {heading && <h2 className="ap-section-heading text-2xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={fillTokens(heading, biz)} /></h2>}
+                {text && <p className="text-sm mb-4 m-0" style={{ color: subColor(dk) }}><Rt html={fillTokens(text, biz)} /></p>}
                 {code && (
                   <div className="flex items-center gap-3 flex-wrap">
                     <span
@@ -1706,8 +1746,8 @@ export const builderConfig: Config<BuilderComponents> = {
     TeamMembers: {
       label: "Team members",
       fields: {
-        heading: { type: "text", label: "Heading" },
-        subtitle: { type: "text", label: "Subtitle" },
+        heading: richTextField("Heading"),
+        subtitle: richTextField("Subtitle"),
         headingSize: headingSizeField,
         bodySize: bodySizeField,
         nameSize: scaleField("Name size"),
@@ -1721,7 +1761,7 @@ export const builderConfig: Config<BuilderComponents> = {
           arrayFields: {
             name: { type: "text", label: "Name" },
             role: { type: "text", label: "Role" },
-            bio: { type: "textarea", label: "Short bio" },
+            bio: richTextField("Short bio"),
             photo: imageField("Photo"),
             nameSize: scaleField("Name size (this person)"),
             bioSize: scaleField("Bio size (this person)", false),
@@ -1745,8 +1785,8 @@ export const builderConfig: Config<BuilderComponents> = {
             <div className="max-w-7xl mx-auto">
               {heading && (
                 <div className="text-center mb-8">
-                  <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
-                  {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}>{subtitle}</p>}
+                  <h2 className="ap-section-heading text-3xl md:text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
+                  {subtitle && <p className={bodyFont(bodySize)} style={{ color: subColor(dk) }}><Rt html={subtitle} /></p>}
                 </div>
               )}
 
@@ -1812,7 +1852,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("reviews", "guest reviews and rating"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         background: bgField(),
         padY: padField,
@@ -1828,7 +1868,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-                <h2 className="ap-section-heading text-3xl m-0" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-3xl m-0" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
                 {rating.value != null && (
                   <div className="text-sm" style={{ color: subColor(dk) }}>
                     <strong style={{ color: headingColor(dk) }}>{rating.value}</strong> from {rating.count} review{rating.count === 1 ? "" : "s"}
@@ -1868,7 +1908,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "title, tagline and price"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug (e.g. barapole-rafting)" },
-        heading: { type: "text", label: "Override title (blank = the trip's own)" },
+        heading: richTextField("Override title (blank = the trip's own)"),
         titleSize: scaleField("Title size"),
         eyebrowSize: scaleField("Location size", false),
         taglineSize: scaleField("Tagline size", false),
@@ -1922,13 +1962,34 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("page-details", "duration, difficulty, season, group size, minimum age and maximum weight"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading (blank = none)" },
+        heading: richTextField("Heading (blank = none)"),
+        facts: {
+          type: "array",
+          label: "Facts (leave empty to use the trip's own)",
+          arrayFields: { label: richTextField("Label"), value: richTextField("Value") },
+          getItemSummary: (it: { label?: string }) => richTextPlain(it?.label) || "Fact",
+          defaultItemProps: { label: "Label", value: "Value" },
+        } as any,
+        factColumns: {
+          type: "select", label: "Columns",
+          options: [{ label: "Auto (fit the width)", value: "" }, ...[1, 2, 3, 4, 5, 6].map((n) => ({ label: String(n), value: String(n) }))],
+        },
+        factRows: {
+          type: "select", label: "Rows",
+          options: [{ label: "Auto (as many as needed)", value: "" }, ...[1, 2, 3, 4, 5, 6].map((n) => ({ label: String(n), value: String(n) }))],
+        },
+        factWidth: {
+          type: "select", label: "Column width",
+          options: [{ label: "Even columns", value: "even" }, { label: "Fit to the text", value: "fit" }],
+        },
         headingSize: headingSizeField,
+        labelSize: scaleField("Label size", false),
+        valueSize: scaleField("Value size", false),
         background: bgField(),
         padY: padField,
       },
-      defaultProps: { tourSlug: "", heading: "", background: "", padY: "", headingSize: "" },
-      render: ({ headingSize, tourSlug, heading, background, padY }: TripBlockProps) => {
+      defaultProps: { tourSlug: "", heading: "", facts: [], background: "", padY: "", headingSize: "", factColumns: "", factRows: "", factWidth: "even", labelSize: "", valueSize: "" },
+      render: ({ headingSize, labelSize, valueSize, factColumns, factRows, factWidth, facts: ownFacts, tourSlug, heading, background, padY }: TripFactsProps) => {
         const slug = useTripSlug(tourSlug);
         const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
@@ -1947,18 +2008,45 @@ export const builderConfig: Config<BuilderComponents> = {
           ["Minimum age", t.minAge],
           ["Maximum weight", t.maxWeight],
         ].filter(([, v]) => v) as [string, string][];
-        if (facts.length === 0) return <TripBlockPrompt what="facts" slug={slug} empty />;
+        // Three sources, narrowest first: rows typed into this section, then the
+        // trip's own hand-written facts (Trips → Facts, FAQs & activities), then
+        // the automatic ones.
+        const clean = (list?: { label?: string; value?: string }[]) =>
+          (list ?? []).filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value)).map((f) => [f.label ?? "", f.value ?? ""] as [string, string]);
+        const typed = clean(ownFacts);
+        const fromTrip = clean(t.ownFacts);
+        const rows: [string, string][] = typed.length
+          ? typed
+          : fromTrip.length
+            ? (t.ownFactsReplace ? fromTrip : [...facts, ...fromTrip])
+            : facts;
+        if (rows.length === 0) return <TripBlockPrompt what="facts" slug={slug} empty />;
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-6 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-6 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-5 m-0">
-                {facts.map(([k, v]) => (
-                  <div key={k}>
-                    <dt className="text-xs uppercase tracking-wide mb-1" style={{ color: subColor(dk) }}>{k}</dt>
-                    <dd className="m-0 font-semibold" style={{ color: headingColor(dk) }}>{v}</dd>
+              {/* Columns and rows are the admin's choice; "fit" sizes each column to
+                  its own text, otherwise they share the width evenly. Cells never clip:
+                  long values wrap rather than spill over the next column. */}
+              <dl
+                className="grid gap-5 m-0"
+                style={{
+                  gridTemplateColumns: factColumns
+                    ? `repeat(${factColumns}, ${factWidth === "fit" ? "max-content" : "minmax(0, 1fr)"})`
+                    : factWidth === "fit"
+                      ? "repeat(auto-fit, minmax(min(100%, 8rem), max-content))"
+                      : "repeat(auto-fit, minmax(min(100%, 10rem), 1fr))",
+                  ...(factRows
+                    ? { gridTemplateRows: `repeat(${factRows}, auto)`, gridAutoFlow: "column" as const }
+                    : {}),
+                  justifyContent: factWidth === "fit" ? "center" : undefined,
+                }}>
+                {rows.map(([k, v], i) => (
+                  <div key={`${richTextPlain(k)}-${i}`} className="min-w-0">
+                    <dt className={`uppercase tracking-wide mb-1 ${bodyFont(labelSize) || "text-xs"}`} style={{ color: subColor(dk) }}><Rt html={k} /></dt>
+                    <dd className={`m-0 font-semibold break-words ${bodyFont(valueSize)}`} style={{ color: headingColor(dk) }}><Rt html={v} /></dd>
                   </div>
                 ))}
               </dl>
@@ -1973,7 +2061,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("itinerary", "day-by-day itinerary"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         background: bgField(),
         padY: padField,
@@ -1993,7 +2081,7 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
-              <h2 className="ap-section-heading text-3xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+              <h2 className="ap-section-heading text-3xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               {days.length > 0 ? (
                 <ol className="space-y-6 list-none p-0 m-0">
                   {days.map((day, i) => (
@@ -2028,7 +2116,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("location", "address, directions and map point"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         background: bgField(),
         padY: padField,
@@ -2050,7 +2138,7 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.muted, padY)}>
             <div className="max-w-7xl mx-auto">
-              <h2 className="ap-section-heading text-3xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+              <h2 className="ap-section-heading text-3xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               {addr && <p className="whitespace-pre-line m-0" style={{ color: headingColor(dk) }}>{addr}</p>}
               {t.directions && <p className="whitespace-pre-line mt-3 m-0" style={{ color: subColor(dk) }}>{t.directions}</p>}
               {map && (
@@ -2069,7 +2157,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "terms \u0026 conditions"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         background: bgField(),
         padY: padField,
@@ -2085,7 +2173,7 @@ export const builderConfig: Config<BuilderComponents> = {
         return (
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
-              <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}>{heading}</h2>
+              <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               <p className="whitespace-pre-line m-0 text-sm" style={{ color: subColor(dk) }}>{t.terms}</p>
             </div>
           </section>
@@ -2106,7 +2194,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "title, tagline, photos and type"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug (e.g. barapole-rafting)" },
-        heading: { type: "text", label: "Override title (blank = the trip's own)" },
+        heading: richTextField("Override title (blank = the trip's own)"),
         titleSize: scaleField("Title size"),
         taglineSize: scaleField("Tagline size", false),
         overlayOpacity: sliderField("Image darkening overlay", 0, 100, 5),
@@ -2188,7 +2276,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "description"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading (blank = none)" },
+        heading: richTextField("Heading (blank = none)"),
         headingSize: headingSizeField,
         bodySize: bodySizeField,
         background: bgField(),
@@ -2206,7 +2294,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               <div
                 className={`ace-richtext leading-relaxed ${bodyFont(bodySize) || "text-base"}`}
@@ -2223,7 +2311,7 @@ export const builderConfig: Config<BuilderComponents> = {
       label: "Trust badges (live)",
       fields: {
         tourSlug: { type: "text", label: "Trip slug (blank = this page's trip)" },
-        heading: { type: "text", label: "Heading (optional)" },
+        heading: richTextField("Heading (optional)"),
         badges: { type: "textarea", label: "Badges, one per line (blank = the trip's own, else Settings → Trust badges)" },
         layout: { type: "select", label: "Layout", options: [{ label: "Row of badges", value: "row" }, { label: "Cards", value: "cards" }] },
         headingSize: headingSizeField,
@@ -2248,7 +2336,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               {layout === "cards" ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -2282,7 +2370,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "highlights"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         itemSize: scaleField("Highlight text size", false),
         columns: { type: "select", label: "Columns", options: [{ label: "1", value: "1" }, { label: "2", value: "2" }] },
@@ -2302,7 +2390,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               <ul className={`list-none p-0 m-0 gap-3 ${columns === "2" ? "grid sm:grid-cols-2" : "space-y-3"}`}>
                 {items.map((h, i) => (
@@ -2325,7 +2413,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("basic", "included and not-included lists"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Included heading" },
+        heading: richTextField("Included heading"),
         excludedHeading: { type: "text", label: "Not-included heading" },
         headingSize: headingSizeField,
         itemSize: scaleField("List text size", false),
@@ -2349,7 +2437,7 @@ export const builderConfig: Config<BuilderComponents> = {
           rows.length === 0 ? null : (
             <div>
               {title?.trim() && (
-                <h3 className="ap-section-heading text-xl mb-4 font-semibold" style={{ color: headingColor(dk), ...headingFont(headingSize) }}>{title}</h3>
+                <h3 className="ap-section-heading text-xl mb-4 font-semibold" style={{ color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={title} /></h3>
               )}
               <ul className="space-y-2.5 list-none p-0 m-0">
                 {rows.map((item, i) => (
@@ -2379,7 +2467,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("page-details", "activities list"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         titleSize: scaleField("Activity name size"),
         bodySize: bodySizeField,
@@ -2399,7 +2487,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               <div className="grid sm:grid-cols-2 gap-4">
                 {acts.map((act, i) => {
@@ -2427,8 +2515,8 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("page-details", "rapid grades"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
-        intro: { type: "textarea", label: "Intro paragraph (blank = none)" },
+        heading: richTextField("Heading"),
+        intro: richTextField("Intro paragraph (blank = none)"),
         headingSize: headingSizeField,
         titleSize: scaleField("Grade name size"),
         bodySize: bodySizeField,
@@ -2452,10 +2540,10 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               {intro?.trim() && (
-                <p className={`mb-6 m-0 ${bodyFont(bodySize) || "text-base"}`} style={{ color: subColor(dk) }}>{intro}</p>
+                <p className={`mb-6 m-0 ${bodyFont(bodySize) || "text-base"}`} style={{ color: subColor(dk) }}><Rt html={intro} /></p>
               )}
               <div className="space-y-4">
                 {grades.map((g, i) => (
@@ -2482,7 +2570,7 @@ export const builderConfig: Config<BuilderComponents> = {
       resolveFields: withSourceNote("page-details", "FAQs"),
       fields: {
         tourSlug: { type: "text", label: "Trip slug" },
-        heading: { type: "text", label: "Heading" },
+        heading: richTextField("Heading"),
         headingSize: headingSizeField,
         questionSize: scaleField("Question size", false),
         answerSize: scaleField("Answer size", false),
@@ -2502,7 +2590,7 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
             <div className="max-w-7xl mx-auto">
               {heading?.trim() && (
-                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>
+                <h2 className="ap-section-heading text-2xl mb-4" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
               <div className="space-y-3">
                 {faqs.map((f, i) => (
@@ -2525,8 +2613,8 @@ export const builderConfig: Config<BuilderComponents> = {
       label: "Image + text",
       fields: {
         image: imageField("Image"),
-        heading: { type: "text", label: "Heading" },
-        body: { type: "textarea", label: "Body" },
+        heading: richTextField("Heading"),
+        body: richTextField("Body"),
         imageSide: { type: "radio", label: "Image side", options: [{ label: "Left", value: "left" }, { label: "Right", value: "right" }] },
         ctaLabel: { type: "text", label: "Button (optional)" },
         ctaHref: { type: "text", label: "Button link" },
@@ -2546,10 +2634,10 @@ export const builderConfig: Config<BuilderComponents> = {
           <section className="px-6 py-8 md:py-10" style={sectionStyle(bg, C.bg, padY)}>
             <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
               <div className={`relative h-72 lg:h-96 rounded-2xl overflow-hidden ${imageSide === "right" ? "lg:order-2" : ""}`}>
-                <SmartImage src={image} alt={heading} wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />
+                <SmartImage src={image} alt={richTextPlain(heading)} wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />
               </div>
               <div>
-                {heading && <h2 className="ap-section-heading text-3xl md:text-4xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}>{heading}</h2>}
+                {heading && <h2 className="ap-section-heading text-3xl md:text-4xl mb-5" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk), ...headingFont(headingSize) }}><Rt html={heading} /></h2>}
                 {(body ?? "").split("\n\n").map((p, i) => (
                   <p key={i} className="mb-4 leading-relaxed" style={{ color: bodyColor(dk) }}>{p}</p>
                 ))}

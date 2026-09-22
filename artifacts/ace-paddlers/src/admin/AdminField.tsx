@@ -101,6 +101,16 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
   });
 
   const removeAt = (i: number) => onChange(images.filter((_, idx) => idx !== i));
+  /** Drag a photo onto another to put it in that position. */
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const moveTo = (from: number, to: number) => {
+    if (from === to) return;
+    const copy = [...images];
+    const [moved] = copy.splice(from, 1);
+    copy.splice(to, 0, moved);
+    onChange(copy);
+  };
   const moveAt = (i: number, dir: -1 | 1) => {
     const j = i + dir;
     if (j < 0 || j >= images.length) return;
@@ -111,10 +121,27 @@ function MediaListField({ value, onChange }: { value: string[]; onChange: (v: st
 
   return (
     <div>
+      <p className="mb-2 text-xs text-slate-400">Drag a photo to reorder. The first one is the cover.</p>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
         {images.map((src, i) => (
-          <div key={src + i} className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-            <img src={src} alt="" className="h-full w-full object-cover" />
+          <div key={src + i}
+            draggable
+            onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+            onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+            onDragOver={(e) => { if (dragFrom !== null) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOver(i); } }}
+            onDragLeave={() => setDragOver((d) => (d === i ? null : d))}
+            onDrop={(e) => {
+              e.preventDefault();
+              const from = dragFrom ?? Number(e.dataTransfer.getData("text/plain"));
+              if (!Number.isNaN(from)) moveTo(from, i);
+              setDragFrom(null);
+              setDragOver(null);
+            }}
+            title="Drag to reorder"
+            className={`group relative aspect-[4/3] cursor-grab overflow-hidden rounded-lg border bg-slate-100 transition active:cursor-grabbing ${
+              dragOver === i && dragFrom !== i ? "border-cyan-500 ring-2 ring-cyan-400" : "border-slate-200"
+            } ${dragFrom === i ? "opacity-40" : ""}`}>
+            <img src={src} alt="" draggable={false} className="h-full w-full object-cover" />
             {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">Cover</span>}
             <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
               <button type="button" title="Move earlier" onClick={() => moveAt(i, -1)} disabled={i === 0}

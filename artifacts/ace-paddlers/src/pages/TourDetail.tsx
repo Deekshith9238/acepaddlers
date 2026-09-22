@@ -283,6 +283,21 @@ function TourDetailContent({ slug }: { slug: string }) {
                   )}
                 </div>
                 {showLocation && <LocationModal label={tour.title} query={tour.location} onClose={() => setShowLocation(false)} />}
+                {/* Facts written by hand on the trip (Trips → Facts, FAQs & activities). */}
+                {(tour.ownFacts ?? []).some((f) => richTextPlain(f?.label) || richTextPlain(f?.value)) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    {(tour.ownFacts ?? [])
+                      .filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value))
+                      .map((f, i) => (
+                        <div key={i} className="rounded-xl p-4 text-center" style={{ backgroundColor: C.muted }}>
+                          <div className="ace-richtext text-xs uppercase tracking-wider mb-1" style={{ color: "#3f6f88" }}
+                            dangerouslySetInnerHTML={{ __html: richTextHtml(f.label ?? "") }} />
+                          <div className="ace-richtext font-semibold text-sm" style={{ color: C.text }}
+                            dangerouslySetInnerHTML={{ __html: richTextHtml(f.value ?? "") }} />
+                        </div>
+                      ))}
+                  </div>
+                )}
                 {(tour.stretchLength || tour.maxWeight) && (
                   <div className="flex flex-wrap gap-3 mt-4">
                     {tour.stretchLength && (
