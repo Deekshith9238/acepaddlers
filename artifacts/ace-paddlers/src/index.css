@@ -445,6 +445,19 @@ body { font-weight: var(--brand-bodyWeight, 400); }
   -webkit-backdrop-filter: blur(var(--ap-nav-blur, 22px)) saturate(200%);
 }
 /* Clear: barely there, just a lens over the page. */
+/* Menu links light up with the theme's hover colour. Only non-active items:
+   an active link carries its own inline background, which wins over this. */
+/* The trip decides how many columns its add-ons tile into, but only where they
+   fit: a narrow window drops to two, a phone to one. */
+@media (max-width: 900px) {
+  .ace-addon-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  .ace-addon-grid { grid-template-columns: 1fr !important; }
+}
+
+.ap-nav-item:hover { background-color: var(--brand-navHover, #cfe8f3); }
+
 [data-nav-style="clear"]  { --ap-nav-tint: 8%;   --ap-nav-blur: 26px; --ap-nav-edge: 22%; }
 /* Glass (default): a light wash of the tint. */
 [data-nav-style="glass"]  { --ap-nav-tint: 22%;  --ap-nav-blur: 22px; --ap-nav-edge: 35%; }

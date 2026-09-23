@@ -32,6 +32,8 @@ export const THEME_DEFAULTS: Record<string, string> = {
   nav: "#dceef6",
   /** Menu links and the phone number in the bar. */
   navText: "#0d2d40",
+  /** Background behind a menu link under the pointer. */
+  navHover: "#cfe8f3",
 };
 
 /**

@@ -180,6 +180,8 @@ export default function AdminTheme() {
                     value={colour("nav")} onChange={(v) => setTheme("nav", v)} />
                   <ColourField label="Navigation text" help="Menu links and the phone number. Light text reads best over a dark tint."
                     value={colour("navText")} onChange={(v) => setTheme("navText", v)} />
+                  <ColourField label="Navigation hover" help="Background that appears behind a menu link when the pointer is over it."
+                    value={colour("navHover")} onChange={(v) => setTheme("navHover", v)} />
                 </div>
               )}
             </Section>

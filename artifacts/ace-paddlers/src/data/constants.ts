@@ -18,6 +18,7 @@ export const THEME_DEFAULTS = {
   secondary: "#0d2d40",
   nav: "#dceef6",
   navText: "#0d2d40",
+  navHover: "#cfe8f3",
   footerText: "#5a8ea8",
 } as const;
 
@@ -40,6 +41,7 @@ export const THEME_FIELDS: { key: ThemeKey; label: string; help: string }[] = [
   { key: "footerText", label: "Footer text", help: "Type colour over the footer background" },
   { key: "nav", label: "Navigation tint", help: "The colour washed over the menu bar" },
   { key: "navText", label: "Navigation text", help: "Menu links and the phone number" },
+  { key: "navHover", label: "Navigation hover", help: "Background behind a menu link the pointer is over" },
 ];
 
 const cssVar = (key: ThemeKey): string => `var(--brand-${key}, ${THEME_DEFAULTS[key]})`;
@@ -58,5 +60,6 @@ export const C = {
   logoBg: cssVar("logoBg"),
   secondary: cssVar("secondary"),
   navText: cssVar("navText"),
+  navHover: cssVar("navHover"),
   footerText: cssVar("footerText"),
 };
