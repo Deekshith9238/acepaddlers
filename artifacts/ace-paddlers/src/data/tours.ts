@@ -57,7 +57,7 @@ export interface Tour {
   /** This trip's own trust badges; absent = the site-wide ones. */
   trustBadges?: string[];
   /** Facts written by hand on the trip (formatted label/value), and whether they replace the automatic ones. */
-  ownFacts?: { label?: string; value?: string }[];
+  ownFacts?: { label?: string; value?: string; width?: number }[];
   ownFactsReplace?: boolean;
   terms?: string;
   itinerary?: ItineraryDay[];

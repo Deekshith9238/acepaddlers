@@ -67,7 +67,7 @@ const FONTS: { label: string; value: string }[] = [
 
 /** Font dropdown that shows every font in its own face (a native <select>
  *  can't style its options on macOS, so this is a small custom list). */
-function FontPicker({ editor }: { editor: Editor }) {
+export function FontPicker({ editor }: { editor: Editor }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = (editor.getAttributes("textStyle").fontFamily as string) ?? "";

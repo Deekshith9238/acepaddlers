@@ -87,6 +87,8 @@
     "@tiptap/pm": "^3.27.3",
     "@tiptap/react": "^3.27.3",
     "@tiptap/starter-kit": "^3.27.3",
+    "ag-grid-community": "^36.2.0",
+    "ag-grid-react": "^36.2.0",
     "dompurify": "^3.4.11",
     "firebase": "^12.18.0",
     "react-helmet-async": "^3.0.0"

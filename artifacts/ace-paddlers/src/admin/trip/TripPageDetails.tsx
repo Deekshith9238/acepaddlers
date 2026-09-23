@@ -1,7 +1,10 @@
 import { Card, Field, SaveBar, inputCls, ghostBtnCls } from "./shell";
 import { useTourSection } from "./useTour";
-import RichTextField from "@/builder/RichTextField";
+import { lazy, Suspense } from "react";
 import { richTextPlain } from "@/lib/richText";
+
+// The grid is a heavy dependency; it loads when this tab is opened, not with the admin.
+const FactsGrid = lazy(() => import("@/admin/FactsGrid"));
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -61,8 +64,8 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
 
   const faqs: Faq[] = Array.isArray(d.faqs) ? d.faqs : [];
   /** Facts written by hand for this trip — each a formatted label and value. */
-  const facts: { label?: string; value?: string }[] = Array.isArray(d.facts) ? d.facts : [];
-  const setFacts = (next: { label?: string; value?: string }[]) => setDetail({ facts: next });
+  const facts: { label?: string; value?: string; width?: number }[] = Array.isArray(d.facts) ? d.facts : [];
+  const setFacts = (next: { label?: string; value?: string; width?: number }[]) => setDetail({ facts: next });
   const grades: Grade[] = Array.isArray(d.rapidGrades) ? d.rapidGrades : [];
   const activities: Activity[] = (Array.isArray(d.activities) ? d.activities : []).map(splitActivity);
 
@@ -90,7 +93,7 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
         .filter((g) => g.grade || g.title || g.desc),
       activities: activities.map(joinActivity).filter(Boolean),
       facts: facts
-        .map((f) => ({ label: (f.label ?? "").trim(), value: (f.value ?? "").trim() }))
+        .map((f) => ({ label: (f.label ?? "").trim(), value: (f.value ?? "").trim(), ...(Number.isFinite(f.width) ? { width: Math.max(140, Math.min(800, f.width!)) } : {}) }))
         .filter((f) => richTextPlain(f.label) || richTextPlain(f.value)),
       factsReplace: d.factsReplace === true,
     };
@@ -160,31 +163,11 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
       <Card
         title="Your own facts"
         hint="Extra facts for this trip, written the way you want them. They appear in the facts band wherever this trip is shown."
-        right={
-          <button type="button" className={ghostBtnCls} onClick={() => setFacts([...facts, { label: "", value: "" }])}>
-            + Add fact
-          </button>
-        }>
-        {facts.length === 0 ? (
-          <p className="text-sm text-slate-400">None — the band shows the quick facts above.</p>
-        ) : (
-          <div className="space-y-3">
-            {facts.map((f, i) => (
-              <RowShell key={i} onRemove={() => setFacts(facts.filter((_, idx) => idx !== i))}>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <div>
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Label</div>
-                    <RichTextField value={f.label ?? ""} onChange={(x) => setFacts(patchAt(facts, i, { label: x === "<p></p>" ? "" : x }))} />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Value</div>
-                    <RichTextField value={f.value ?? ""} onChange={(x) => setFacts(patchAt(facts, i, { value: x === "<p></p>" ? "" : x }))} />
-                  </div>
-                </div>
-              </RowShell>
-            ))}
-          </div>
-        )}
+        >
+        <Suspense fallback={<p className="text-sm text-slate-400">Loading the grid…</p>}>
+          <FactsGrid rows={facts} onChange={setFacts} />
+        </Suspense>
+
         <label className="mt-4 flex items-start gap-3 cursor-pointer">
           <input type="checkbox" className="mt-0.5 h-4 w-4" checked={d.factsReplace === true}
             onChange={(e) => setDetail({ factsReplace: e.target.checked })} />

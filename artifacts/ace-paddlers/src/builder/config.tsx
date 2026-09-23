@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link } from "wouter";
 import { Check, X, Minus, ShieldCheck } from "lucide-react";
 import type { Config, Field, SelectField, TextField } from "@measured/puck";
@@ -16,6 +16,9 @@ import { useOpenBookingModal } from "@/lib/bookingModalContext";
 import { fetchSiteConfig, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
 import { useTripSlug, getPageTripSlug } from "@/builder/tripPage";
+
+// Only pages that choose the grid layout pay for the grid.
+const FactsTable = lazy(() => import("@/components/FactsTable"));
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -737,6 +740,8 @@ export interface TripHeroProps extends TripBlockProps {
 
 /** Photo banner: the trip's own gallery behind its title. */
 export interface TripBannerProps extends TripBlockProps {
+  /** Chips over the title; none listed = the trip's type and difficulty. */
+  badges?: { text?: string }[];
   titleSize?: TextScale;
   taglineSize?: TextScale;
   height?: HeroHeight;
@@ -761,6 +766,8 @@ export interface TripFactsProps extends TripBlockProps {
   factRows?: string;
   /** Even columns, or columns only as wide as their text. */
   factWidth?: "even" | "fit";
+  /** "" = the plain columns; "grid" = a sortable, filterable table. */
+  factLayout?: string;
   labelSize?: TextScale;
   valueSize?: TextScale;
 }
@@ -1978,6 +1985,10 @@ export const builderConfig: Config<BuilderComponents> = {
           type: "select", label: "Rows",
           options: [{ label: "Auto (as many as needed)", value: "" }, ...[1, 2, 3, 4, 5, 6].map((n) => ({ label: String(n), value: String(n) }))],
         },
+        factLayout: {
+          type: "select", label: "Layout",
+          options: [{ label: "Default (facts band)", value: "" }, { label: "Facts band", value: "grid" }, { label: "Cards", value: "cards" }],
+        },
         factWidth: {
           type: "select", label: "Column width",
           options: [{ label: "Even columns", value: "even" }, { label: "Fit to the text", value: "fit" }],
@@ -1988,8 +1999,8 @@ export const builderConfig: Config<BuilderComponents> = {
         background: bgField(),
         padY: padField,
       },
-      defaultProps: { tourSlug: "", heading: "", facts: [], background: "", padY: "", headingSize: "", factColumns: "", factRows: "", factWidth: "even", labelSize: "", valueSize: "" },
-      render: ({ headingSize, labelSize, valueSize, factColumns, factRows, factWidth, facts: ownFacts, tourSlug, heading, background, padY }: TripFactsProps) => {
+      defaultProps: { tourSlug: "", heading: "", facts: [], background: "", padY: "", headingSize: "", factColumns: "", factRows: "", factWidth: "even", factLayout: "", labelSize: "", valueSize: "" },
+      render: ({ headingSize, labelSize, valueSize, factColumns, factRows, factWidth, factLayout, facts: ownFacts, tourSlug, heading, background, padY }: TripFactsProps) => {
         const slug = useTripSlug(tourSlug);
         const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const t = data ? adaptTour(data) : null;
@@ -2011,11 +2022,11 @@ export const builderConfig: Config<BuilderComponents> = {
         // Three sources, narrowest first: rows typed into this section, then the
         // trip's own hand-written facts (Trips → Facts, FAQs & activities), then
         // the automatic ones.
-        const clean = (list?: { label?: string; value?: string }[]) =>
-          (list ?? []).filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value)).map((f) => [f.label ?? "", f.value ?? ""] as [string, string]);
+        const clean = (list?: { label?: string; value?: string; width?: number }[]) =>
+          (list ?? []).filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value)).map((f) => [f.label ?? "", f.value ?? "", f.width] as [string, string, number?]);
         const typed = clean(ownFacts);
         const fromTrip = clean(t.ownFacts);
-        const rows: [string, string][] = typed.length
+        const rows: [string, string, number?][] = typed.length
           ? typed
           : fromTrip.length
             ? (t.ownFactsReplace ? fromTrip : [...facts, ...fromTrip])
@@ -2027,6 +2038,12 @@ export const builderConfig: Config<BuilderComponents> = {
               {heading?.trim() && (
                 <h2 className="ap-section-heading text-2xl mb-6 text-center" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               )}
+              {factLayout !== "cards" ? (
+                <Suspense fallback={<div className="py-6 text-sm" style={{ color: subColor(dk) }}>Loading facts…</div>}>
+                  <FactsTable rows={rows} />
+                </Suspense>
+              ) : (
+              <>
               {/* Columns and rows are the admin's choice; "fit" sizes each column to
                   its own text, otherwise they share the width evenly. Cells never clip:
                   long values wrap rather than spill over the next column. */}
@@ -2050,6 +2067,8 @@ export const builderConfig: Config<BuilderComponents> = {
                   </div>
                 ))}
               </dl>
+              </>
+              )}
             </div>
           </section>
         );
@@ -2200,14 +2219,21 @@ export const builderConfig: Config<BuilderComponents> = {
         overlayOpacity: sliderField("Image darkening overlay", 0, 100, 5),
         showBackLink: { type: "radio", label: "“All Tours” link", options: [{ label: "Show", value: true }, { label: "Hide", value: false }] },
         showBadges: { type: "radio", label: "Type / difficulty badges", options: [{ label: "Show", value: true }, { label: "Hide", value: false }] },
+        badges: {
+          type: "array",
+          label: "Badges (none = the trip's type and difficulty)",
+          arrayFields: { text: { type: "text", label: "Badge" } },
+          getItemSummary: (it: { text?: string }) => it?.text || "Badge",
+          defaultItemProps: { text: "New badge" },
+        } as any,
         showRating: { type: "radio", label: "Star rating", options: [{ label: "Show", value: true }, { label: "Hide", value: false }] },
       },
       defaultProps: {
         tourSlug: "", heading: "", titleSize: "", taglineSize: "", height: "compact",
-        overlayOpacity: 55, showBackLink: true, showBadges: true, showRating: true,
+        overlayOpacity: 55, showBackLink: true, showBadges: true, showRating: true, badges: [],
         background: "", padY: "",
       },
-      render: ({ tourSlug, heading, titleSize, taglineSize, height, overlayOpacity, showBackLink, showBadges, showRating }: TripBannerProps) => {
+      render: ({ tourSlug, heading, titleSize, taglineSize, height, overlayOpacity, showBackLink, showBadges, showRating, badges }: TripBannerProps) => {
         const slug = useTripSlug(tourSlug);
         const { data } = useGetTour(slug, { query: { enabled: !!slug, retry: false } } as never);
         const { rating } = useReviews(slug || undefined);
@@ -2236,20 +2262,25 @@ export const builderConfig: Config<BuilderComponents> = {
                   ← All Tours
                 </Link>
               )}
-              {showBadges !== false && (t.type || t.difficulty) && (
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {t.type && (
-                    <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(26,127,166,0.50)", color: "#a8dff0" }}>
-                      {t.type}
-                    </span>
-                  )}
-                  {t.difficulty && (
-                    <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.22)", color: "white" }}>
-                      {t.difficulty}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Your own badge words if you typed any, otherwise the trip's type and difficulty. */}
+              {(() => {
+                if (showBadges === false) return null;
+                const own = (badges ?? []).map((b) => (b?.text ?? "").trim()).filter(Boolean);
+                const chips = own.length ? own : [t.type, t.difficulty].filter(Boolean) as string[];
+                if (chips.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {chips.map((chip, i) => (
+                      <span key={`${chip}-${i}`} className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full"
+                        style={i === 0
+                          ? { backgroundColor: "rgba(26,127,166,0.50)", color: "#a8dff0" }
+                          : { backgroundColor: "rgba(255,255,255,0.22)", color: "white" }}>
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
               <h1
                 className={titleSize ? "font-medium mb-3" : "text-4xl md:text-5xl font-medium mb-3"}
                 style={{ fontFamily: "var(--app-font-serif)", ...heroTitleFont(titleSize) }}

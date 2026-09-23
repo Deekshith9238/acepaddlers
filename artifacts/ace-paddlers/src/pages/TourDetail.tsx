@@ -1,6 +1,6 @@
 import { Link, useParams } from "wouter";
 import { Clock, MapPin, Users, ShieldCheck, Check, X, Minus, ArrowLeft, Phone, AlertTriangle, Calendar, Star, ChevronDown, ChevronUp, Weight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import EditablePage from "@/builder/EditablePage";
 import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
@@ -15,6 +15,8 @@ import { useReviews, initials, reviewDate } from "@/lib/reviews";
 import { C } from "@/data/constants";
 import { richTextHtml, richTextPlain, itineraryHtml, listItemHtml } from "@/lib/richText";
 import { fetchSiteConfig, BOOKING_TEXT_DEFAULTS, BUSINESS_DEFAULTS, type BookingText } from "@/lib/site-config";
+
+const FactsTable = lazy(() => import("@/components/FactsTable"));
 
 const BADGE: Record<string, string> = { Easy: "#16a34a", Moderate: C.riverTeal, Challenging: "#c94f28" };
 
@@ -254,7 +256,7 @@ function TourDetailContent({ slug }: { slug: string }) {
           <div className="grid lg:grid-cols-3 gap-12">
 
             {/* Left: details */}
-            <div className="lg:col-span-2 space-y-12">
+            <div className="lg:col-span-2 min-w-0 space-y-12">
 
               {/* Quick info */}
               <Animate variant="up">
@@ -285,17 +287,12 @@ function TourDetailContent({ slug }: { slug: string }) {
                 {showLocation && <LocationModal label={tour.title} query={tour.location} onClose={() => setShowLocation(false)} />}
                 {/* Facts written by hand on the trip (Trips → Facts, FAQs & activities). */}
                 {(tour.ownFacts ?? []).some((f) => richTextPlain(f?.label) || richTextPlain(f?.value)) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                    {(tour.ownFacts ?? [])
-                      .filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value))
-                      .map((f, i) => (
-                        <div key={i} className="rounded-xl p-4 text-center" style={{ backgroundColor: C.muted }}>
-                          <div className="ace-richtext text-xs uppercase tracking-wider mb-1" style={{ color: "#3f6f88" }}
-                            dangerouslySetInnerHTML={{ __html: richTextHtml(f.label ?? "") }} />
-                          <div className="ace-richtext font-semibold text-sm" style={{ color: C.text }}
-                            dangerouslySetInnerHTML={{ __html: richTextHtml(f.value ?? "") }} />
-                        </div>
-                      ))}
+                  <div className="mt-4 min-w-0 px-6 py-8" style={{ backgroundColor: C.muted }}>
+                    <Suspense fallback={<p>Loading facts…</p>}>
+                      <FactsTable rows={(tour.ownFacts ?? [])
+                        .filter((f) => richTextPlain(f?.label) || richTextPlain(f?.value))
+                        .map((f) => [f.label ?? "", f.value ?? "", f.width])} />
+                    </Suspense>
                   </div>
                 )}
                 {(tour.stretchLength || tour.maxWeight) && (
