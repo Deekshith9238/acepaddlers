@@ -139,9 +139,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
    * the element rather than through state: this runs on every scroll frame.
    */
   const cardRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * Below a desktop the corner card becomes a bar across the bottom: 240px of
+   * floating card over a phone or tablet screen covered the page it was
+   * selling.
+   */
+  const [isPhone, setIsPhone] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
+    // The bottom bar is docked; nothing to move, and a stale transform would
+    // push it off-screen.
+    if (isPhone) { el.style.transform = ""; return; }
     let frame = 0;
     const place = () => {
       frame = 0;
@@ -161,7 +179,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       window.removeEventListener("resize", onScroll);
       ro.disconnect();
     };
-  }, [currentTour]);
+  }, [currentTour, isPhone]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -189,7 +207,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ backgroundColor: C.bg, color: C.text, fontFamily: "var(--app-font-sans)" }}
-      className="min-h-screen">
+      className="min-h-screen pb-[4.75rem] lg:pb-0">
 
       {/* ── Floating nav (dynamic-island style) ──
           Detached from the top edge: freestanding logo top-left, a centered
@@ -216,15 +234,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   onMouseLeave={() => item.items && closeDropDelayed()}>
                   {item.href ? (
                     <Link href={item.href}
-                      className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-colors"
-                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : "transparent" }}
+                      className="ap-nav-item flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-colors"
+                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : undefined }}
                       onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}
                       onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.navText; }}>
                       {item.label}
                     </Link>
                   ) : (
-                    <button className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-transparent border-none cursor-pointer"
-                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : "transparent" }}>
+                    <button className="ap-nav-item flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-transparent border-none cursor-pointer"
+                      style={{ color: active ? "white" : C.navText,
+                        // Keep the highlight while its menu is open, even once the pointer has moved onto the menu.
+                        backgroundColor: active ? C.riverTeal : openDrop === item.label ? C.navHover : undefined }}>
                       {item.label}
                       <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200"
                         style={{ transform: openDrop === item.label ? "rotate(180deg)" : "rotate(0deg)",
@@ -478,7 +498,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Rests low on an unscrolled page and rises with the scroll, one pixel per
           pixel, until it docks under the menu and stays there. */}
       <div ref={cardRef}
-        className={`fixed right-6 top-28 z-40 w-[15rem] max-w-[calc(100vw-3rem)] flex-col gap-2.5 items-stretch rounded-2xl border p-3 ${menuOpen ? "hidden" : "flex"}`}
+        className={`fixed z-40 border ${menuOpen ? "hidden" : "flex"} ${
+          isPhone
+            ? "inset-x-0 bottom-0 flex-row items-center gap-2 rounded-t-2xl px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+            : "right-6 top-28 w-[15rem] max-w-[calc(100vw-3rem)] flex-col items-stretch gap-2.5 rounded-2xl p-3"
+        }`}
         style={{
           backgroundColor: C.bgCard,
           borderColor: C.mutedBorder,
@@ -489,35 +513,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Book Now leads the card, with the trip's price read underneath it. */}
         {currentTour ? (
           <button type="button" onClick={() => setShowFloaterBooking(true)} key={currentTour.slug}
-            className="ap-trip-cta flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl"
+            className={`ap-trip-cta flex items-center justify-center gap-2.5 rounded-full text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl ${isPhone ? "min-w-0 flex-1 px-4 py-3" : "px-6 py-3.5"}`}
             style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
             title="Book now">
             <CalendarCheck className="w-5 h-5 shrink-0" />
-            <span className="hidden sm:inline">Book Now</span>
+            <span className="truncate">Book Now</span>
           </button>
         ) : (
           <Link href="/tours"
-            className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl"
+            className={`flex items-center justify-center gap-2.5 rounded-full text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl ${isPhone ? "min-w-0 flex-1 px-4 py-3" : "px-6 py-3.5"}`}
             style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
             title="Book now">
             <CalendarCheck className="w-5 h-5 shrink-0" />
-            <span className="hidden sm:inline">Book Now</span>
+            <span className="truncate">Book Now</span>
           </Link>
         )}
-        {currentTour && <FloatingPrice slug={currentTour.slug} />}
+        {currentTour && (
+          <div className={isPhone ? "order-first shrink-0" : ""}>
+            <FloatingPrice slug={currentTour.slug} compact={isPhone} />
+          </div>
+        )}
         <a href={waHref(biz)} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5"
+          className={`flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5 ${isPhone ? "h-11 w-11 p-0" : "px-4 py-2.5"}`}
           style={{ backgroundColor: "#25D366", color: "white" }}
           title="Chat on WhatsApp">
           <MessageCircle className="w-5 h-5" />
-          <span className="hidden sm:inline">WhatsApp</span>
+          {!isPhone && <span>WhatsApp</span>}
         </a>
         <a href={telHref(biz.phones[0] ?? "")}
-          className="flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5"
+          className={`flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5 ${isPhone ? "h-11 w-11 p-0" : "px-4 py-2.5"}`}
           style={{ backgroundColor: C.deepOcean, color: "white", border: `1.5px solid ${C.riverTeal}` }}
           title="Call us">
           <Phone className="w-5 h-5" />
-          <span className="hidden sm:inline">Call Us</span>
+          {!isPhone && <span>Call Us</span>}
         </a>
       </div>
 

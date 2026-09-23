@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { useListAdminTours, type Tour } from "@workspace/api-client-react";
 import { TRIP_TABS, TabLink } from "@/admin/trip/shell";
@@ -10,6 +11,7 @@ import { TripBookingFields } from "@/admin/trip/TripBookingFields";
 import { TripBasics, TripSettings, TripLocation, TripEmail, TripAdvanced } from "@/admin/trip/TripFormTabs";
 import TripReviews from "@/admin/trip/TripReviews";
 import { TripPageDetails } from "@/admin/trip/TripPageDetails";
+import StorefrontPreview from "@/admin/StorefrontPreview";
 
 /**
  * One trip, edited a tab at a time — the layout Vacation Labs uses, so the team
@@ -25,6 +27,8 @@ export default function AdminTripEditor() {
   const { data } = useListAdminTours();
   const tours = Array.isArray(data) ? (data as Tour[]) : [];
   const tour = tours.find((t) => t.id === tourId);
+  /** Storefront path being previewed, or null when the preview is closed. */
+  const [preview, setPreview] = useState<string | null>(null);
 
   if (data && !tour) {
     return (
@@ -58,13 +62,12 @@ export default function AdminTripEditor() {
             )}
           </div>
           {tour && (
-            <a
-              href={`/tours/${tour.slug}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-600 no-underline hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => setPreview(`/tours/${tour.slug}`)}
+              className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
               View on store front →
-            </a>
+            </button>
           )}
         </div>
 
@@ -88,6 +91,8 @@ export default function AdminTripEditor() {
           </>
         )}
       </div>
+
+      {preview && <StorefrontPreview path={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }
