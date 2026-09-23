@@ -21,22 +21,79 @@ function DropMenu({ items, visible }: { items: DropItem[]; visible: boolean }) {
       style={{ pointerEvents: visible ? "auto" : "none", opacity: visible ? 1 : 0,
         transform: `translateX(-50%) translateY(${visible ? 0 : -8}px)`,
         transition: "opacity 0.22s ease, transform 0.22s ease" }}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl border min-w-[240px]"
+      {/* Clipping would cut off a submenu opening beside a row, so the corners are
+          rounded on the rows themselves when one of them has children. */}
+      <div className={`rounded-2xl shadow-2xl border min-w-[240px] ${
+        items.some((i) => (i.items?.length ?? 0) > 0)
+          ? "[&>*:first-child]:rounded-t-2xl [&>*:last-child]:rounded-b-2xl"
+          : "overflow-hidden"}`}
         style={{ backgroundColor: "#071820", borderColor: "rgba(26,127,166,0.25)" }}>
-        {items.map((item) => (
-          <Link key={item.href + item.label} href={item.href}
-            className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
-            style={{ borderColor: "rgba(26,127,166,0.12)" }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "rgba(26,127,166,0.14)")}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}>
-            <span className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
-              {item.label}
-            </span>
-            {item.sub && (
-              <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{item.sub}</span>
-            )}
-          </Link>
-        ))}
+        {items.map((item) => <DropRow key={(item.href ?? "") + item.label} item={item} />)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One line of a dropdown. An entry carrying its own `items` opens them in a
+ * panel beside it rather than linking anywhere, so a menu can go one level
+ * deeper — "Rivers → Coorg → Barapole" — without a wall of entries.
+ */
+function DropRow({ item }: { item: DropItem }) {
+  const [open, setOpen] = useState(false);
+  const nested = item.items ?? [];
+  const rowStyle = { borderColor: "rgba(26,127,166,0.12)" } as const;
+  const hover = (on: boolean) => (e: React.MouseEvent) => {
+    (e.currentTarget as HTMLElement).style.backgroundColor = on ? "rgba(26,127,166,0.14)" : "transparent";
+  };
+  const body = (
+    <>
+      <span className="flex items-center gap-2 text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
+        {item.label}
+        {nested.length > 0 && <ChevronDown className="w-3.5 h-3.5 -rotate-90 shrink-0" style={{ color: "rgba(168,223,240,0.6)" }} />}
+      </span>
+      {item.sub && <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{item.sub}</span>}
+    </>
+  );
+
+  if (nested.length === 0) {
+    return (
+      <Link href={item.href ?? "#"}
+        className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
+        style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      {item.href ? (
+        <Link href={item.href}
+          className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
+          style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+          {body}
+        </Link>
+      ) : (
+        <div className="flex flex-col px-5 py-3.5 transition-colors group border-b last:border-b-0 cursor-default"
+          style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+          {body}
+        </div>
+      )}
+      {/* Opens to the left when there is no room on the right. */}
+      <div className="absolute top-0 left-full pl-1 z-50"
+        style={{ pointerEvents: open ? "auto" : "none", opacity: open ? 1 : 0, transition: "opacity 0.18s ease" }}>
+        <div className="rounded-2xl overflow-hidden shadow-2xl border min-w-[220px]"
+          style={{ backgroundColor: "#071820", borderColor: "rgba(26,127,166,0.25)" }}>
+          {nested.map((sub) => (
+            <Link key={(sub.href ?? "") + sub.label} href={sub.href ?? "#"}
+              className="flex flex-col px-5 py-3 no-underline transition-colors group border-b last:border-b-0"
+              style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+              <span className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{sub.label}</span>
+              {sub.sub && <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{sub.sub}</span>}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -241,12 +298,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {mobileOpen === item.label && item.items && (
                     <div className="py-2 pl-4 space-y-0.5">
                       {item.items.map(sub => (
-                        <Link key={sub.href + sub.label} href={sub.href}
-                          className="block py-2.5 no-underline"
-                          style={{ color: "rgba(168,223,240,0.75)" }}>
-                          <div className="text-sm font-medium">{sub.label}</div>
-                          {sub.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{sub.sub}</div>}
-                        </Link>
+                        <div key={(sub.href ?? "") + sub.label}>
+                          {sub.href ? (
+                            <Link href={sub.href} className="block py-2.5 no-underline" style={{ color: "rgba(168,223,240,0.75)" }}>
+                              <div className="text-sm font-medium">{sub.label}</div>
+                              {sub.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{sub.sub}</div>}
+                            </Link>
+                          ) : (
+                            <div className="py-2.5 text-sm font-medium" style={{ color: "rgba(168,223,240,0.55)" }}>{sub.label}</div>
+                          )}
+                          {(sub.items ?? []).length > 0 && (
+                            <div className="pl-4 space-y-0.5 border-l" style={{ borderColor: "rgba(26,127,166,0.25)" }}>
+                              {(sub.items ?? []).map((deep) => (
+                                <Link key={(deep.href ?? "") + deep.label} href={deep.href ?? "#"}
+                                  className="block py-2 no-underline" style={{ color: "rgba(168,223,240,0.75)" }}>
+                                  <div className="text-sm">{deep.label}</div>
+                                  {deep.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{deep.sub}</div>}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}

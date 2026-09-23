@@ -1,7 +1,10 @@
 export interface NavDropItem {
   label: string;
-  href: string;
+  /** A parent of `items` may have no link of its own. */
+  href?: string;
   sub?: string;
+  /** One further level: the entry opens a submenu beside it. */
+  items?: NavDropItem[];
 }
 export interface NavItem {
   label: string;

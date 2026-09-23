@@ -11,6 +11,8 @@ import {
   Heading2, Heading3, AlignLeft, AlignCenter, AlignRight, AlignJustify, ZoomIn, ZoomOut, Trash2,
 } from "lucide-react";
 import { uploadMedia } from "@/admin/upload";
+import ImageCropper from "@/admin/ImageCropper";
+import { Crop as CropIcon } from "lucide-react";
 import { FONT_OPTIONS, fontStack, loadFontFamilies, loadFontsUsedIn } from "@/lib/typography";
 import { richTextHtml } from "@/lib/richText";
 
@@ -20,6 +22,8 @@ const DEFAULT_WIDTH: Record<"left" | "center" | "right", number> = { left: 45, c
  *  inserted images can be arranged around text like in a word processor.
  *  `width` (% of the column) is independently resizable via the toolbar. */
 const AlignableImage = Image.extend({
+  // Pick an image up and drop it somewhere else in the text.
+  draggable: true,
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -137,6 +141,21 @@ async function insertImageFileAtView(view: EditorView, file: File, pos?: number)
 function Toolbar({ editor }: { editor: Editor }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  // Crop the picture that is selected, and put the result back in its place.
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const startCrop = async () => {
+    const src = editor.getAttributes("image").src as string | undefined;
+    if (!src) return;
+    setBusy(true);
+    try {
+      const res = await fetch(src, { cache: "reload" });
+      const blob = await res.blob();
+      const name = (src.split("/").pop() || "image.jpg").split("?")[0];
+      setCropFile(new File([blob], name, { type: blob.type || "image/jpeg" }));
+    } finally {
+      setBusy(false);
+    }
+  };
   const imageSelected = editor.isActive("image");
 
   const pickImage = () => fileRef.current?.click();
@@ -220,8 +239,25 @@ function Toolbar({ editor }: { editor: Editor }) {
             <span style={{ width: 34 }}>{currentWidth()}%</span>
           </label>
           <ToolbarBtn title="Larger" onClick={() => setImageWidth(currentWidth() + 10)}><ZoomIn size={15} /></ToolbarBtn>
+          <ToolbarBtn title="Crop image" onClick={() => void startCrop()}><CropIcon size={15} /></ToolbarBtn>
           <ToolbarBtn title="Delete image" onClick={deleteImage}><Trash2 size={15} color="#dc2626" /></ToolbarBtn>
         </>
+      )}
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onDone={async (cropped) => {
+            setCropFile(null);
+            setBusy(true);
+            try {
+              const m = await uploadMedia(cropped);
+              if (m.url) editor.chain().focus().updateAttributes("image", { src: m.url }).run();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
       )}
     </div>
   );

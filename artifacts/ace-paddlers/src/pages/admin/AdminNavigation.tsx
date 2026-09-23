@@ -55,6 +55,23 @@ function Inner() {
   const addChild = (i: number) =>
     patchItem(i, { items: [...(nav![i].items ?? []), { label: "Item", href: "/" }] });
 
+  // One level deeper: entries inside a dropdown entry.
+  const subItems = (i: number, j: number) => nav![i].items?.[j]?.items ?? [];
+  const setSubs = (i: number, j: number, subs: NavDropItem[]) =>
+    patchChild(i, j, { items: subs.length ? subs : undefined });
+  const addSub = (i: number, j: number) => setSubs(i, j, [...subItems(i, j), { label: "Item", href: "/" }]);
+  const patchSub = (i: number, j: number, k: number, patch: Partial<NavDropItem>) =>
+    setSubs(i, j, subItems(i, j).map((x, idx) => (idx === k ? { ...x, ...patch } : x)));
+  const removeSub = (i: number, j: number, k: number) =>
+    setSubs(i, j, subItems(i, j).filter((_, idx) => idx !== k));
+  const moveSub = (i: number, j: number, k: number, dir: -1 | 1) => {
+    const subs = [...subItems(i, j)];
+    const t = k + dir;
+    if (t < 0 || t >= subs.length) return;
+    [subs[k], subs[t]] = [subs[t], subs[k]];
+    setSubs(i, j, subs);
+  };
+
   const onSave = async () => {
     if (!nav) return;
     setStatus({ kind: "saving" });
@@ -92,7 +109,8 @@ function Inner() {
       )}
 
       <p className="text-sm text-slate-500 mb-6 max-w-2xl">
-        These are the items in the site header. An item with no dropdown entries is a direct link
+        These are the items in the site header. A dropdown entry can itself hold a submenu, which opens
+        beside it. An item with no dropdown entries is a direct link
         (set its URL). Add dropdown entries to turn it into a menu. Use links like
         <code className="mx-1 rounded bg-slate-100 px-1">/tours</code> or full URLs.
       </p>
@@ -137,15 +155,19 @@ function Inner() {
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Dropdown items</div>
                     <div className="space-y-2">
                       {(item.items ?? []).map((c, j) => (
-                        <div key={j} className="flex flex-wrap items-end gap-2">
+                        <div key={j} className="rounded-xl border border-slate-100 p-2">
+                        <div className="flex flex-wrap items-end gap-2">
                           <div className="flex-1 min-w-[120px]">
                             <label className="block text-[11px] text-slate-400 mb-0.5">Label</label>
                             <input className={inputCls} value={c.label}
                               onChange={(e) => patchChild(i, j, { label: e.target.value })} />
                           </div>
                           <div className="flex-1 min-w-[120px]">
-                            <label className="block text-[11px] text-slate-400 mb-0.5">URL</label>
-                            <input className={inputCls} value={c.href}
+                            <label className="block text-[11px] text-slate-400 mb-0.5">
+                              URL{(c.items?.length ?? 0) > 0 ? " (optional)" : ""}
+                            </label>
+                            <input className={inputCls} value={c.href ?? ""}
+                              placeholder={(c.items?.length ?? 0) > 0 ? "leave empty to only open the submenu" : "/tours"}
                               onChange={(e) => patchChild(i, j, { href: e.target.value })} />
                           </div>
                           <div className="flex-1 min-w-[120px]">
@@ -159,6 +181,40 @@ function Inner() {
                             <button className="rounded-md border border-red-300 text-red-600 px-2 py-1 text-xs font-semibold hover:bg-red-50"
                               onClick={() => removeChild(i, j)}>✕</button>
                           </div>
+                        </div>
+
+                        {/* Submenu: entries that open beside this one. */}
+                        {(c.items?.length ?? 0) > 0 && (
+                          <div className="mt-2 ml-3 space-y-2 border-l border-slate-200 pl-3">
+                            {(c.items ?? []).map((g, k) => (
+                              <div key={k} className="flex flex-wrap items-end gap-2">
+                                <div className="flex-1 min-w-[110px]">
+                                  <label className="block text-[11px] text-slate-400 mb-0.5">Label</label>
+                                  <input className={inputCls} value={g.label}
+                                    onChange={(e) => patchSub(i, j, k, { label: e.target.value })} />
+                                </div>
+                                <div className="flex-1 min-w-[110px]">
+                                  <label className="block text-[11px] text-slate-400 mb-0.5">URL</label>
+                                  <input className={inputCls} value={g.href ?? ""} placeholder="/tours/…"
+                                    onChange={(e) => patchSub(i, j, k, { href: e.target.value })} />
+                                </div>
+                                <div className="flex-1 min-w-[110px]">
+                                  <label className="block text-[11px] text-slate-400 mb-0.5">Subtitle (optional)</label>
+                                  <input className={inputCls} value={g.sub ?? ""}
+                                    onChange={(e) => patchSub(i, j, k, { sub: e.target.value })} />
+                                </div>
+                                <div className="flex gap-1 pb-0.5">
+                                  <button className={btnGhost} onClick={() => moveSub(i, j, k, -1)} disabled={k === 0}>↑</button>
+                                  <button className={btnGhost} onClick={() => moveSub(i, j, k, 1)} disabled={k === (c.items!.length - 1)}>↓</button>
+                                  <button className="rounded-md border border-red-300 text-red-600 px-2 py-1 text-xs font-semibold hover:bg-red-50"
+                                    onClick={() => removeSub(i, j, k)}>✕</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button className="mt-2 ml-3 text-xs text-cyan-700 font-semibold hover:underline"
+                          onClick={() => addSub(i, j)}>+ Add submenu item</button>
                         </div>
                       ))}
                     </div>

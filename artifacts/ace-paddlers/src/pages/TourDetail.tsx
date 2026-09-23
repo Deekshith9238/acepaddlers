@@ -1,5 +1,5 @@
 import { Link, useParams } from "wouter";
-import { Clock, MapPin, Users, ShieldCheck, Check, X, ArrowLeft, Phone, AlertTriangle, Calendar, Star, ChevronDown, ChevronUp, Weight } from "lucide-react";
+import { Clock, MapPin, Users, ShieldCheck, Check, X, Minus, ArrowLeft, Phone, AlertTriangle, Calendar, Star, ChevronDown, ChevronUp, Weight } from "lucide-react";
 import { useEffect, useState } from "react";
 import EditablePage from "@/builder/EditablePage";
 import Animate from "@/components/Animate";
@@ -424,7 +424,9 @@ function TourDetailContent({ slug }: { slug: string }) {
                     <ul className="space-y-2.5 list-none p-0 m-0">
                       {tour.included.map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
-                          <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
+                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ backgroundColor: "#4caf50" }}>
+                            <Check className="h-3 w-3 text-white" />
+                          </span>
                           <span className="ace-inline text-sm" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                         </li>
                       ))}
@@ -435,7 +437,9 @@ function TourDetailContent({ slug }: { slug: string }) {
                     <ul className="space-y-2.5 list-none p-0 m-0">
                       {tour.excluded.map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
-                          <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />
+                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ backgroundColor: "#e05c5c" }}>
+                            <Minus className="h-3 w-3 text-white" />
+                          </span>
                           <span className="ace-inline text-sm" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                         </li>
                       ))}

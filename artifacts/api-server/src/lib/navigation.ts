@@ -9,8 +9,11 @@ export const NAVIGATION_KEY = "navigation";
 
 export interface NavDropItem {
   label: string;
-  href: string;
+  /** A parent of `items` may have no link of its own. */
+  href?: string;
   sub?: string;
+  /** One further level: the entry opens a submenu beside it. */
+  items?: NavDropItem[];
 }
 export interface NavItem {
   label: string;
@@ -50,6 +53,30 @@ export const NAVIGATION_DEFAULTS: NavItem[] = [
   { label: "Contact", href: "/contact" },
 ];
 
+/**
+ * Dropdown entries, and (one level deeper) the submenu an entry may open.
+ * An entry needs a link of its own unless it has a submenu to open instead.
+ */
+function dropItems(input: unknown, allowNesting: boolean): NavDropItem[] {
+  if (!Array.isArray(input)) return [];
+  const out: NavDropItem[] = [];
+  for (const c of input) {
+    if (!c || typeof c !== "object") continue;
+    const co = c as Record<string, unknown>;
+    const label = typeof co.label === "string" ? co.label.trim() : "";
+    if (!label) continue;
+    const href = typeof co.href === "string" ? co.href.trim() : "";
+    const nested = allowNesting ? dropItems(co.items, false) : [];
+    if (!href && nested.length === 0) continue;
+    const child: NavDropItem = { label };
+    if (href) child.href = href;
+    if (typeof co.sub === "string" && co.sub.trim()) child.sub = co.sub.trim();
+    if (nested.length > 0) child.items = nested;
+    out.push(child);
+  }
+  return out;
+}
+
 /** Keep only well-formed items; drop empties. Falls back to defaults if empty. */
 function sanitize(input: unknown): NavItem[] {
   if (!Array.isArray(input)) return NAVIGATION_DEFAULTS;
@@ -61,20 +88,8 @@ function sanitize(input: unknown): NavItem[] {
     if (!label) continue;
     const item: NavItem = { label };
     if (typeof o.href === "string" && o.href.trim()) item.href = o.href.trim();
-    if (Array.isArray(o.items)) {
-      const children: NavDropItem[] = [];
-      for (const c of o.items) {
-        if (!c || typeof c !== "object") continue;
-        const co = c as Record<string, unknown>;
-        const clabel = typeof co.label === "string" ? co.label.trim() : "";
-        const chref = typeof co.href === "string" ? co.href.trim() : "";
-        if (!clabel || !chref) continue;
-        const child: NavDropItem = { label: clabel, href: chref };
-        if (typeof co.sub === "string" && co.sub.trim()) child.sub = co.sub.trim();
-        children.push(child);
-      }
-      if (children.length > 0) item.items = children;
-    }
+    const children = dropItems(o.items, true);
+    if (children.length > 0) item.items = children;
     out.push(item);
   }
   return out.length > 0 ? out : NAVIGATION_DEFAULTS;

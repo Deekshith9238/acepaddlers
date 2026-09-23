@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { Check, X, ShieldCheck } from "lucide-react";
+import { Check, X, Minus, ShieldCheck } from "lucide-react";
 import type { Config, Field, SelectField, TextField } from "@measured/puck";
 import { richTextHtml, itineraryHtml, listItemHtml, richTextPlain } from "@/lib/richText";
 import SmartImage from "@/components/SmartImage";
@@ -2442,9 +2442,11 @@ export const builderConfig: Config<BuilderComponents> = {
               <ul className="space-y-2.5 list-none p-0 m-0">
                 {rows.map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    {ok
-                      ? <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
-                      : <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#dc2626" }} />}
+                    {/* A filled disc either way: the tick and the minus read at a glance. */}
+                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full"
+                      style={{ backgroundColor: ok ? "#4caf50" : "#e05c5c" }}>
+                      {ok ? <Check className="h-3 w-3 text-white" /> : <Minus className="h-3 w-3 text-white" />}
+                    </span>
                     <span className={`ace-inline ${bodyFont(itemSize) || "text-sm"}`} style={{ color: subColor(dk) }} dangerouslySetInnerHTML={{ __html: listItemHtml(item) }} />
                   </li>
                 ))}
