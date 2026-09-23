@@ -233,6 +233,12 @@ img {
 .ace-richtext li > p { margin: 0; }
 .ace-richtext a { color: var(--brand-riverTeal, #1a7fa6); text-decoration: underline; }
 .ace-richtext img { height: auto; }
+/* An image's width is a percentage of the column it sits in, and that column is
+   far wider on the page than in the editor box — so a picture placed at "45%"
+   came out roughly twice the size live, with a gap beside short text. Floated
+   images are capped to the size they appeared when placed; a centred image is
+   left alone, since spanning the column is the point of it. */
+.ace-richtext img[style*="float"] { max-width: min(100%, 460px) !important; }
 .ace-richtext strong { font-weight: 700; }
 
 /* ──────────────────────────────────────────────────────────────────────────
