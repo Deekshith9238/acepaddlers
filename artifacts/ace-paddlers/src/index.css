@@ -238,7 +238,7 @@ img {
    came out roughly twice the size live, with a gap beside short text. Floated
    images are capped to the size they appeared when placed; a centred image is
    left alone, since spanning the column is the point of it. */
-.ace-richtext img[style*="float"] { max-width: min(100%, 460px) !important; }
+.ace-richtext img[style*="float"] { max-width: min(100%, 460px) !important; clear: both; }
 .ace-richtext strong { font-weight: 700; }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -452,3 +452,13 @@ body { font-weight: var(--brand-bodyWeight, 400); }
 [data-nav-style="frosted"]{ --ap-nav-tint: 55%;  --ap-nav-blur: 28px; --ap-nav-edge: 55%; }
 /* Solid: no transparency at all. */
 [data-nav-style="solid"]  { --ap-nav-tint: 100%; --ap-nav-blur: 0px;  --ap-nav-edge: 100%; }
+
+/* A wrapped image and its own text, side by side (see pairFloats in lib/richText). */
+.ace-richtext .ace-float-row { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 1.5rem; }
+.ace-richtext .ace-float-row > .ace-float-text { flex: 1 1 0; min-width: 0; }
+.ace-richtext .ace-float-row > .ace-float-text > :last-child { margin-bottom: 0; }
+.ace-richtext .ace-float-media img { max-width: 100% !important; border-radius: 12px; }
+@media (max-width: 640px) {
+  .ace-richtext .ace-float-row { display: block; }
+  .ace-richtext .ace-float-media { margin-bottom: 0.75rem; }
+}
