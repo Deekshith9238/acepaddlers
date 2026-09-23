@@ -6,7 +6,8 @@ import {
   type RateCard,
   type TourVariant,
 } from "@workspace/api-client-react";
-import { Card, SaveBar, inputCls, labelCls, ghostBtnCls } from "./shell";
+import { Card, Choice, SaveBar, inputCls, labelCls, ghostBtnCls } from "./shell";
+import { useTourSection } from "./useTour";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -33,6 +34,15 @@ export function TripAddons({ tourId }: { tourId: string }) {
   const { data: variantData } = useGetTourVariants(tourId);
   const save = useSaveTourRateCard();
   const variants = (variantData?.variants ?? []) as TourVariant[];
+
+  // How the booking form lays these out, and whether they can be sold alone.
+  // Per trip, because every trip's list and prices are its own.
+  const form = useTourSection(tourId, ["details"]);
+  const details = (form.values.details ?? {}) as Record<string, unknown>;
+  const columns = Math.min(4, Math.max(1, Number(details.addonColumns) || 1));
+  const addonOnly = details.addonOnly === true;
+  const setDetails = (patch: Record<string, unknown>) =>
+    form.set({ details: { ...details, ...patch } });
 
   const [addons, setAddons] = useState<Addon[]>([]);
   // Carried untouched so saving this tab doesn't erase the rate card, which
@@ -67,7 +77,7 @@ export function TripAddons({ tourId }: { tourId: string }) {
         } as any,
       },
       {
-        onSuccess: () => { setSaved(true); refetch(); },
+        onSuccess: () => { setSaved(true); refetch(); form.save(); },
         onError: (err: any) => setError(ERRORS[err?.data?.error] ?? "Save failed."),
       },
     );
@@ -163,7 +173,48 @@ export function TripAddons({ tourId }: { tourId: string }) {
         </p>
       </Card>
 
-      <SaveBar onSave={onSave} saving={save.isPending} saved={saved} error={error} />
+      <Card
+        title="How these appear when booking"
+        hint="Each trip sets its own, since the list and the prices differ from trip to trip. One add-on is one row — add or remove rows above.">
+        <div>
+          <label className={labelCls}>Columns</label>
+          <div className="flex items-center gap-3">
+            <button type="button" aria-label="One column fewer" disabled={columns <= 1}
+              className="h-9 w-9 rounded-full border border-slate-300 text-lg leading-none text-slate-600 disabled:opacity-40"
+              onClick={() => setDetails({ addonColumns: columns - 1 })}>−</button>
+            <span className="w-6 text-center text-base font-semibold text-slate-700">{columns}</span>
+            <button type="button" aria-label="One column more" disabled={columns >= 4}
+              className="h-9 w-9 rounded-full border border-slate-300 text-lg leading-none text-slate-600 disabled:opacity-40"
+              onClick={() => setDetails({ addonColumns: columns + 1 })}>+</button>
+            <span className="text-xs text-slate-400">A phone always shows one column.</span>
+          </div>
+        </div>
+
+        {addons.length > 0 && (
+          <div className="mt-4">
+            <label className={labelCls}>Preview</label>
+            <div className="grid gap-2 rounded-xl border border-slate-200 p-3"
+              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+              {addons.map((a, i) => (
+                <div key={a.id} className="truncate rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+                  {a.label || `Add-on ${i + 1}`}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-5">
+          <Choice
+            label="Let customers book the add-ons on their own"
+            help="They can take a jet ski or a banana ride without paying for the trip itself. The booking still takes a seat on the departure."
+            checked={addonOnly}
+            onChange={(v) => setDetails({ addonOnly: v })}
+          />
+        </div>
+      </Card>
+
+      <SaveBar onSave={onSave} saving={save.isPending || form.saving} saved={saved} error={error ?? form.error} />
     </>
   );
 }

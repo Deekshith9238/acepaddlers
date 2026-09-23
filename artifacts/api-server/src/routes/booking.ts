@@ -182,7 +182,7 @@ router.post("/quote", async (req, res) => {
     res.status(400).json({ error: "invalid", issues: parsed.error.issues });
     return;
   }
-  const { slotId, numGuests, participants, addons, couponCode, paymentMethod } = parsed.data;
+  const { slotId, numGuests, participants, addons, addonsOnly, couponCode, paymentMethod } = parsed.data;
   const [slot] = await db.select().from(tourSlots).where(eq(tourSlots.id, slotId)).limit(1);
   const [tour] = slot ? await db.select().from(tours).where(eq(tours.id, slot.tourId)).limit(1) : [];
   if (!slot || !tour) {
@@ -198,6 +198,7 @@ router.post("/quote", async (req, res) => {
       participants: participants ?? undefined,
       numGuests: numGuests ?? undefined,
       addons: addons ?? undefined,
+      addonsOnly: addonsOnly ?? undefined,
       paymentMethod,
     });
 
@@ -224,6 +225,7 @@ router.post("/quote", async (req, res) => {
       participants: participants ?? undefined,
       numGuests: numGuests ?? undefined,
       addons: addons ?? undefined,
+      addonsOnly: addonsOnly ?? undefined,
       discountAmount: discount,
       paymentMethod,
     });

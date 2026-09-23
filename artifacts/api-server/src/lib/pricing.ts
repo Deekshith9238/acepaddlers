@@ -110,6 +110,12 @@ export interface QuoteInput {
   /** Used when `participants` is absent — priced against the default type. */
   numGuests?: number;
   addons?: AddonSelection[];
+  /**
+   * Sell the add-ons alone — someone who wants the jet ski but not the trip.
+   * The head count still applies (seats are taken, per-person add-ons are
+   * priced by it); only the trip's own fare is left off.
+   */
+  addonsOnly?: boolean;
   /** Rupees already resolved by the coupon engine. */
   discountAmount?: number;
   /** How the customer intends to pay. Decides which method-scoped charges
@@ -172,8 +178,19 @@ export async function quoteBooking(input: QuoteInput): Promise<Quote> {
     0,
   );
 
+  // Only the trip that says so may be sold as add-ons alone: a flag on the
+  // wire must never turn an ordinary trip free of charge.
+  const addonsOnly =
+    input.addonsOnly === true &&
+    (() => {
+      if ((tour.details as Record<string, unknown> | null)?.addonOnly !== true) {
+        throw new PricingError("addons_only_not_allowed");
+      }
+      return true;
+    })();
+
   const fullPrice = types.length ? Math.max(...types.map((t) => t.price)) : tour.priceValue;
-  const participantLines: ParticipantLine[] = selections.map(({ type, count }) => {
+  const participantLines: ParticipantLine[] = (addonsOnly ? [] : selections).map(({ type, count }) => {
     const listPrice = type ? type.price : tour.priceValue;
     const tierPrice = resolveTierPrice(rateCard.tiers, type?.id ?? null, numGuests, listPrice, fullPrice);
     const unitPrice = tierPrice ?? listPrice;
@@ -216,6 +233,10 @@ export async function quoteBooking(input: QuoteInput): Promise<Quote> {
   for (const id of chosen.keys()) {
     if (!rateCard.addons.some((a) => a.id === id)) throw new PricingError("unknown_addon");
   }
+
+  // Add-ons alone still have to be something: no extras chosen would otherwise
+  // price a booking at zero.
+  if (addonsOnly && addonLines.length === 0) throw new PricingError("no_addons_selected");
 
   const participantsTotal = participantLines.reduce((sum, l) => sum + l.amount, 0);
   const addonsTotal = addonLines.reduce((sum, l) => sum + l.amount, 0);

@@ -2505,6 +2505,7 @@ components:
         participants: { type: array, items: { $ref: "#/components/schemas/ParticipantSelection" }, description: "Per-type counts; when given, numGuests is derived from these" }
         analyticsSessionId: { type: string, nullable: true, description: "Anonymous session id, so the booking joins up with the visitor's pageviews" }
         addons: { type: array, items: { $ref: "#/components/schemas/AddonSelection" } }
+        addonsOnly: { type: boolean, description: "Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen." }
         paymentMethod: { type: string, nullable: true, description: "How the customer intends to pay; decides which method-scoped charges apply" }
       required: [slotId, customerName, customerEmail, customerPhone, numGuests]
     BookingDetail:
@@ -2636,6 +2637,7 @@ components:
         numGuests: { type: integer }
         participants: { type: array, items: { $ref: "#/components/schemas/ParticipantSelection" } }
         addons: { type: array, items: { $ref: "#/components/schemas/AddonSelection" } }
+        addonsOnly: { type: boolean, description: "Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen." }
         couponCode: { type: string, nullable: true }
         paymentMethod: { type: string, nullable: true }
       required: [slotId]

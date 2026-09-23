@@ -24,6 +24,8 @@ export interface BookingInput {
   /** Anonymous session id, so the booking joins up with the visitor's pageviews */
   analyticsSessionId?: string | null;
   addons?: AddonSelection[];
+  /** Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen. */
+  addonsOnly?: boolean;
   /** How the customer intends to pay; decides which method-scoped charges apply */
   paymentMethod?: string | null;
 }

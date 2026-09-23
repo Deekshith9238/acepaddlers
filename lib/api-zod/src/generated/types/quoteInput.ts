@@ -13,6 +13,8 @@ export interface QuoteInput {
   numGuests?: number;
   participants?: ParticipantSelection[];
   addons?: AddonSelection[];
+  /** Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen. */
+  addonsOnly?: boolean;
   couponCode?: string | null;
   paymentMethod?: string | null;
 }

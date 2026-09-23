@@ -123,6 +123,8 @@ export interface CreateBookingInput {
    *  these rather than trusted. */
   participants?: ParticipantSelection[];
   addons?: AddonSelection[];
+  /** Sell the add-ons alone, on a trip whose editor allows it. */
+  addonsOnly?: boolean;
   /** How the customer said they would pay — decides which method-scoped
    *  charges apply, and is snapshotted onto the booking. */
   paymentMethod?: string | null;
@@ -177,6 +179,7 @@ export async function createBooking(input: CreateBookingInput): Promise<{
       participants: input.participants,
       numGuests: input.numGuests,
       addons: input.addons,
+      addonsOnly: input.addonsOnly,
       paymentMethod: input.paymentMethod ?? null,
     });
   } catch (err) {
@@ -250,6 +253,7 @@ export async function createBooking(input: CreateBookingInput): Promise<{
       participants: input.participants,
       numGuests: input.numGuests,
       addons: input.addons,
+      addonsOnly: input.addonsOnly,
       discountAmount,
       paymentMethod: input.paymentMethod ?? null,
     });

@@ -67,6 +67,14 @@ export default function BookingModal({
 
   // The top of the booking funnel. Paired with booking_created, this is what
   // makes the drop-off between "opened the form" and "booked" measurable.
+  // The page behind must not scroll with the popup open: on a short screen the
+  // wheel would otherwise carry on past the form and move the page underneath.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, []);
+
   useEffect(() => {
     track("booking_started", { path: `/tours/${tourSlug}`, tourId: tour?.id ?? null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -233,15 +241,58 @@ export default function BookingModal({
   // shown here are exactly what gets billed. This used to be worked out here
   // as base price × guests, which never saw a group rate: six guests on a
   // "6+ at ₹1,200" trip were shown the full price.
+  /**
+   * Priced extras the trip sells, narrowed to the chosen variant — the same
+   * rows the admin's Addons tab saves. A required one is charged whether or
+   * not it is asked for, so it is shown as included rather than as a choice.
+   */
+  const addons = useMemo(
+    () =>
+      (rateCard?.addons ?? [])
+        .filter((a) => a.active && (a.variantId == null || a.variantId === variantId))
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    [rateCard, variantId],
+  );
+  /** Booking-form choices made per trip in the editor's Addons tab. */
+  const tripDetails = (rules?.details ?? {}) as Record<string, unknown>;
+  const addonColumns = Math.min(4, Math.max(1, Number(tripDetails.addonColumns) || 1));
+  const addonOnlyAllowed = tripDetails.addonOnly === true;
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+  /** True when the customer is buying extras alone — no seat on the trip itself. */
+  const [addonsOnly, setAddonsOnly] = useState(false);
+  // Switching variant can take an add-on off the table; a selection the server
+  // no longer recognises fails the whole quote, so drop it.
+  useEffect(() => {
+    setAddonQty((q) => {
+      const kept = Object.fromEntries(Object.entries(q).filter(([id]) => addons.some((a) => a.id === id)));
+      return Object.keys(kept).length === Object.keys(q).length ? q : kept;
+    });
+  }, [addons]);
+  useEffect(() => {
+    if (!addonOnlyAllowed || addons.length === 0) setAddonsOnly(false);
+  }, [addonOnlyAllowed, addons.length]);
+  const addonQtyOf = (a: (typeof addons)[number]): number =>
+    a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
+  const addonSelections = useMemo(
+    () => addons.flatMap((a) => {
+      const qty = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
+      return qty > 0 ? [{ addonId: a.id, qty }] : [];
+    }),
+    [addons, addonQty],
+  );
+
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   useEffect(() => {
     if (!slotId) { setQuote(null); return; }
     let live = true;
-    quoteBooking({ slotId, numGuests: guests, couponCode: appliedCode, paymentMethod: payMethod })
+    // Extras alone with nothing chosen is not a booking; leave the last quote
+    // rather than asking the server to price nothing.
+    if (addonsOnly && addonSelections.length === 0) { setQuote(null); return; }
+    quoteBooking({ slotId, numGuests: guests, addons: addonSelections, addonsOnly, couponCode: appliedCode, paymentMethod: payMethod })
       .then((q) => { if (live) setQuote(q); })
       .catch(() => { if (live) setQuote(null); });
     return () => { live = false; };
-  }, [slotId, guests, appliedCode, payMethod]);
+  }, [slotId, guests, addonSelections, addonsOnly, appliedCode, payMethod]);
 
   // Until then (or if the quote fails), a local estimate — including the
   // trip-wide group rate for this head count, as the server applies it to a
@@ -250,7 +301,20 @@ export default function BookingModal({
     (t) => !t.participantTypeId && guests >= t.minGuests && (t.maxGuests == null || guests <= t.maxGuests),
   );
   const estimateUnit = groupTier ? groupTier.price : unitPrice;
-  const localBase = estimateUnit * guests;
+  // Priced the way the server prices them, so the total doesn't jump once a
+  // departure is picked and the real quote arrives.
+  const localAddonLines = useMemo(
+    () => addons.flatMap((a) => {
+      const qty = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
+      if (qty <= 0) return [];
+      const amount = a.priceType === "per_person" ? a.price * guests
+        : a.priceType === "per_booking" ? a.price
+        : a.price * qty;
+      return [{ label: a.label, amount }];
+    }),
+    [addons, addonQty, guests],
+  );
+  const localBase = (addonsOnly ? 0 : estimateUnit * guests) + localAddonLines.reduce((sum, l) => sum + l.amount, 0);
   // Charges are computed on the base after any discount, matching how the
   // server prices the booking.
   const localBreakdown = useMemo(() => computeCharges(Math.max(0, localBase - discount), charges), [localBase, discount, charges]);
@@ -258,9 +322,22 @@ export default function BookingModal({
   const shownUnit = lines.length === 1 ? lines[0].unitPrice : estimateUnit;
   const groupRateApplied = quote ? lines.some((l) => l.tierApplied) : !!groupTier && groupTier.price !== unitPrice;
   const baseAmount = quote?.baseAmount ?? localBase;
+  const shownAddonLines = quote ? quote.addonLines : localAddonLines;
+  // The guests row must not swallow the extras: base minus what the add-ons cost.
+  const participantsAmount = baseAmount - shownAddonLines.reduce((sum, l) => sum + l.amount, 0);
   const shownDiscount = quote ? quote.discountAmount : discount;
   const breakdown = quote?.chargesBreakdown ?? localBreakdown;
   const total = quote?.totalAmount ?? Math.max(0, localBase - discount) + localBreakdown.reduce((sum, c) => sum + c.amount, 0);
+
+  /**
+   * The form is as wide as its add-on grid needs. A one-column trip keeps the
+   * narrow popup it has always had, and the calendar step never widens — only
+   * the step that actually shows the add-ons.
+   */
+  const shellWidth =
+    selectedDate && addons.length > 0
+      ? ({ 1: "max-w-md", 2: "max-w-2xl", 3: "max-w-4xl", 4: "max-w-5xl" }[addonColumns] ?? "max-w-md")
+      : "max-w-md";
 
   const COUPON_MESSAGES: Record<string, string> = {
     not_found: "We don't recognise that code.",
@@ -342,6 +419,8 @@ export default function BookingModal({
           customerEmail: email,
           customerPhone: cphone,
           numGuests: guests,
+          addons: addonSelections,
+          addonsOnly,
           couponCode: appliedCode,
           paymentMethod: payMethod,
           // The booking event is recorded server-side; passing our session id
@@ -379,10 +458,12 @@ export default function BookingModal({
   // traps a child's z-index inside it — sections further down the page then
   // painted over the popup.
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(6,18,28,0.6)" }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl my-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: C.deepOcean }}>
+      {/* Never taller than the screen: the title stays put and the form itself
+          scrolls, so a short laptop screen shows the same popup a big one does. */}
+      <div className={`flex w-full ${shellWidth} max-h-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-[max-width] duration-300`} onClick={(e) => e.stopPropagation()}>
+        <div className="flex shrink-0 items-center justify-between px-6 py-4" style={{ backgroundColor: C.deepOcean }}>
           <span className="text-white font-semibold" style={{ fontFamily: "var(--app-font-serif)" }}>
             {bookingRef ? "Payment" : "Book your spot"}
           </span>
@@ -391,7 +472,7 @@ export default function BookingModal({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           {bookingRef ? (
             <PayScreen
               bookingRef={bookingRef}
@@ -462,7 +543,7 @@ export default function BookingModal({
                 <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
                   Choose a departure
                 </label>
-                <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
+                <div className="space-y-1.5">
                   {[...slotsByDate.keys()].sort().map((key) => {
                     const daySlots = slotsByDate.get(key) ?? [];
                     const seats = daySlots.reduce((n, sl) => n + sl.remaining, 0);
@@ -537,7 +618,7 @@ export default function BookingModal({
                 <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
                   {formatDateLong(selectedDate)} — choose a time
                 </label>
-                <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2">
                   {dayOfSlots.map((s) => {
                     const active = s.id === slotId;
                     return (
@@ -603,6 +684,72 @@ export default function BookingModal({
                   )}
                 </div>
               </div>
+
+              {addons.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
+                    Add-ons
+                  </label>
+                  {addonOnlyAllowed && (
+                    <div className="mb-2 grid grid-cols-2 gap-2">
+                      {[
+                        { only: false, label: "Trip + extras" },
+                        { only: true, label: "Only add-ons" },
+                      ].map((opt) => (
+                        <button key={String(opt.only)} type="button" onClick={() => setAddonsOnly(opt.only)}
+                          className="rounded-xl px-3 py-2.5 text-sm font-medium border transition-colors"
+                          style={addonsOnly === opt.only
+                            ? { borderColor: C.riverTeal, backgroundColor: C.riverTeal + "12", color: C.text }
+                            : { borderColor: C.mutedBorder, color: "#5a8ea8" }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="ace-addon-grid grid gap-2" style={{ gridTemplateColumns: `repeat(${addonColumns}, minmax(0, 1fr))` }}>
+                    {addons.map((a) => {
+                      const qty = addonQtyOf(a);
+                      const step = Math.max(1, a.minQty);
+                      const ceiling = a.maxQty ?? 99;
+                      const unitNote = a.priceType === "per_person" ? "per person" : a.priceType === "per_unit" ? "each" : "per booking";
+                      return (
+                        <div key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
+                          style={{ borderColor: qty > 0 ? C.riverTeal : C.mutedBorder, backgroundColor: qty > 0 ? C.riverTeal + "0d" : "transparent" }}>
+                          {!a.required && a.priceType !== "per_unit" && (
+                            <input type="checkbox" className="h-4 w-4 shrink-0" checked={qty > 0}
+                              aria-label={a.label}
+                              onChange={(e) => setAddonQty((q) => ({ ...q, [a.id]: e.target.checked ? step : 0 }))} />
+                          )}
+                          <div className="min-w-[8rem] flex-1">
+                            <div className="text-sm font-semibold" style={{ color: C.text }}>{a.label}</div>
+                            {a.description && <div className="text-xs" style={{ color: "#5a8ea8" }}>{a.description}</div>}
+                            <div className="text-xs" style={{ color: "#5a8ea8" }}>
+                              {formatINR(a.price)} {unitNote}{a.required && " · included"}
+                            </div>
+                          </div>
+                          {!a.required && a.priceType === "per_unit" && (
+                            <div className="ml-auto flex items-center gap-2 shrink-0">
+                              <button type="button" aria-label={`One less ${a.label}`}
+                                onClick={() => setAddonQty((q) => ({ ...q, [a.id]: qty - 1 < step ? 0 : qty - 1 }))}
+                                className="w-8 h-8 rounded-full border flex items-center justify-center"
+                                style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-5 text-center text-sm font-semibold" style={{ color: C.text }}>{qty}</span>
+                              <button type="button" aria-label={`One more ${a.label}`}
+                                onClick={() => setAddonQty((q) => ({ ...q, [a.id]: Math.min(ceiling, qty === 0 ? step : qty + 1) }))}
+                                className="w-8 h-8 rounded-full border flex items-center justify-center"
+                                style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <input className={inputCls} style={{ borderColor: C.mutedBorder }} placeholder="Full name"
                 value={name} onChange={(e) => setName(e.target.value)} required />
@@ -675,13 +822,21 @@ export default function BookingModal({
 
               {/* Price breakdown */}
               <div className="rounded-lg p-3 space-y-1.5 text-sm" style={{ backgroundColor: C.muted }}>
+                {!addonsOnly && (
                 <div className="flex justify-between" style={{ color: "#2e5a74" }}>
                   <span>
                     {formatINR(shownUnit)} × {guests} guest{guests > 1 ? "s" : ""}
                     {groupRateApplied && <span className="ml-1 text-xs font-semibold" style={{ color: "#047857" }}>group rate</span>}
                   </span>
-                  <span>{formatINR(baseAmount)}</span>
+                  <span>{formatINR(participantsAmount)}</span>
                 </div>
+                )}
+                {shownAddonLines.map((l, i) => (
+                  <div key={i} className="flex justify-between" style={{ color: "#2e5a74" }}>
+                    <span>{l.label}</span>
+                    <span>{formatINR(l.amount)}</span>
+                  </div>
+                ))}
                 {shownDiscount > 0 && (
                   <div className="flex justify-between" style={{ color: "#047857" }}>
                     <span>Discount ({appliedCode})</span>
@@ -702,7 +857,11 @@ export default function BookingModal({
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 
-              <button type="submit" disabled={create.isPending || !slotId}
+              {addonsOnly && addonSelections.length === 0 && (
+                <p className="text-sm" style={{ color: "#b45309" }}>Pick at least one add-on to continue.</p>
+              )}
+
+              <button type="submit" disabled={create.isPending || !slotId || (addonsOnly && addonSelections.length === 0)}
                 className="flex items-center justify-center gap-2 w-full rounded-full py-3.5 font-semibold no-underline disabled:opacity-60"
                 style={{ backgroundColor: C.riverTeal, color: "white" }}>
                 {create.isPending ? "Requesting…" : txt.ctaLabel}

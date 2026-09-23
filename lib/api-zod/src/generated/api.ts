@@ -1087,6 +1087,7 @@ export const CreateBookingBody = zod.object({
   "addonId": zod.string(),
   "qty": zod.number()
 })).optional(),
+  "addonsOnly": zod.boolean().optional().describe('Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen.'),
   "paymentMethod": zod.string().nullish().describe('How the customer intends to pay; decides which method-scoped charges apply')
 })
 
@@ -2495,6 +2496,7 @@ export const QuoteBookingBody = zod.object({
   "addonId": zod.string(),
   "qty": zod.number()
 })).optional(),
+  "addonsOnly": zod.boolean().optional().describe('Sell only the add-ons — the trip itself is not charged. Allowed only on trips that permit it and with at least one add-on chosen.'),
   "couponCode": zod.string().nullish(),
   "paymentMethod": zod.string().nullish()
 })
