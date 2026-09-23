@@ -417,13 +417,32 @@ body { font-weight: var(--brand-bodyWeight, 400); }
 [data-header-style="center"] .ap-header-inner > a:first-child { order: 0; }
 [data-header-style="center"] .ap-header-inner::after { content: ""; flex-basis: 100%; order: 1; }
 
-/* Trip booking bar: one attention pulse when a trip page is first opened. */
+/* Corner booking panel: one attention pulse when a trip page is first opened. */
 @keyframes ap-trip-cta-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(26, 127, 166, 0); }
   30%      { box-shadow: 0 0 0 8px rgba(26, 127, 166, 0.28); }
   60%      { box-shadow: 0 0 0 14px rgba(26, 127, 166, 0); }
 }
-.ap-trip-bar-cta { animation: ap-trip-cta-pulse 1.6s ease-out 0.35s 2; }
-@media (prefers-reduced-motion: reduce) {
-  .ap-trip-bar, .ap-trip-bar-cta { animation: none !important; transition: none !important; }
+.ap-trip-cta { animation: ap-trip-cta-pulse 1.6s ease-out 0.5s 2; }
+@media (prefers-reduced-motion: reduce) { .ap-trip-cta { animation: none !important; } }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Navigation surfaces (menu pill, logo chip, phone and menu buttons).
+ * The Navigation style in Website Theme picks how much of the page shows
+ * through; the tint itself is the theme's Navigation colour.
+ * ────────────────────────────────────────────────────────────────────────── */
+.ap-nav-surface {
+  background-color: color-mix(in srgb, var(--brand-nav, #dceef6) var(--ap-nav-tint, 22%), transparent);
+  border-color: color-mix(in srgb, #ffffff var(--ap-nav-edge, 35%), transparent);
+  box-shadow: 0 8px 32px rgba(13, 45, 64, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(var(--ap-nav-blur, 22px)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--ap-nav-blur, 22px)) saturate(200%);
 }
+/* Clear: barely there, just a lens over the page. */
+[data-nav-style="clear"]  { --ap-nav-tint: 8%;   --ap-nav-blur: 26px; --ap-nav-edge: 22%; }
+/* Glass (default): a light wash of the tint. */
+[data-nav-style="glass"]  { --ap-nav-tint: 22%;  --ap-nav-blur: 22px; --ap-nav-edge: 35%; }
+/* Frosted: heavier milk, text reads over any photo. */
+[data-nav-style="frosted"]{ --ap-nav-tint: 55%;  --ap-nav-blur: 28px; --ap-nav-edge: 55%; }
+/* Solid: no transparency at all. */
+[data-nav-style="solid"]  { --ap-nav-tint: 100%; --ap-nav-blur: 0px;  --ap-nav-edge: 100%; }

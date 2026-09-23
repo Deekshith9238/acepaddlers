@@ -325,6 +325,23 @@ function Canvas() {
 }
 
 /**
+ * Preview widths, ending with the width of the screen the editor is open on.
+ *
+ * Puck's own set stops at 1280, so on a wider laptop every page was composed at
+ * 1280 and then looked different on the real site — grids wrapped elsewhere,
+ * text broke in other places. The last entry is the one Puck opens with, so the
+ * canvas matches the screen you are sitting at; the fixed widths stay for
+ * checking phone and tablet.
+ */
+const SCREEN_W = Math.round(typeof window === "undefined" ? 1280 : window.innerWidth);
+const VIEWPORTS = [
+  { width: 390, label: "Phone" },
+  { width: 768, label: "Tablet" },
+  { width: 1280, label: "Laptop" },
+  ...(SCREEN_W > 1340 ? [{ width: SCREEN_W, label: `This screen (${SCREEN_W}px)` }] : []),
+];
+
+/**
  * Defined once, at module level. Rebuilding this object per render is what
  * remounted the preview; it must keep the same identity for the life of the
  * editor.
@@ -422,6 +439,7 @@ function Editor({ slug }: { slug: string }) {
            on every page load, which is the one most worth warning about. */
         onChange={() => setSave((st) => (st.status === "dirty" ? st : { status: "dirty" }))}
         overrides={OVERRIDES}
+        viewports={VIEWPORTS}
         />
       </div>
       </TripPageProvider>

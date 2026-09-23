@@ -25,6 +25,7 @@ const STYLE_KEYS = [
   "footerStyle",
   "couponStripStyle",
   "teamMembersStyle",
+  "navStyle",
 ] as const;
 
 /** Font weights ride as variables, since they are numbers CSS consumes directly. */

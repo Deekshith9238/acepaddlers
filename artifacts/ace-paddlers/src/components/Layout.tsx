@@ -13,7 +13,7 @@ import { fetchSiteConfig, telHref, waHref, BOOKING_TEXT_DEFAULTS, type BookingTe
 import { useBusiness } from "@/lib/useBusiness";
 import { BookingModalContext } from "@/lib/bookingModalContext";
 import BookingModal from "./BookingModal";
-import TripBookingBar from "./TripBookingBar";
+import FloatingPrice from "./FloatingPrice";
 
 function DropMenu({ items, visible }: { items: DropItem[]; visible: boolean }) {
   return (
@@ -70,27 +70,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     fetchSiteConfig().then((c) => { setFloaterTxt(c.bookingText); setFloaterShowSeatCount(c.showSeatCount); });
   }, [currentTour]);
 
-  /**
-   * On a trip page the menu folds away as soon as you scroll down, leaving the
-   * booking bar alone at the top; scrolling back up brings the menu back. Tied
-   * to direction rather than depth so the menu is always one flick away.
-   */
-  const [navFolded, setNavFolded] = useState(false);
   useEffect(() => {
-    let lastY = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 60);
-      if (Math.abs(y - lastY) > 6) {
-        setNavFolded(y > 140 && y > lastY);
-        lastY = y;
-      }
-    };
+    const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  // Only trip pages have a booking bar to fold the menu away for.
-  const foldNav = navFolded && !!currentTour && !menuOpen && !openDrop;
+
+  /**
+   * The corner booking card starts near the bottom of the first screen and
+   * travels up with the page, arriving under the menu and staying there. Set on
+   * the element rather than through state: this runs on every scroll frame.
+   */
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    let frame = 0;
+    const place = () => {
+      frame = 0;
+      const rest = Math.max(0, window.innerHeight - 112 - el.offsetHeight - 24);
+      el.style.transform = `translate3d(0, ${Math.max(0, rest - window.scrollY)}px, 0)`;
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(place); };
+    place();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    // The price arrives after a fetch, which changes the card's height.
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+    };
+  }, [currentTour]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -100,7 +114,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [location]);
 
   // Nav uses the muted brand surface colour (#dceef6) in all states.
-  const navBg = C.muted;
+
 
   const openDropDelayed = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -125,26 +139,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           pill that sizes to its content (and compacts on scroll), and the
           Book CTA in the top corner. */}
       <header className="ap-header fixed top-0 left-0 right-0 z-50 pointer-events-none">
-        <div className={`relative z-10 grid transition-[grid-template-rows,opacity] duration-300 ${foldNav ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
-        {/* Clipped only while folding — an open dropdown must be free to hang below. */}
-        <div className={foldNav ? "overflow-hidden" : "overflow-visible"}>
         <div className={`ap-header-inner w-full px-2 md:px-3 flex items-center justify-between gap-3 transition-all duration-300 ${scrolled ? "pt-2" : "pt-3 md:pt-4"}`}>
 
           {/* Logo — freestanding chip, top left. Background is theme-controlled (default white). */}
-          <Link href="/" className="pointer-events-auto flex items-center no-underline shrink-0 rounded-2xl px-3 py-1.5 shadow-lg transition-all duration-300"
-            style={{
-              backgroundColor: C.logoBg,
-              border: `1px solid ${C.mutedBorder}`,
-              backdropFilter: "blur(18px) saturate(160%)",
-              WebkitBackdropFilter: "blur(18px) saturate(160%)",
-            }}>
+          <Link href="/" className="pointer-events-auto flex items-center no-underline shrink-0 rounded-2xl border px-3 py-1.5 shadow-lg transition-all duration-300"
+            style={{ backgroundColor: C.logoBg, borderColor: C.mutedBorder }}>
             <img src="/images/logo.png" alt="Ace Paddlers"
               className={`${scrolled ? "h-12 md:h-16" : "h-16 md:h-20"} w-auto transition-all duration-300`} />
           </Link>
 
           {/* Center pill — width fits content, compacts when scrolled */}
-          <nav className={`pointer-events-auto hidden lg:flex items-center gap-0.5 flex-nowrap rounded-full border transition-all duration-300 ${scrolled ? "px-1.5 py-0.5" : "px-2.5 py-1.5"}`}
-            style={{ backgroundColor: navBg, borderColor: C.mutedBorder, boxShadow: "0 8px 30px rgba(13,45,64,0.16)", backdropFilter: "blur(10px)" }}>
+          <nav className={`ap-nav-surface pointer-events-auto hidden lg:flex items-center gap-0.5 flex-nowrap rounded-full border transition-all duration-300 ${scrolled ? "px-1.5 py-0.5" : "px-2.5 py-1.5"}`}
+            >
             {nav.map((item) => {
               const active = isActive(item);
               return (
@@ -154,14 +160,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {item.href ? (
                     <Link href={item.href}
                       className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-colors"
-                      style={{ color: active ? "white" : C.secondary, backgroundColor: active ? C.riverTeal : "transparent" }}
+                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : "transparent" }}
                       onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}
-                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.secondary; }}>
+                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.navText; }}>
                       {item.label}
                     </Link>
                   ) : (
                     <button className="flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-transparent border-none cursor-pointer"
-                      style={{ color: active ? "white" : C.secondary, backgroundColor: active ? C.riverTeal : "transparent" }}>
+                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : "transparent" }}>
                       {item.label}
                       <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200"
                         style={{ transform: openDrop === item.label ? "rotate(180deg)" : "rotate(0deg)",
@@ -181,8 +187,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Right: phone + CTA + hamburger */}
           <div className="pointer-events-auto flex items-center gap-2 shrink-0">
             <a href={telHref(biz.phones[0] ?? "")}
-              className="hidden xl:flex items-center gap-2 text-sm no-underline whitespace-nowrap rounded-full px-3.5 py-2.5 shadow-lg transition-colors"
-              style={{ backgroundColor: "rgba(255,255,255,0.90)", border: `1px solid ${C.mutedBorder}`, color: C.deepOcean, backdropFilter: "blur(10px)" }}
+              className="ap-nav-surface hidden xl:flex items-center gap-2 text-sm no-underline whitespace-nowrap rounded-full px-3.5 py-2.5 transition-colors"
+              style={{ color: C.navText }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = C.riverTeal)}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.deepOcean)}>
               <Phone className="w-3.5 h-3.5 shrink-0" />
@@ -195,22 +201,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.deepOcean)}>
               Book a Trip
             </Link>
-            <button className="lg:hidden p-2.5 shrink-0 rounded-full shadow-lg"
+            <button className="ap-nav-surface lg:hidden p-2.5 shrink-0 rounded-full"
               onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu"
-              style={{ backgroundColor: "rgba(255,255,255,0.90)", border: `1px solid ${C.mutedBorder}`, color: C.deepOcean, backdropFilter: "blur(10px)" }}>
+              style={{ color: C.navText }}>
               {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
-        </div>
-        </div>
-
-        {/* Trip pages: the price + Book Now bar, always in reach under the menu. */}
-        {currentTour && (
-          <div className="relative z-0">
-            <TripBookingBar slug={currentTour.slug} onBook={() => setShowFloaterBooking(true)} />
-          </div>
-        )}
       </header>
 
       {/* ── Mobile menu ── */}
@@ -406,34 +403,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </footer>
 
       {/* ── Floating contact buttons ── */}
-      <div className={`fixed bottom-6 right-6 z-50 flex-col gap-3 items-end ${menuOpen ? "hidden" : "flex"}`}>
+      {/* Rests low on an unscrolled page and rises with the scroll, one pixel per
+          pixel, until it docks under the menu and stays there. */}
+      <div ref={cardRef}
+        className={`fixed right-6 top-28 z-40 w-[15rem] max-w-[calc(100vw-3rem)] flex-col gap-2.5 items-stretch rounded-2xl border p-3 ${menuOpen ? "hidden" : "flex"}`}
+        style={{
+          backgroundColor: C.bgCard,
+          borderColor: C.mutedBorder,
+          boxShadow: "0 10px 40px rgba(13,45,64,0.22)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}>
+        {/* Book Now leads the card, with the trip's price read underneath it. */}
         {currentTour ? (
-          <button type="button" onClick={() => setShowFloaterBooking(true)}
-            className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
+          <button type="button" onClick={() => setShowFloaterBooking(true)} key={currentTour.slug}
+            className="ap-trip-cta flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl"
             style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
             title="Book now">
-            <CalendarCheck className="w-5 h-5" />
+            <CalendarCheck className="w-5 h-5 shrink-0" />
             <span className="hidden sm:inline">Book Now</span>
           </button>
         ) : (
           <Link href="/tours"
-            className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
+            className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl"
             style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
             title="Book now">
-            <CalendarCheck className="w-5 h-5" />
+            <CalendarCheck className="w-5 h-5 shrink-0" />
             <span className="hidden sm:inline">Book Now</span>
           </Link>
         )}
+        {currentTour && <FloatingPrice slug={currentTour.slug} />}
         <a href={waHref(biz)} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
-          style={{ backgroundColor: "#25D366", color: "white", boxShadow: "0 4px 20px rgba(37,211,102,0.40)" }}
+          className="flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5"
+          style={{ backgroundColor: "#25D366", color: "white" }}
           title="Chat on WhatsApp">
           <MessageCircle className="w-5 h-5" />
           <span className="hidden sm:inline">WhatsApp</span>
         </a>
         <a href={telHref(biz.phones[0] ?? "")}
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5"
-          style={{ backgroundColor: C.deepOcean, color: "white", border: `1.5px solid ${C.riverTeal}`, boxShadow: "0 4px 20px rgba(13,58,94,0.50)" }}
+          className="flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5"
+          style={{ backgroundColor: C.deepOcean, color: "white", border: `1.5px solid ${C.riverTeal}` }}
           title="Call us">
           <Phone className="w-5 h-5" />
           <span className="hidden sm:inline">Call Us</span>

@@ -16,6 +16,8 @@ export const THEME_DEFAULTS = {
   mutedBorder: "#b8d9e8",
   logoBg: "#ffffff",
   secondary: "#0d2d40",
+  nav: "#dceef6",
+  navText: "#0d2d40",
   footerText: "#5a8ea8",
 } as const;
 
@@ -36,6 +38,8 @@ export const THEME_FIELDS: { key: ThemeKey; label: string; help: string }[] = [
   { key: "logoBg", label: "Logo background", help: "Nav logo chip background" },
   { key: "secondary", label: "Secondary colour", help: "Section headings and navigation links — a dark shade reads best" },
   { key: "footerText", label: "Footer text", help: "Type colour over the footer background" },
+  { key: "nav", label: "Navigation tint", help: "The colour washed over the menu bar" },
+  { key: "navText", label: "Navigation text", help: "Menu links and the phone number" },
 ];
 
 const cssVar = (key: ThemeKey): string => `var(--brand-${key}, ${THEME_DEFAULTS[key]})`;
@@ -53,5 +57,6 @@ export const C = {
   mutedBorder: cssVar("mutedBorder"),
   logoBg: cssVar("logoBg"),
   secondary: cssVar("secondary"),
+  navText: cssVar("navText"),
   footerText: cssVar("footerText"),
 };

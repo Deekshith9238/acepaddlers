@@ -29,6 +29,9 @@ export const THEME_DEFAULTS: Record<string, string> = {
   secondary: "#0d2d40",
   /** Footer type, over the `footer` background. */
   footerText: "#5a8ea8",
+  nav: "#dceef6",
+  /** Menu links and the phone number in the bar. */
+  navText: "#0d2d40",
 };
 
 /**
@@ -49,6 +52,7 @@ export const THEME_STYLE_OPTIONS: Record<string, string[]> = {
   footerStyle: ["multi-column", "concise"],
   couponStripStyle: ["default", "without-image"],
   teamMembersStyle: ["default", "accordion"],
+  navStyle: ["glass", "clear", "frosted", "solid"],
   /* First entry is the default, so these lead with what the site already uses
      — a fresh install must render exactly as it did before the theme editor
      grew these controls. */

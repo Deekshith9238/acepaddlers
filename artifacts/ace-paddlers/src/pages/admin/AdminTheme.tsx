@@ -169,17 +169,25 @@ export default function AdminTheme() {
         </Section>
 
         {/* 3–9: pick-one styles, each shown as a picture of itself. */}
-        {(["buttonStyle", "sectionHeadingStyle", "tourCardStyle", "collectionCardStyle", "headerStyle", "couponStripStyle", "teamMembersStyle"] as const).map((key, i) => {
+        {(["buttonStyle", "sectionHeadingStyle", "tourCardStyle", "collectionCardStyle", "headerStyle", "navStyle", "couponStripStyle", "teamMembersStyle"] as const).map((key, i) => {
           const g = styleSection(key);
           return (
             <Section key={key} n={i + 3} title={g.label} hint={g.help}>
               <Choices group={g} current={pick(key, g.options[0].value)} brand={brand} onPick={(v) => setTheme(key, v)} />
+              {key === "navStyle" && (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <ColourField label="Navigation colour" help="The tint washed over the menu bar. How much of it shows depends on the style above."
+                    value={colour("nav")} onChange={(v) => setTheme("nav", v)} />
+                  <ColourField label="Navigation text" help="Menu links and the phone number. Light text reads best over a dark tint."
+                    value={colour("navText")} onChange={(v) => setTheme("navText", v)} />
+                </div>
+              )}
             </Section>
           );
         })}
 
-        {/* 10. Footer colours */}
-        <Section n={10} title="Footer Background & Text Colour">
+        {/* Footer colours */}
+        <Section n={11} title="Footer Background & Text Colour">
           <div className="grid gap-4 sm:grid-cols-2">
             <ColourField label="Footer background" value={colour("footer")} onChange={(v) => setTheme("footer", v)} />
             <ColourField label="Footer text" value={colour("footerText")} onChange={(v) => setTheme("footerText", v)} />
@@ -189,8 +197,8 @@ export default function AdminTheme() {
           </div>
         </Section>
 
-        {/* 11. Footer style */}
-        <Section n={11} title={styleSection("footerStyle").label} hint={styleSection("footerStyle").help}>
+        {/* Footer style */}
+        <Section n={12} title={styleSection("footerStyle").label} hint={styleSection("footerStyle").help}>
           <Choices group={styleSection("footerStyle")} current={pick("footerStyle", "multi-column")} brand={brand}
             footer={{ bg: colour("footer"), fg: colour("footerText") }} onPick={(v) => setTheme("footerStyle", v)} />
         </Section>
@@ -305,6 +313,13 @@ const STYLES: Group[] = [
     ],
   },
   {
+    key: "navStyle", label: "Navigation Styles", help: "How much of the page shows through the menu bar.",
+    options: [
+      { value: "glass", label: "Glass" }, { value: "clear", label: "Clear" },
+      { value: "frosted", label: "Frosted" }, { value: "solid", label: "Solid" },
+    ],
+  },
+  {
     key: "couponStripStyle", label: "Coupon Strip Styles", help: "The promotion strip.",
     options: [{ value: "default", label: "With Image" }, { value: "without-image", label: "Without Image" }],
   },
@@ -395,6 +410,23 @@ function Thumb({ group, value, brand, footer }: { group: string; value: string; 
       if (value === "reversed") return frame(strip(<>{menu}{logo}</>));
       if (value === "transparent") return frame(strip(<>{logo}<div className="flex gap-1">{bar("10px", 3, "#fff")}{bar("10px", 3, "#fff")}{bar("10px", 3, "#fff")}</div></>, true), true);
       return frame(strip(<>{logo}{menu}</>));
+    }
+    case "navStyle": {
+      const tint = { clear: 0.08, glass: 0.22, frosted: 0.55, solid: 1 }[value] ?? 0.22;
+      const blur = value === "solid" ? 0 : value === "clear" ? 3 : 2;
+      return (
+        <div style={{ width: 120, height: 70, borderRadius: 6, overflow: "hidden", background: "linear-gradient(135deg,#7fb3c8,#2f6f8c)", display: "flex", alignItems: "flex-start", padding: 8 }}>
+          <div className="flex w-full items-center justify-center gap-1.5"
+            style={{
+              borderRadius: 999, padding: "5px 6px",
+              background: `color-mix(in srgb, #dceef6 ${tint * 100}%, transparent)`,
+              backdropFilter: `blur(${blur}px)`, WebkitBackdropFilter: `blur(${blur}px)`,
+              border: `1px solid color-mix(in srgb, #ffffff ${Math.round(tint * 90)}%, transparent)`,
+            }}>
+            {bar("14px", 3, brand)}{bar("10px", 3, "#64748b")}{bar("10px", 3, "#64748b")}
+          </div>
+        </div>
+      );
     }
     case "couponStripStyle":
       return (
