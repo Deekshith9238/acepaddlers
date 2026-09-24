@@ -131,11 +131,21 @@ export function TripAddons({ tourId }: { tourId: string }) {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div>
-                    <label className={labelCls}>Quantity</label>
+                    {/* On a per-person rate the minimum is a minimum party — a
+                        banana boat that needs four is charged for four — so the
+                        field says that rather than "quantity". */}
+                    <label className={labelCls}>{a.priceType === "per_person" ? "Minimum people" : "Quantity"}</label>
                     <div className="flex items-center gap-2">
                       <input type="number" min={0} className={inputCls} placeholder="min" value={a.minQty} onChange={(e) => patch(i, { minQty: Number(e.target.value) })} />
-                      <input type="number" className={inputCls} placeholder="max" value={a.maxQty ?? ""} onChange={(e) => patch(i, { maxQty: e.target.value === "" ? null : Number(e.target.value) })} />
+                      {a.priceType !== "per_person" && (
+                        <input type="number" className={inputCls} placeholder="max" value={a.maxQty ?? ""} onChange={(e) => patch(i, { maxQty: e.target.value === "" ? null : Number(e.target.value) })} />
+                      )}
                     </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {a.priceType === "per_person"
+                        ? "Fewer guests than this are still charged for this many."
+                        : "How many of it a customer may take."}
+                    </p>
                   </div>
                   {variants.length > 0 && (
                     <div>
@@ -206,8 +216,8 @@ export function TripAddons({ tourId }: { tourId: string }) {
 
         <div className="mt-5">
           <Choice
-            label="Let customers book the add-ons on their own"
-            help="They can take a jet ski or a banana ride without paying for the trip itself. The booking still takes a seat on the departure."
+            label="Show the trip itself as one of the choices"
+            help="The trip appears first in the list with its own price, ticked. Untick it and the customer pays for the add-ons alone — a jet ski without the package. The booking still takes a seat on the departure."
             checked={addonOnly}
             onChange={(v) => setDetails({ addonOnly: v })}
           />

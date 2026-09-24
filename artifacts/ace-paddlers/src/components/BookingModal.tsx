@@ -275,11 +275,28 @@ export default function BookingModal({
     a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
   const addonSelections = useMemo(
     () => addons.flatMap((a) => {
-      const qty = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
-      return qty > 0 ? [{ addonId: a.id, qty }] : [];
+      const chosen = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
+      if (chosen <= 0) return [];
+      // With the trip on the list a per-person extra follows the party; with
+      // the trip off it, the counter on the card is the party for that extra.
+      const qty = a.priceType === "per_person" && !addonsOnly ? Math.max(guests, a.minQty) : Math.max(chosen, a.minQty);
+      return [{ addonId: a.id, qty }];
     }),
-    [addons, addonQty],
+    [addons, addonQty, addonsOnly, guests],
   );
+
+  /**
+   * The head count the booking is made for. Add-ons alone have no guest
+   * selector, so it is the largest party among the extras chosen — the same
+   * people take the speed boat and the banana boat.
+   */
+  const partySize = useMemo(() => {
+    if (!addonsOnly) return guests;
+    const counts = addonSelections
+      .filter((sel) => addons.find((a) => a.id === sel.addonId)?.priceType === "per_person")
+      .map((sel) => sel.qty);
+    return Math.max(1, ...counts);
+  }, [addonsOnly, guests, addonSelections, addons]);
 
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   useEffect(() => {
@@ -288,11 +305,11 @@ export default function BookingModal({
     // Extras alone with nothing chosen is not a booking; leave the last quote
     // rather than asking the server to price nothing.
     if (addonsOnly && addonSelections.length === 0) { setQuote(null); return; }
-    quoteBooking({ slotId, numGuests: guests, addons: addonSelections, addonsOnly, couponCode: appliedCode, paymentMethod: payMethod })
+    quoteBooking({ slotId, numGuests: partySize, addons: addonSelections, addonsOnly, couponCode: appliedCode, paymentMethod: payMethod })
       .then((q) => { if (live) setQuote(q); })
       .catch(() => { if (live) setQuote(null); });
     return () => { live = false; };
-  }, [slotId, guests, addonSelections, addonsOnly, appliedCode, payMethod]);
+  }, [slotId, partySize, addonSelections, addonsOnly, appliedCode, payMethod]);
 
   // Until then (or if the quote fails), a local estimate — including the
   // trip-wide group rate for this head count, as the server applies it to a
@@ -307,12 +324,13 @@ export default function BookingModal({
     () => addons.flatMap((a) => {
       const qty = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
       if (qty <= 0) return [];
-      const amount = a.priceType === "per_person" ? a.price * guests
+      const perPeople = Math.max(a.priceType === "per_person" && addonsOnly ? qty : guests, a.minQty);
+      const amount = a.priceType === "per_person" ? a.price * perPeople
         : a.priceType === "per_booking" ? a.price
         : a.price * qty;
       return [{ label: a.label, amount }];
     }),
-    [addons, addonQty, guests],
+    [addons, addonQty, addonsOnly, guests],
   );
   const localBase = (addonsOnly ? 0 : estimateUnit * guests) + localAddonLines.reduce((sum, l) => sum + l.amount, 0);
   // Charges are computed on the base after any discount, matching how the
@@ -418,7 +436,7 @@ export default function BookingModal({
           customerName: name,
           customerEmail: email,
           customerPhone: cphone,
-          numGuests: guests,
+          numGuests: partySize,
           addons: addonSelections,
           addonsOnly,
           couponCode: appliedCode,
@@ -660,6 +678,9 @@ export default function BookingModal({
                 </div>
               </div>
 
+              {/* Add-ons alone are counted on their own cards, so one guest
+                  number for the whole booking would mean nothing here. */}
+              {!addonsOnly && (
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
                   Guests
@@ -684,38 +705,43 @@ export default function BookingModal({
                   )}
                 </div>
               </div>
+              )}
 
               {addons.length > 0 && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
                     Add-ons
                   </label>
-                  {addonOnlyAllowed && (
-                    <div className="mb-2 grid grid-cols-2 gap-2">
-                      {[
-                        { only: false, label: "Trip + extras" },
-                        { only: true, label: "Only add-ons" },
-                      ].map((opt) => (
-                        <button key={String(opt.only)} type="button" onClick={() => setAddonsOnly(opt.only)}
-                          className="rounded-xl px-3 py-2.5 text-sm font-medium border transition-colors"
-                          style={addonsOnly === opt.only
-                            ? { borderColor: C.riverTeal, backgroundColor: C.riverTeal + "12", color: C.text }
-                            : { borderColor: C.mutedBorder, color: "#5a8ea8" }}>
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                   <div className="ace-addon-grid grid gap-2" style={{ gridTemplateColumns: `repeat(${addonColumns}, minmax(0, 1fr))` }}>
+                    {/* The trip is an item on the list like any other, so it can
+                        be taken off: someone who only wants the jet ski unticks
+                        it. Offered only where the trip's editor allows it. */}
+                    {addonOnlyAllowed && (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
+                        style={{ borderColor: !addonsOnly ? C.riverTeal : C.mutedBorder, backgroundColor: !addonsOnly ? C.riverTeal + "0d" : "transparent" }}>
+                        <input type="checkbox" className="h-4 w-4 shrink-0" checked={!addonsOnly}
+                          aria-label={tour?.title ?? "The trip itself"}
+                          onChange={(e) => setAddonsOnly(!e.target.checked)} />
+                        <div className="min-w-[8rem] flex-1">
+                          <div className="text-sm font-semibold" style={{ color: C.text }}>{tour?.title ?? "The trip"}</div>
+                          <div className="text-xs" style={{ color: "#5a8ea8" }}>{formatINR(estimateUnit)} per person</div>
+                        </div>
+                      </div>
+                    )}
                     {addons.map((a) => {
                       const qty = addonQtyOf(a);
                       const step = Math.max(1, a.minQty);
-                      const ceiling = a.maxQty ?? 99;
                       const unitNote = a.priceType === "per_person" ? "per person" : a.priceType === "per_unit" ? "each" : "per booking";
+                      // Charged for the minimum party even when fewer are booked.
+                      const minPeople = a.priceType === "per_person" && a.minQty > 1 ? a.minQty : 0;
+                      // Counted rather than ticked: per-unit extras always, and
+                      // per-person ones once they carry their own head count.
+                      const counted = a.priceType === "per_unit" || (addonsOnly && a.priceType === "per_person");
+                      const ceiling = a.priceType === "per_unit" ? (a.maxQty ?? 99) : Math.min(99, Number.isFinite(maxGuests) ? maxGuests : 99);
                       return (
                         <div key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
                           style={{ borderColor: qty > 0 ? C.riverTeal : C.mutedBorder, backgroundColor: qty > 0 ? C.riverTeal + "0d" : "transparent" }}>
-                          {!a.required && a.priceType !== "per_unit" && (
+                          {!a.required && !counted && (
                             <input type="checkbox" className="h-4 w-4 shrink-0" checked={qty > 0}
                               aria-label={a.label}
                               onChange={(e) => setAddonQty((q) => ({ ...q, [a.id]: e.target.checked ? step : 0 }))} />
@@ -725,9 +751,15 @@ export default function BookingModal({
                             {a.description && <div className="text-xs" style={{ color: "#5a8ea8" }}>{a.description}</div>}
                             <div className="text-xs" style={{ color: "#5a8ea8" }}>
                               {formatINR(a.price)} {unitNote}{a.required && " · included"}
+                              {minPeople > 0 && ` · minimum ${minPeople} people`}
                             </div>
+                            {!addonsOnly && minPeople > guests && qty > 0 && (
+                              <div className="text-xs font-semibold" style={{ color: "#b45309" }}>
+                                Charged for {minPeople}
+                              </div>
+                            )}
                           </div>
-                          {!a.required && a.priceType === "per_unit" && (
+                          {!a.required && counted && (
                             <div className="ml-auto flex items-center gap-2 shrink-0">
                               <button type="button" aria-label={`One less ${a.label}`}
                                 onClick={() => setAddonQty((q) => ({ ...q, [a.id]: qty - 1 < step ? 0 : qty - 1 }))}
@@ -736,6 +768,9 @@ export default function BookingModal({
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
                               <span className="w-5 text-center text-sm font-semibold" style={{ color: C.text }}>{qty}</span>
+                              {addonsOnly && a.priceType === "per_person" && (
+                                <span className="text-xs" style={{ color: "#5a8ea8" }}>people</span>
+                              )}
                               <button type="button" aria-label={`One more ${a.label}`}
                                 onClick={() => setAddonQty((q) => ({ ...q, [a.id]: Math.min(ceiling, qty === 0 ? step : qty + 1) }))}
                                 className="w-8 h-8 rounded-full border flex items-center justify-center"

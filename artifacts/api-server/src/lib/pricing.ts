@@ -211,19 +211,36 @@ export async function quoteBooking(input: QuoteInput): Promise<Quote> {
     // A required add-on is charged whether or not the caller asked for it.
     const requested = chosen.get(addon.id) ?? (addon.required ? Math.max(1, addon.minQty) : 0);
     if (requested <= 0) continue;
-    if (requested < addon.minQty) throw new PricingError("addon_below_min");
-    if (addon.maxQty != null && requested > addon.maxQty) throw new PricingError("addon_above_max");
 
-    const amount =
-      addon.priceType === "per_person"
-        ? addon.price * numGuests
-        : addon.priceType === "per_booking"
-          ? addon.price
-          : addon.price * requested;
+    /**
+     * On a per-person add-on the minimum is a minimum *party*, not a quantity:
+     * a banana boat that needs four people is sold to four, and two customers
+     * taking it pay for four. Anything else is a per-unit count, where the
+     * minimum and maximum bound what the customer may ask for.
+     */
+    const perPerson = addon.priceType === "per_person";
+    /**
+     * With the trip off the list there is no party booking it, so each extra
+     * carries its own head count — a speed boat for two and a banana boat for
+     * four in the same booking. With the trip on the list the party is the
+     * party, and the count is the guests.
+     */
+    const perPersonCount = addonsOnly ? requested : numGuests;
+    const billedGuests = perPerson ? Math.max(perPersonCount, addon.minQty) : numGuests;
+    if (!perPerson) {
+      if (requested < addon.minQty) throw new PricingError("addon_below_min");
+      if (addon.maxQty != null && requested > addon.maxQty) throw new PricingError("addon_above_max");
+    }
+
+    const amount = perPerson
+      ? addon.price * billedGuests
+      : addon.priceType === "per_booking"
+        ? addon.price
+        : addon.price * requested;
     addonLines.push({
       addonId: addon.id,
       label: addon.label,
-      qty: addon.priceType === "per_booking" ? 1 : requested,
+      qty: perPerson ? billedGuests : addon.priceType === "per_booking" ? 1 : requested,
       unitPrice: addon.price,
       priceType: addon.priceType,
       amount,
