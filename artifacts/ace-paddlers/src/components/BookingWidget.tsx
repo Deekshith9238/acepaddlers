@@ -7,7 +7,7 @@ import { useGetTourRateCard } from "@workspace/api-client-react";
 import { formatINR, priceLabel } from "@/lib/content";
 import type { Tour as LegacyTour } from "@/data/tours";
 
-type LabelSource = Pick<LegacyTour, "priceLabel" | "priceLabelPosition" | "showAdvertisedPrice" | "showGroupRates" | "trustBadges">;
+type LabelSource = Pick<LegacyTour, "priceLabel" | "priceLabelPosition" | "showAdvertisedPrice" | "showGroupRates" | "trustBadges" | "priceNote">;
 
 /**
  * The trip's group rates as a customer reads them — "1–5 guests ₹1,500".
@@ -100,6 +100,7 @@ export default function BookingWidget({
         {label.before && <div className="text-white/70 text-sm mb-1">{label.before}</div>}
         <div className="text-4xl font-bold text-white mb-1" style={{ fontFamily: "var(--app-font-serif)" }}>{price}</div>
         {label.after && <div className="text-white/60 text-sm">{label.after}</div>}
+        {tour?.priceNote && <div className="mt-2 text-sm leading-snug text-white/75">{tour.priceNote}</div>}
       </div>
 
       <div className="p-6 bg-white">

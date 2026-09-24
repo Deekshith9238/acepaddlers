@@ -15,6 +15,12 @@ export function formatINR(value: number): string {
   return "₹" + value.toLocaleString("en-IN");
 }
 
+/** The grouped number on its own — for a price whose label carries the
+ *  currency, so "₹" and "INR" are never printed side by side. */
+export function formatAmount(value: number): string {
+  return value.toLocaleString("en-IN");
+}
+
 /** "water_sports" -> "Water Sports" — fallback used before the live tour
  *  types list has loaded, or for a type slug with no matching lookup row. */
 function humanizeSlug(slug: string): string {
@@ -59,7 +65,14 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     metaDescription: t.seoDescription ?? undefined,
     // What visitors see: the advertised price when one is set, and nothing
     // numeric at all for a trip quoted on request.
-    price: t.showAdvertisedPrice === false ? "Price on request" : formatINR(t.advertisedPrice ?? t.priceValue),
+    // A trip that names its currency in the label prints the bare number; one
+    // with no label of its own keeps the rupee sign it has always had.
+    price:
+      t.showAdvertisedPrice === false
+        ? "Price on request"
+        : t.priceLabelPosition !== "none" && t.priceLabel?.trim()
+          ? formatAmount(t.advertisedPrice ?? t.priceValue)
+          : formatINR(t.advertisedPrice ?? t.priceValue),
     priceValue: t.priceValue,
     duration: t.duration ?? "",
     location: t.location ?? "",
@@ -88,6 +101,7 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     showAdvertisedPrice: t.showAdvertisedPrice ?? undefined,
     priceLabelPosition: (t.priceLabelPosition as LegacyTour["priceLabelPosition"]) ?? undefined,
     priceLabel: t.priceLabel?.trim() || undefined,
+    priceNote: asStr(d.advertisedPriceNote)?.trim() || undefined,
     showGroupRates: t.showGroupRates ?? undefined,
     trustBadges: Array.isArray(d.trustBadges) && d.trustBadges.length ? (d.trustBadges as string[]) : undefined,
     ownFacts: Array.isArray(d.facts) ? (d.facts as { label?: string; value?: string; width?: number }[]) : undefined,

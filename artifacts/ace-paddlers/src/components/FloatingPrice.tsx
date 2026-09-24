@@ -11,7 +11,10 @@ export default function FloatingPrice({ slug, compact = false }: { slug: string;
   const tour = data ? adaptTour(data) : null;
   if (!tour) return null;
   const label = priceLabel(tour, { after: "Per Person" });
-  const words = label.before ?? label.after;
+  // A label chosen to sit before the price is a currency — it belongs against
+  // the number, not trailing it like "Per Person" does.
+  const amount = label.before ? `${label.before} ${tour.price}` : tour.price;
+  const words = label.after;
 
   // Compact stacks the label under the number instead of beside it: in the
   // phone bar the price sits next to the button that sells, and every
@@ -20,7 +23,7 @@ export default function FloatingPrice({ slug, compact = false }: { slug: string;
     <div className={compact ? "flex flex-col items-start leading-none" : "flex items-baseline justify-center gap-1.5 px-1"}>
       <span className={`font-bold leading-none ${compact ? "text-lg" : "text-2xl"}`}
         style={{ color: C.riverTeal, fontFamily: "var(--app-font-serif)" }}>
-        {tour.price}
+        {amount}
       </span>
       {words && (
         <span className={`font-semibold leading-tight ${compact ? "text-[10px]" : "max-w-[4.5rem] text-[11px]"}`}

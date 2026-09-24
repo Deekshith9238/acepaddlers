@@ -342,8 +342,28 @@ function RatesCard({ tourId }: { tourId: string }) {
   );
 }
 
+/**
+ * What goes beside the advertised price: the currency code, not its symbol —
+ * a trip priced in dollars reads "USD 1,250". The number itself is printed
+ * bare, so the code is what tells a customer the currency.
+ */
+const CURRENCIES = [
+  { value: "INR", label: "INR — Indian rupee" },
+  { value: "USD", label: "USD — US dollar" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "GBP", label: "GBP — British pound" },
+  { value: "AED", label: "AED — UAE dirham" },
+  { value: "AUD", label: "AUD — Australian dollar" },
+  { value: "SGD", label: "SGD — Singapore dollar" },
+  { value: "CAD", label: "CAD — Canadian dollar" },
+  { value: "JPY", label: "JPY — Japanese yen" },
+  { value: "CHF", label: "CHF — Swiss franc" },
+  { value: "MYR", label: "MYR — Malaysian ringgit" },
+  { value: "LKR", label: "LKR — Sri Lankan rupee" },
+];
+
 const GROUP_KEYS = ["showGroupRates"] as const;
-const PRICE_KEYS = ["advertisedPrice", "priceLabel", "priceLabelPosition", "showAdvertisedPrice", "priceValue", "currency"] as const;
+const PRICE_KEYS = ["advertisedPrice", "priceLabel", "priceLabelPosition", "showAdvertisedPrice", "priceValue", "currency", "details"] as const;
 
 function AdvertisedPriceCard({ tourId }: { tourId: string }) {
   const s = useTourSection(tourId, PRICE_KEYS);
@@ -361,8 +381,16 @@ function AdvertisedPriceCard({ tourId }: { tourId: string }) {
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-3 mt-4">
-        <Field label="Price label" help="Your own words, as in Vacation Labs — e.g. Starting from, Per Person, Per night.">
-          <input className={inputCls} value={v.priceLabel ?? ""} placeholder="Starting from" onChange={(e) => s.set({ priceLabel: e.target.value || null })} />
+        <Field label="Price label (currency)" help="The code printed beside the number — INR, USD. The number carries no symbol, so this is what tells a customer the currency.">
+          <select className={inputCls} value={v.priceLabel ?? ""} onChange={(e) => s.set({ priceLabel: e.target.value || null })}>
+            <option value="">No currency — each spot's usual wording</option>
+            {/* Anything typed before this became a list stays selectable, so no
+                trip silently loses the label it was saved with. */}
+            {v.priceLabel && !CURRENCIES.some((c) => c.value === v.priceLabel) && (
+              <option value={v.priceLabel}>{v.priceLabel} (saved earlier)</option>
+            )}
+            {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
         </Field>
         <Field label="Label position">
           <select className={inputCls} value={v.priceLabelPosition ?? "before"} onChange={(e) => s.set({ priceLabelPosition: e.target.value })}>
@@ -374,13 +402,26 @@ function AdvertisedPriceCard({ tourId }: { tourId: string }) {
         <Field label="Customers see">
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             {v.showAdvertisedPrice === false ? "Price on request" : (() => {
-              const n = rupees(v.advertisedPrice ?? v.priceValue ?? 0);
+              const amount = (v.advertisedPrice ?? v.priceValue ?? 0).toLocaleString("en-IN");
               const text = (v.priceLabel ?? "").trim();
-              if (v.priceLabelPosition === "none") return <b>{n}</b>;
-              if (!text) return <><b>{n}</b> <span className="text-slate-400">(each spot's usual wording)</span></>;
-              return v.priceLabelPosition === "after" ? <><b>{n}</b> {text}</> : <>{text} <b>{n}</b></>;
+              if (v.priceLabelPosition === "none" || !text) {
+                const n = rupees(v.advertisedPrice ?? v.priceValue ?? 0);
+                return v.priceLabelPosition === "none"
+                  ? <b>{n}</b>
+                  : <><b>{n}</b> <span className="text-slate-400">(each spot's usual wording)</span></>;
+              }
+              return v.priceLabelPosition === "after" ? <><b>{amount}</b> {text}</> : <>{text} <b>{amount}</b></>;
             })()}
           </div>
+        </Field>
+      </div>
+      <div className="mt-4">
+        <Field label="Description under the price" help="Shown to customers beneath the advertised price — what it covers, when it applies, anything they should read before booking.">
+          <textarea
+            className={`${inputCls} min-h-[4.5rem]`}
+            value={((v.details ?? {}) as Record<string, unknown>).advertisedPriceNote as string ?? ""}
+            placeholder="Includes safety gear and guide. Rates differ on public holidays."
+            onChange={(e) => s.set({ details: { ...((v.details ?? {}) as Record<string, unknown>), advertisedPriceNote: e.target.value || null } })} />
         </Field>
       </div>
       <div className="mt-4">

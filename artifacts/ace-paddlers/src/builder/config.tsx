@@ -1958,6 +1958,9 @@ export const builderConfig: Config<BuilderComponents> = {
                   {label.after && <span className="text-sm font-normal ml-2" style={{ color: subColor(dk) }}>{label.after}</span>}
                 </p>
               )}
+              {showPrice && t.priceNote && (
+                <p className="mt-2 text-sm m-0" style={{ color: subColor(dk) }}>{t.priceNote}</p>
+              )}
             </div>
           </section>
         );
