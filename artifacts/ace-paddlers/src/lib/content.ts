@@ -21,6 +21,21 @@ export function formatAmount(value: number): string {
   return value.toLocaleString("en-IN");
 }
 
+/**
+ * Does this label name a currency?
+ *
+ * Only then does the number drop its rupee sign. A label is free text on
+ * trips saved before the currency list existed — "For four activities" is a
+ * phrase, and a price beside it still needs its sign.
+ */
+const CURRENCY_LABELS = new Set([
+  "inr", "usd", "eur", "gbp", "aed", "aud", "sgd", "cad", "jpy", "chf", "myr", "lkr",
+  "₹", "$", "€", "£", "¥", "a$", "s$", "ca$", "rs", "rs.",
+]);
+export function isCurrencyLabel(label: string | null | undefined): boolean {
+  return CURRENCY_LABELS.has((label ?? "").trim().toLowerCase());
+}
+
 /** "water_sports" -> "Water Sports" — fallback used before the live tour
  *  types list has loaded, or for a type slug with no matching lookup row. */
 function humanizeSlug(slug: string): string {
@@ -66,11 +81,12 @@ export function adaptTour(t: ApiTour, labels?: Map<string, string>): LegacyTour 
     // What visitors see: the advertised price when one is set, and nothing
     // numeric at all for a trip quoted on request.
     // A trip that names its currency in the label prints the bare number; one
-    // with no label of its own keeps the rupee sign it has always had.
+    // labelled with words of its own, or with no label at all, keeps the rupee
+    // sign it has always had.
     price:
       t.showAdvertisedPrice === false
         ? "Price on request"
-        : t.priceLabelPosition !== "none" && t.priceLabel?.trim()
+        : t.priceLabelPosition !== "none" && isCurrencyLabel(t.priceLabel)
           ? formatAmount(t.advertisedPrice ?? t.priceValue)
           : formatINR(t.advertisedPrice ?? t.priceValue),
     priceValue: t.priceValue,

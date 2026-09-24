@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { Card, Field, SaveBar, inputCls, labelCls, ghostBtnCls, rupees } from "./shell";
 import { useTourSection } from "./useTour";
+import { isCurrencyLabel } from "@/lib/content";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -402,8 +403,10 @@ function AdvertisedPriceCard({ tourId }: { tourId: string }) {
         <Field label="Customers see">
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             {v.showAdvertisedPrice === false ? "Price on request" : (() => {
-              const amount = (v.advertisedPrice ?? v.priceValue ?? 0).toLocaleString("en-IN");
               const text = (v.priceLabel ?? "").trim();
+              const amount = isCurrencyLabel(text)
+                ? (v.advertisedPrice ?? v.priceValue ?? 0).toLocaleString("en-IN")
+                : rupees(v.advertisedPrice ?? v.priceValue ?? 0);
               if (v.priceLabelPosition === "none" || !text) {
                 const n = rupees(v.advertisedPrice ?? v.priceValue ?? 0);
                 return v.priceLabelPosition === "none"
