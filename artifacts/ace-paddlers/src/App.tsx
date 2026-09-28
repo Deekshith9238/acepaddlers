@@ -21,6 +21,7 @@ const About = lazy(() => import("@/pages/About"));
 const Destinations = lazy(() => import("@/pages/Destinations"));
 const DestinationDetail = lazy(() => import("@/pages/DestinationDetail"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
+const Reviews = lazy(() => import("@/pages/Reviews"));
 const Safety = lazy(() => import("@/pages/Safety"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Corporate = lazy(() => import("@/pages/Corporate"));
@@ -45,6 +46,7 @@ const AgentPortal = lazy(() => import("@/pages/agent/AgentPortal"));
 const AdminAvailability = lazy(() => import("@/pages/admin/AdminAvailability"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminGallery = lazy(() => import("@/pages/admin/AdminGallery"));
+const AdminReviews = lazy(() => import("@/pages/admin/AdminReviews"));
 const AdminPages = lazy(() => import("@/pages/admin/AdminPages"));
 const AdminPageEditor = lazy(() => import("@/pages/admin/AdminPageEditor"));
 const AdminTheme = lazy(() => import("@/pages/admin/AdminTheme"));
@@ -119,6 +121,7 @@ function PublicRoutes() {
             <Route path="/destinations" component={Destinations} />
             <Route path="/destinations/:slug" component={DestinationDetail} />
             <Route path="/gallery" component={Gallery} />
+            <Route path="/reviews" component={Reviews} />
             <Route path="/safety" component={Safety} />
             <Route path="/contact" component={Contact} />
             <Route path="/corporate-groups" component={Corporate} />
@@ -164,6 +167,7 @@ function AdminRoutes() {
           <Route path="/admin/availability" component={AdminAvailability} />
           <Route path="/admin/settings" component={AdminSettings} />
           <Route path="/admin/gallery" component={AdminGallery} />
+          <Route path="/admin/reviews" component={AdminReviews} />
           <Route path="/admin/pages" component={AdminPages} />
           <Route path="/admin/pages/:slug" component={AdminPageEditor} />
           <Route path="/admin/theme" component={AdminTheme} />

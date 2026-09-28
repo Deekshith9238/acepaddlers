@@ -5,6 +5,7 @@ import { logger } from "./lib/logger";
 import { ensureBootstrapAdmin } from "./lib/bootstrap";
 import { startReminderScheduler } from "./lib/reminders";
 import { migrateLegacyCharges } from "./lib/charges";
+import { startGoogleReviewsScheduler } from "./lib/google-reviews";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +25,7 @@ async function main() {
   await ensureBootstrapAdmin();
   await migrateLegacyCharges();
   startReminderScheduler();
+  startGoogleReviewsScheduler();
 
   /**
    * Optional TLS for local development.

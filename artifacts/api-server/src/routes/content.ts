@@ -1,3 +1,4 @@
+import { publicReviews } from "../lib/google-reviews";
 import { Router, type IRouter } from "express";
 import { listPublishedReviews, firstPartyRating, toPublicReview, tourIdBySlug } from "../lib/reviews";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -271,6 +272,15 @@ router.get("/tours/:slug/reviews", async (req, res) => {
   }
   const rows = await listPublishedReviews(tourId);
   res.json({ reviews: rows.map(toPublicReview), rating: firstPartyRating(rows) });
+});
+
+/**
+ * Every approved review, for the public Reviews page — Google imports and the
+ * team's own alike — with each Google listing's star total and a link to leave
+ * a review there. None of it feeds review markup: that stays first-party only.
+ */
+router.get("/reviews", async (_req, res) => {
+  res.json(await publicReviews());
 });
 
 // ── Blog ──

@@ -3,6 +3,7 @@ import { RESOURCES } from "@/admin/resources";
 import { useListBookings, useUpdateBookingStatus, useAdminMe, type BookingDetail } from "@workspace/api-client-react";
 import OperationsDashboard from "@/admin/OperationsDashboard";
 import { StatusBadge } from "@/admin/booking/sections";
+import { ReviewsWaiting } from "@/pages/admin/AdminReviews";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function StatCard({ label, value, href, accent }: { label: string; value: number | string; href: string; accent?: boolean }) {
@@ -31,6 +32,8 @@ function Inner() {
   // read as "business is quiet" rather than "you can't see this".
   const { data: me } = useAdminMe();
   const seesBookings = me?.role === "viewer" || (me?.capabilities ?? []).includes("bookings");
+  // Approving a review is a content decision; the panel follows the same rule.
+  const seesReviews = (me?.capabilities ?? []).includes("content");
   const { data, refetch } = useListBookings(undefined, { query: { enabled: seesBookings } } as never);
   const update = useUpdateBookingStatus();
   const bookings: BookingDetail[] = Array.isArray(data) ? data : [];
@@ -91,6 +94,12 @@ function Inner() {
         </section>
 
       </div>
+      )}
+
+      {seesReviews && (
+        <div className="mb-8">
+          <ReviewsWaiting />
+        </div>
       )}
 
       {seesBookings && (

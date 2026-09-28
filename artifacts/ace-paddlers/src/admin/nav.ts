@@ -89,6 +89,7 @@ export const MODULES: NavModule[] = [
       { label: "Navigation", href: "/admin/navigation", need: "content" },
       { label: "Blog", href: "/admin/blog", need: "content" },
       { label: "Gallery", href: "/admin/gallery", need: "content" },
+      { label: "Reviews", href: "/admin/reviews", need: "content" },
       { label: "Page images", href: "/admin/page-images", need: "content" },
     ],
   },

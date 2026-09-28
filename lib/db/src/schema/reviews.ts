@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, boolean, timestamp, date, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, timestamp, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { tours } from "./tours";
 
 /**
@@ -18,9 +18,9 @@ export const reviews = pgTable(
   "reviews",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    tourId: uuid("tour_id")
-      .references(() => tours.id, { onDelete: "cascade" })
-      .notNull(),
+    /** The trip it is about. Null for a review of the business as a whole —
+     *  which is what a Google review is: it is left on a listing, not a trip. */
+    tourId: uuid("tour_id").references(() => tours.id, { onDelete: "cascade" }),
     authorName: text("author_name").notNull(),
     /** Free text — "Bengaluru", "Kochi". Not a structured place. */
     authorLocation: text("author_location"),
@@ -35,9 +35,23 @@ export const reviews = pgTable(
      *  a rating aggregated across sources needs to be explainable. */
     source: text("source").default("website").notNull(),
     published: boolean("published").default(true).notNull(),
+    /**
+     * When someone decided whether it shows. Null means nobody has yet: a
+     * review imported from Google waits here until the admin approves or
+     * hides it, and the admin's queue is exactly the rows where this is null.
+     */
+    moderatedAt: timestamp("moderated_at", { withTimezone: true }),
+    /** The source's own identity for it, so a re-import never duplicates it.
+     *  For Google: the listing plus the reviewer — Google allows one review
+     *  per person per listing. */
+    externalId: text("external_id"),
+    authorPhotoUrl: text("author_photo_url"),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("reviews_tour_idx").on(t.tourId)],
+  (t) => [
+    index("reviews_tour_idx").on(t.tourId),
+    uniqueIndex("reviews_external_id_idx").on(t.externalId),
+  ],
 );

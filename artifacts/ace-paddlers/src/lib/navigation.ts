@@ -41,6 +41,7 @@ export const NAVIGATION_DEFAULTS: NavItem[] = [
   { label: "All Tours", href: "/tours" },
   { label: "About Us", href: "/about" },
   { label: "Gallery", href: "/gallery" },
+  { label: "Reviews", href: "/reviews" },
 ];
 
 const baseUrl = (): string => (import.meta.env.VITE_API_URL as string) || "";

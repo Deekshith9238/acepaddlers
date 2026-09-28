@@ -50,6 +50,7 @@ export const NAVIGATION_DEFAULTS: NavItem[] = [
   { label: "All Tours", href: "/tours" },
   { label: "About Us", href: "/about" },
   { label: "Gallery", href: "/gallery" },
+  { label: "Reviews", href: "/reviews" },
   { label: "Contact", href: "/contact" },
 ];
 

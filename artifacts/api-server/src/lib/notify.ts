@@ -592,3 +592,45 @@ export async function notifyBookingFormStarted(v: {
     );
   }
 }
+
+
+/**
+ * Tells the team that Google reviews are waiting for approval.
+ *
+ * One message per check, not one per review: a busy day should be one ping
+ * that says "three waiting", not three pings. Sent only for reviews that are
+ * actually waiting — the first import of a listing publishes on its own and
+ * needs nobody's attention.
+ *
+ * WhatsApp goes through the `staff_new_review` template, as every
+ * business-initiated message must; until Meta approves it the free-form text
+ * below is what is tried, which only arrives inside the 24h window.
+ */
+export async function notifyNewReviews(list: { authorName: string; rating: number; body: string; listing: string }[]): Promise<void> {
+  if (list.length === 0) return;
+  const siteUrl = process.env.PUBLIC_SITE_URL ?? "https://www.acepaddlers.com";
+  const adminUrl = `${siteUrl}/admin/reviews`;
+  const stars = (n: number) => "★".repeat(n) + "☆".repeat(Math.max(0, 5 - n));
+  const first = list[0];
+  const waiting = `${list.length} review${list.length === 1 ? " is" : "s are"} waiting for your approval`;
+
+  const subject = list.length === 1
+    ? `New Google review — ${stars(first.rating)} from ${first.authorName}`
+    : `${list.length} new Google reviews waiting for approval`;
+  const text = list
+    .map((r) => `${stars(r.rating)}  ${r.authorName} — ${r.listing}\n${r.body}`)
+    .join("\n\n");
+  const body = `${text}\n\nNothing shows on the website until you approve it: ${adminUrl}`;
+  const html = renderEmailHtml({
+    heading: list.length === 1 ? "A new Google review is waiting" : `${list.length} new Google reviews are waiting`,
+    bodyText: `${text}\n\nNothing shows on the website until you approve it.`,
+    details: list.slice(0, 5).map((r) => ({ label: `${r.authorName} · ${r.listing}`, value: stars(r.rating) })),
+    cta: { label: "Approve or hide", url: adminUrl },
+  });
+  for (const to of staffEmails()) await safeSend(to, subject, body, html);
+
+  const wa = `New Google review for Ace Paddlers: ${first.authorName} gave ${first.rating} out of 5 on ${first.listing}. ${waiting} — ${adminUrl}`;
+  for (const phone of staffPhones()) {
+    await sendWaNotification(phone, "staff_new_review", [first.authorName, first.rating, list.length], wa);
+  }
+}

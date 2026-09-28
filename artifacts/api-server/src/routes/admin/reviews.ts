@@ -1,9 +1,17 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, isNotNull } from "drizzle-orm";
 import { db, reviews, tours } from "@workspace/db";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
 import { firstPartyRating } from "../../lib/reviews";
+import {
+  getGoogleReviewsState,
+  importGoogleReviews,
+  pendingReviewCount,
+  searchGooglePlaces,
+  setGooglePlaces,
+  type GooglePlace,
+} from "../../lib/google-reviews";
 
 const router: IRouter = Router();
 router.use(requireAdmin, requireCapability("content"));
@@ -23,6 +31,8 @@ function detail(r: typeof reviews.$inferSelect) {
     reviewedOn: r.reviewedOn,
     source: r.source,
     published: r.published,
+    moderatedAt: r.moderatedAt ? r.moderatedAt.toISOString() : null,
+    authorPhotoUrl: r.authorPhotoUrl,
     sortOrder: r.sortOrder,
     createdAt: r.createdAt.toISOString(),
   };
@@ -97,9 +107,81 @@ router.post("/tours/:tourId/reviews", async (req, res) => {
   }
   const [row] = await db
     .insert(reviews)
-    .values({ tourId: tour.id, ...parsed.values } as typeof reviews.$inferInsert)
+    .values({ tourId: tour.id, moderatedAt: new Date(), ...parsed.values } as typeof reviews.$inferInsert)
     .returning();
   res.status(201).json(detail(row));
+});
+
+/**
+ * Every review across the site, filtered to one stage of moderation:
+ * waiting (imported, nobody has decided), shown, or hidden.
+ */
+router.get("/reviews", async (req, res) => {
+  const status = String(req.query.status ?? "pending");
+  const where =
+    status === "published"
+      ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, true))
+      : status === "hidden"
+        ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, false))
+        : isNull(reviews.moderatedAt);
+  const rows = await db
+    .select({ review: reviews, tourTitle: tours.title })
+    .from(reviews)
+    .leftJoin(tours, eq(tours.id, reviews.tourId))
+    .where(where)
+    .orderBy(desc(reviews.reviewedOn), desc(reviews.createdAt))
+    .limit(500);
+  res.json({
+    reviews: rows.map((r) => ({ ...detail(r.review), tourTitle: r.tourTitle })),
+    pending: await pendingReviewCount(),
+  });
+});
+
+/** Approve or hide: both are decisions, so both take it out of the queue. */
+for (const [action, published] of [["approve", true], ["hide", false]] as const) {
+  router.post(`/reviews/:id/${action}`, async (req, res) => {
+    const [row] = await db
+      .update(reviews)
+      .set({ published, moderatedAt: new Date(), updatedAt: new Date() })
+      .where(eq(reviews.id, req.params.id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+    res.json(detail(row));
+  });
+}
+
+// ── The Google connection ──
+router.get("/google-reviews", async (_req, res) => {
+  res.json({ ...(await getGoogleReviewsState()), pending: await pendingReviewCount() });
+});
+
+router.post("/google-reviews/search", async (req, res) => {
+  const query = typeof req.body?.query === "string" ? req.body.query.trim().slice(0, 200) : "";
+  if (!query) {
+    res.status(400).json({ error: "query_required" });
+    return;
+  }
+  try {
+    res.json({ places: await searchGooglePlaces(query) });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "search_failed" });
+  }
+});
+
+router.put("/google-reviews/places", async (req, res) => {
+  const places = Array.isArray(req.body?.places) ? (req.body.places as GooglePlace[]) : [];
+  res.json(await setGooglePlaces(places));
+});
+
+router.post("/google-reviews/import", async (_req, res) => {
+  try {
+    res.json(await importGoogleReviews());
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "import_failed" });
+  }
 });
 
 router.patch("/reviews/:id", async (req, res) => {

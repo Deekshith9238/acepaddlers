@@ -92,6 +92,12 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
     h1: "Adventures in pictures",
     text: "A glimpse into life on the river, under the stars, and deep in the Western Ghats.",
   },
+  "/reviews": {
+    title: "Guest Reviews | Ace Paddlers",
+    description: "What guests say about rafting, water sports and stays with Ace Paddlers in Coorg and Chikmagalur.",
+    h1: "In their words",
+    text: "What guests say after a day on the water with Ace Paddlers.",
+  },
   "/safety": {
     title: "Safety & Certifications | Ace Paddlers White Water Rafting",
     description: "NOLS, WFR, CPR & Rescue 3 certified guides. 20+ years of white water rafting with zero serious incidents. Learn about Ace Paddlers' safety standards and protocols.",
