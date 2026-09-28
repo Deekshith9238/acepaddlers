@@ -12,6 +12,7 @@ import { uploadMedia } from "@/admin/upload";
 import { C } from "@/data/constants";
 import { useListTours, useListDestinations, useListGallery, useListBlogPosts, useGetTour } from "@workspace/api-client-react";
 import { adaptTour, adaptBlogSummary, useTourTypeLabels, priceLabel } from "@/lib/content";
+import LocationMap from "@/components/LocationMap";
 import { useOpenBookingModal } from "@/lib/bookingModalContext";
 import { fetchSiteConfig, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
@@ -2163,11 +2164,15 @@ export const builderConfig: Config<BuilderComponents> = {
               <h2 className="ap-section-heading text-3xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: headingColor(dk) , ...headingFont(headingSize) }}><Rt html={heading} /></h2>
               {addr && <p className="whitespace-pre-line m-0" style={{ color: headingColor(dk) }}>{addr}</p>}
               {t.directions && <p className="whitespace-pre-line mt-3 m-0" style={{ color: subColor(dk) }}>{t.directions}</p>}
-              {map && (
+              {t.latitude && t.longitude ? (
+                <div className="mt-4">
+                  <LocationMap lat={Number(t.latitude)} lng={Number(t.longitude)} title={`${t.title} — meeting point`} dark={dk} />
+                </div>
+              ) : map ? (
                 <a href={map} target="_blank" rel="noreferrer" className="inline-block mt-4 font-semibold no-underline hover:underline" style={{ color: dk ? "#a8dff0" : C.riverTeal }}>
                   Open in Maps ↗
                 </a>
-              )}
+              ) : null}
             </div>
           </section>
         );

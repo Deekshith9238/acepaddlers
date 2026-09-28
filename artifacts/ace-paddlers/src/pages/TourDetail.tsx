@@ -9,6 +9,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import BookingWidget from "@/components/BookingWidget";
 import BookingModal from "@/components/BookingModal";
 import LocationModal from "@/components/LocationModal";
+import LocationMap from "@/components/LocationMap";
 import { useGetTour, useListTours } from "@workspace/api-client-react";
 import { adaptTour, useTourTypeLabels, priceLabel } from "@/lib/content";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
@@ -501,7 +502,12 @@ function TourDetailContent({ slug }: { slug: string }) {
                     {tour.directions && (
                       <p className="text-slate-600 whitespace-pre-line mt-3 m-0">{tour.directions}</p>
                     )}
-                    {mapHref && (
+                    {Number.isFinite(Number(tour.latitude)) && Number.isFinite(Number(tour.longitude)) && (
+                      <div className="mt-4">
+                        <LocationMap lat={Number(tour.latitude)} lng={Number(tour.longitude)} title={`${tour.title} — meeting point`} />
+                      </div>
+                    )}
+                    {mapHref && !(tour.latitude && tour.longitude) && (
                       <a
                         href={mapHref}
                         target="_blank"

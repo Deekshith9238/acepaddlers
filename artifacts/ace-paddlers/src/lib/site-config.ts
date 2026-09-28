@@ -27,6 +27,8 @@ export interface SiteConfig {
   showSeatCount: boolean;
   notifyOnFormStart: boolean;
   bookingText: BookingText;
+  /** Google Maps browser key from Settings; blank = OpenStreetMap. */
+  mapsApiKey: string;
 }
 
 export const BOOKING_TEXT_DEFAULTS: BookingText = {
@@ -69,6 +71,7 @@ export const SITE_CONFIG_DEFAULTS: SiteConfig = {
   showSeatCount: true,
   notifyOnFormStart: false,
   bookingText: BOOKING_TEXT_DEFAULTS,
+  mapsApiKey: "",
 };
 
 const baseUrl = (): string => (import.meta.env.VITE_API_URL as string) || "";
@@ -130,6 +133,10 @@ function normalize(input: unknown): SiteConfig {
     notifyOnFormStart:
       typeof obj.notifyOnFormStart === "boolean" ? obj.notifyOnFormStart : SITE_CONFIG_DEFAULTS.notifyOnFormStart,
     bookingText: normalizeBookingText(obj.bookingText),
+    mapsApiKey:
+      typeof obj.mapsApiKey === "string" && /^[A-Za-z0-9_-]{0,80}$/.test(obj.mapsApiKey.trim())
+        ? obj.mapsApiKey.trim()
+        : "",
   };
 }
 

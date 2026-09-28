@@ -50,6 +50,14 @@ export interface SiteConfig {
   business: BusinessInfo;
   showSeatCount: boolean;
   bookingText: BookingText;
+  /**
+   * Google Maps browser key, for the map on trip pages and the pin-dropping
+   * map in the trip editor. Public by design — Google expects a browser key
+   * in the page and expects it to be locked to the site's own domains in the
+   * Google Cloud console, not kept secret here. Blank falls back to
+   * OpenStreetMap, which needs no key at all.
+   */
+  mapsApiKey: string;
   /** WhatsApp the team as soon as someone starts filling the booking form.
    *  Off by default: it is a real message per visitor, and whether that is
    *  useful or noise depends on how much traffic the site gets. */
@@ -88,6 +96,7 @@ export const SITE_CONFIG_DEFAULTS: SiteConfig = {
   showSeatCount: true,
   bookingText: BOOKING_TEXT_DEFAULTS,
   notifyOnFormStart: false,
+  mapsApiKey: "",
 };
 
 function str(v: unknown, fallback: string): string {
@@ -154,6 +163,11 @@ export function sanitizeSiteConfig(input: unknown): SiteConfig {
     notifyOnFormStart:
       typeof obj.notifyOnFormStart === "boolean" ? obj.notifyOnFormStart : SITE_CONFIG_DEFAULTS.notifyOnFormStart,
     bookingText: sanitizeBookingText(obj.bookingText),
+    // Google's own key charset. Anything else would end up in a <script src>.
+    mapsApiKey:
+      typeof obj.mapsApiKey === "string" && /^[A-Za-z0-9_-]{0,80}$/.test(obj.mapsApiKey.trim())
+        ? obj.mapsApiKey.trim()
+        : "",
   };
 }
 

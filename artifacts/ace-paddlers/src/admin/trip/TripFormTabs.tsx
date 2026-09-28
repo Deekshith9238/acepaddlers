@@ -4,6 +4,7 @@ import { TrustBadgeList } from "@/admin/TrustBadgeList";
 import AdminField from "@/admin/AdminField";
 import { Card, Field, Choice, RadioGroup, SaveBar, RichLineList, inputCls, labelCls } from "./shell";
 import { useTourSection } from "./useTour";
+import MapPicker from "@/admin/MapPicker";
 import RichTextField from "@/builder/RichTextField";
 import { isHtml, richTextHtml } from "@/lib/richText";
 
@@ -237,17 +238,13 @@ export function TripLocation({ tourId }: { tourId: string }) {
           <Field label="Latitude"><input className={inputCls} value={v.latitude ?? ""} placeholder="12.8347628" onChange={(e) => s.set({ latitude: e.target.value })} /></Field>
           <Field label="Longitude"><input className={inputCls} value={v.longitude ?? ""} placeholder="76.1247472" onChange={(e) => s.set({ longitude: e.target.value })} /></Field>
         </div>
-        {hasPoint && (
-          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-            <iframe
-              title="Trip location"
-              className="w-full h-64 border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.02}%2C${lat - 0.02}%2C${lng + 0.02}%2C${lat + 0.02}&layer=mapnik&marker=${lat}%2C${lng}`}
-            />
-          </div>
-        )}
+        <div className="mt-4">
+          <MapPicker
+            lat={hasPoint ? lat : null}
+            lng={hasPoint ? lng : null}
+            onChange={(newLat, newLng) => s.set({ latitude: String(newLat), longitude: String(newLng) })}
+          />
+        </div>
       </Card>
 
       <Card title="Addresses">

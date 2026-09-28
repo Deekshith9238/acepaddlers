@@ -294,6 +294,67 @@ function BookingCard() {
   );
 }
 
+/**
+ * The Google Maps browser key.
+ *
+ * It sits in site config rather than in a server env var because it belongs to
+ * the pages, not the server: it ships inside the HTML either way, and Google's
+ * protection for it is a domain restriction in the Cloud console. Keeping it
+ * here means the maps can be switched on without a deploy.
+ */
+function MapsCard() {
+  const [key, setKey] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetchAdminSiteConfig()
+      .then((c) => setKey(c.mapsApiKey))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const onSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await saveAdminSiteConfig({ mapsApiKey: key.trim() });
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inp = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500";
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 max-w-xl mt-6">
+      <h2 className="text-lg font-semibold text-slate-800">Google Maps</h2>
+      <p className="text-sm text-slate-500 mt-1">
+        Turns on the map customers see on a trip page, and the map you drop a trip's pin on in
+        Location. Without a key the site falls back to OpenStreetMap, which needs none.
+      </p>
+      <div className="mt-5">
+        <input className={inp} value={key} disabled={!loaded} placeholder="AIza…"
+          onChange={(e) => { setKey(e.target.value); setSaved(false); }} />
+        <p className="mt-2 text-xs text-slate-400">
+          A browser key from the Google Cloud console with <b>Maps JavaScript API</b>, <b>Maps Embed API</b> and
+          (for the search box) <b>Places API</b> enabled. It is visible in the page, as Google intends — restrict it
+          to acepaddlers.com there.
+        </p>
+      </div>
+      <div className="mt-6 flex items-center gap-3">
+        <button onClick={onSave} disabled={!loaded || saving}
+          className="rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-60">
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {saved && <span className="text-sm text-emerald-600">Saved ✓</span>}
+      </div>
+    </div>
+  );
+}
+
 function Inner() {
   const status = useGetGoogleIntegration();
   const disconnect = useDisconnectGoogleIntegration();
@@ -358,6 +419,7 @@ function Inner() {
       </div>
 
       <BusinessCard />
+      <MapsCard />
       <BookingCard />
       <TrustBadgesCard />
     </>
