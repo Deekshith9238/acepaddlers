@@ -263,6 +263,67 @@ function Toolbar({ editor }: { editor: Editor }) {
   );
 }
 
+/**
+ * Corner handles on the selected picture: drag to resize, like a word
+ * processor. The width is stored as a percentage of the column (the same value
+ * the toolbar slider sets), so the picture keeps its proportion on the page.
+ * While dragging only the picture's style changes; the document is updated
+ * once on release, so a resize is a single undo step.
+ */
+function ImageResizeHandles({ editor, box }: { editor: Editor; box: React.RefObject<HTMLDivElement | null> }) {
+  const [, redraw] = useState(0);
+  if (!editor.isActive("image") || !box.current) return null;
+  const img = editor.view.nodeDOM(editor.state.selection.from) as HTMLImageElement | null;
+  if (!(img instanceof HTMLImageElement)) return null;
+  const outer = box.current.getBoundingClientRect();
+  const r = img.getBoundingClientRect();
+  if (!r.height) {
+    img.addEventListener("load", () => redraw((n) => n + 1), { once: true });
+    return null;
+  }
+
+  const start = (side: "left" | "right") => (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const pm = editor.view.dom as HTMLElement;
+    const cs = getComputedStyle(pm);
+    const column = pm.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const startX = e.clientX;
+    const startW = img.getBoundingClientRect().width;
+    // A centred picture grows on both sides, so the pointer moves half as far.
+    const factor = editor.getAttributes("image").align === "center" ? 2 : 1;
+    let pct = Math.round((startW / column) * 100);
+    const move = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) * (side === "right" ? 1 : -1) * factor;
+      pct = Math.min(100, Math.max(10, Math.round(((startW + dx) / column) * 100)));
+      img.style.width = `${pct}%`;
+      redraw((n) => n + 1);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.style.cursor = "";
+      editor.chain().focus().updateAttributes("image", { width: pct }).run();
+    };
+    document.body.style.cursor = side === "right" ? "nwse-resize" : "nesw-resize";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const handle = (side: "left" | "right"): React.CSSProperties => ({
+    position: "absolute", width: 12, height: 12, borderRadius: 3, background: "#0284c7", border: "2px solid white",
+    boxShadow: "0 0 0 1px #0284c7", top: r.bottom - outer.top - 6,
+    left: (side === "right" ? r.right : r.left) - outer.left - 6,
+    cursor: side === "right" ? "nwse-resize" : "nesw-resize", touchAction: "none", zIndex: 10,
+  });
+  return (
+    <>
+      <div title="Drag to resize" style={handle("left")} onPointerDown={start("left")} />
+      <div title="Drag to resize" style={handle("right")} onPointerDown={start("right")} />
+    </>
+  );
+}
+
 /** Word-like rich text field for the page builder: formatting toolbar, inline
  *  images insertable via the toolbar, drag-and-drop from the desktop, or
  *  paste — with left/center/right arrangement once an image is selected.
@@ -322,6 +383,7 @@ export default function RichTextField({ value, onChange }: { value?: string; onC
   }, [value, editor]);
 
   const [preview, setPreview] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
   if (!editor) return null;
 
   const tab = (on: boolean): React.CSSProperties => ({
@@ -342,8 +404,9 @@ export default function RichTextField({ value, onChange }: { value?: string; onC
       ) : (
         <>
           <Toolbar editor={editor} />
-          <div style={{ border: "1px solid #cbd5e1", borderRadius: "0 0 8px 8px", background: "white" }}>
+          <div ref={boxRef} style={{ position: "relative", border: "1px solid #cbd5e1", borderRadius: "0 0 8px 8px", background: "white" }}>
             <EditorContent editor={editor} />
+            <ImageResizeHandles editor={editor} box={boxRef} />
           </div>
         </>
       )}
