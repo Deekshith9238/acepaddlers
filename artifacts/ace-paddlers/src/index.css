@@ -224,6 +224,9 @@ img {
 /* flow-root contains floated (wrap-text) images, so they never spill into the next section. */
 .ace-richtext { display: flow-root; }
 .ace-richtext p { margin-bottom: 1rem; }
+/* A blank line saved by the editor is an empty <p>, which a browser draws with
+   no height; the editor shows it one line tall, so the page must too. */
+.ace-richtext p:empty::before { content: "\00a0"; }
 .ace-richtext h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; font-family: var(--app-font-serif); }
 .ace-richtext h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: var(--app-font-serif); }
 .ace-richtext ul, .ace-richtext ol { margin: 0 0 1rem 1.25rem; }
@@ -466,12 +469,8 @@ body { font-weight: var(--brand-bodyWeight, 400); }
 /* Solid: no transparency at all. */
 [data-nav-style="solid"]  { --ap-nav-tint: 100%; --ap-nav-blur: 0px;  --ap-nav-edge: 100%; }
 
-/* A wrapped image and its own text, side by side (see pairFloats in lib/richText). */
-.ace-richtext .ace-float-row { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 1.5rem; }
-.ace-richtext .ace-float-row > .ace-float-text { flex: 1 1 0; min-width: 0; }
-.ace-richtext .ace-float-row > .ace-float-text > :last-child { margin-bottom: 0; }
-.ace-richtext .ace-float-media img { max-width: 100% !important; border-radius: 12px; }
+/* A wrapped image and its own text, kept in one block (see pairFloats in lib/richText). */
+.ace-richtext .ace-float-row { display: flow-root; }
 @media (max-width: 640px) {
-  .ace-richtext .ace-float-row { display: block; }
-  .ace-richtext .ace-float-media { margin-bottom: 0.75rem; }
+  .ace-richtext .ace-float-row > img { float: none !important; width: 100% !important; max-width: 100% !important; margin: 0 0 0.75rem !important; }
 }

@@ -23,9 +23,11 @@ export function richTextHtml(body: string | undefined): string {
  * previous picture, one pair out of step with the next.
  *
  * So each floated image and the text that follows it (up to the next image)
- * becomes one two-column row: the picture stays with its own words at any
- * width, and the rows stack in order. On a phone `.ace-float-row` drops to a
- * single column — see index.css.
+ * becomes one block that contains its float (`display: flow-root`). Inside it
+ * the picture floats exactly as in the editor — text beside it, and whatever
+ * the blank lines push past its bottom runs full width underneath — while the
+ * next picture always starts a fresh block, so its heading cannot ride up. On
+ * a phone the picture stops floating — see index.css.
  */
 function pairFloats(html: string): string {
   if (typeof document === "undefined" || !/float\s*:/i.test(html)) return html;
@@ -33,35 +35,18 @@ function pairFloats(html: string): string {
   root.innerHTML = html;
   const isFloating = (el: Element) =>
     el.tagName === "IMG" && /float\s*:\s*(left|right)/i.test(el.getAttribute("style") ?? "");
-  const blank = (el: Element) => el.tagName === "P" && !el.textContent?.trim() && !el.querySelector("img");
 
   for (const img of [...root.children].filter(isFloating)) {
-    const style = img.getAttribute("style") ?? "";
-    const right = /float\s*:\s*right/i.test(style);
-    const width = Number(img.getAttribute("data-width")) || 40;
-
     const row = document.createElement("div");
     row.className = "ace-float-row";
-    row.style.flexDirection = right ? "row-reverse" : "row";
-    const media = document.createElement("div");
-    media.className = "ace-float-media";
-    media.style.flex = `0 0 ${Math.min(60, Math.max(20, width))}%`;
-    const text = document.createElement("div");
-    text.className = "ace-float-text";
-
     img.replaceWith(row);
-    // The float and its own margins are the row's job now.
-    img.setAttribute("style", style.replace(/float\s*:\s*(left|right)\s*;?/i, "").replace(/margin[^;]*;?/i, "") + "width:100%;");
-    media.appendChild(img);
-
+    row.appendChild(img);
     let next = row.nextElementSibling;
     while (next && !isFloating(next)) {
       const take = next;
       next = next.nextElementSibling;
-      if (blank(take) && !text.childNodes.length) { take.remove(); continue; } // spacer before the caption
-      text.appendChild(take);
+      row.appendChild(take);
     }
-    row.append(media, text);
   }
   return root.innerHTML;
 }
