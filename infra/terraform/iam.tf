@@ -32,23 +32,10 @@ resource "aws_iam_role_policy" "ecs_execution_secrets" {
   })
 }
 
-# ── ECS: Task role (what the API container can do on AWS) ──
-resource "aws_iam_role" "ecs_task" {
-  name = "${local.name}-ecs-task"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ecs-tasks.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "ecs_task" {
-  name = "app-permissions"
-  role = aws_iam_role.ecs_task.id
-  policy = jsonencode({
+# What the app can do on AWS — shared by the Fargate task role and the web
+# server's role in ec2.tf.
+locals {
+  app_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -77,6 +64,25 @@ resource "aws_iam_role_policy" "ecs_task" {
       }
     ]
   })
+}
+
+# ── ECS: Task role (what the API container can do on AWS) ──
+resource "aws_iam_role" "ecs_task" {
+  name = "${local.name}-ecs-task"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task" {
+  name   = "app-permissions"
+  role   = aws_iam_role.ecs_task.id
+  policy = local.app_policy
 }
 
 # ── MediaConvert service role (assumed by the transcode job) ──
