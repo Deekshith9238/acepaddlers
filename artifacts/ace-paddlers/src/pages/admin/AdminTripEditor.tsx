@@ -12,6 +12,7 @@ import { TripBasics, TripSettings, TripLocation, TripEmail, TripAdvanced } from 
 import TripReviews from "@/admin/trip/TripReviews";
 import { TripPageDetails } from "@/admin/trip/TripPageDetails";
 import StorefrontPreview from "@/admin/StorefrontPreview";
+import { TripStay } from "@/admin/trip/TripStay";
 
 /**
  * One trip, edited a tab at a time — the layout Vacation Labs uses, so the team
@@ -84,6 +85,7 @@ export default function AdminTripEditor() {
             {tab === "itinerary" && <TripItinerary tourId={tourId} />}
             {tab === "booking-fields" && <TripBookingFields tourId={tourId} />}
             {tab === "addons" && <TripAddons tourId={tourId} />}
+            {tab === "stay" && <TripStay tourId={tourId} />}
             {tab === "email" && <TripEmail tourId={tourId} />}
             {tab === "location" && <TripLocation tourId={tourId} />}
             {tab === "reviews" && <TripReviews tourId={tourId} />}

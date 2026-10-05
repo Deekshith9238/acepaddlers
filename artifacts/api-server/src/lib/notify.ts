@@ -5,6 +5,7 @@ import { getWhatsAppTemplates, renderWhatsAppTemplate } from "./whatsapp-templat
 import { sendWhatsAppMessage, sendWhatsAppTemplate, whatsappConfigured } from "./whatsapp";
 import { sendResendEmail, resendConfigured, type EmailAttachment } from "./resend";
 import { renderEmailHtml } from "./email-layout";
+import type { StayView } from "./stays";
 
 /**
  * Notification providers. Email goes through Resend when RESEND_API_KEY +
@@ -632,5 +633,235 @@ export async function notifyNewReviews(list: { authorName: string; rating: numbe
   const wa = `New Google review for Ace Paddlers: ${first.authorName} gave ${first.rating} out of 5 on ${first.listing}. ${waiting} — ${adminUrl}`;
   for (const phone of staffPhones()) {
     await sendWaNotification(phone, "staff_new_review", [first.authorName, first.rating, list.length], wa);
+  }
+}
+
+
+// ── Partner stays ──────────────────────────────────────────────────────────
+//
+// The partner property is never messaged: the team is. The team checks the
+// partner's availability and says yes, the guest pays, and the team then books
+// the rooms on the partner's own booking page. The guest sees only the
+// listing's name until that booking is made, then the property's real name
+// and address.
+
+const siteBase = () => process.env.PUBLIC_SITE_URL ?? "https://www.acepaddlers.com";
+
+/** "Mon 12 Oct 2026" — a stay is read in days, and the weekday matters. */
+function stayDay(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+  });
+}
+const stayDates = (v: StayView) => `${stayDay(v.checkIn)} → ${stayDay(v.checkOut)} (${v.nights} night${v.nights === 1 ? "" : "s"})`;
+const stayRooms = (v: StayView) => v.rooms.map((r) => `${r.qty} × ${r.name}`).join(", ");
+
+/** A new request: the team is asked to check the partner, the guest is told. */
+export async function notifyStayRequested(v: StayView): Promise<void> {
+  const answerUrl = `${siteBase()}/partner/${v.partnerToken}`;
+  const property = v.partner?.name ?? "the partner";
+
+  const text =
+    `New stay request ${v.ref} for ${property}: ${v.guests} guest(s), ${stayRooms(v)}, ${stayDates(v)}. ` +
+    `Check the partner's availability and approve here: ${answerUrl}`;
+  for (const phone of staffPhones()) {
+    await sendWaNotification(
+      phone,
+      "staff_stay_request",
+      [v.ref, property, stayRooms(v), stayDates(v), v.guests],
+      text,
+      v.partnerToken,
+    );
+  }
+  const staffHtml = renderEmailHtml({
+    heading: `Stay request ${v.ref}`,
+    bodyText: "Check the partner's availability, then approve or decline. The guest pays only after you approve.",
+    details: [
+      { label: "Property", value: property },
+      { label: "Listed as", value: v.listing },
+      { label: "Dates", value: stayDates(v) },
+      { label: "Rooms", value: stayRooms(v) },
+      { label: "Guests", value: String(v.guests) },
+      { label: "Guest", value: `${v.customerName}, ${v.customerPhone}` },
+      { label: "Total", value: money(v.currency, v.totalAmount) },
+    ],
+    cta: { label: "Check and approve", url: answerUrl },
+  });
+  for (const to of staffEmails()) await safeSend(to, `Stay request ${v.ref} — ${property}, ${stayDay(v.checkIn)}`, text, staffHtml);
+
+  // The guest: request received, nothing charged yet.
+  await sendWaNotification(
+    v.customerPhone,
+    "booking_received",
+    [v.customerName, v.listing, stayDates(v), v.ref],
+    `Hi ${v.customerName}, we have received your request for ${v.listing}, ${stayDates(v)}. Reference ${v.ref}. We'll confirm availability shortly — you pay only once it's confirmed.`,
+  );
+  await safeSend(
+    v.customerEmail,
+    `We've got your stay request — ${v.ref}`,
+    `We're checking availability for ${v.listing}, ${stayDates(v)}. You'll get a payment link as soon as the rooms are confirmed; nothing is charged before that.`,
+    renderEmailHtml({
+      heading: "We're checking your rooms",
+      bodyText: "You'll get a payment link as soon as the rooms are confirmed. Nothing is charged before that.",
+      details: [
+        { label: "Stay", value: v.listing },
+        { label: "Dates", value: stayDates(v) },
+        { label: "Rooms", value: stayRooms(v) },
+        { label: "Guests", value: String(v.guests) },
+        { label: "Estimated total", value: money(v.currency, v.totalAmount) },
+        { label: "Reference", value: v.ref },
+      ],
+    }),
+  );
+}
+
+/** The team said yes (or it booked instantly): the guest gets the payment link. */
+export async function notifyStayConfirmed(v: StayView): Promise<void> {
+  if (!v.paymentLinkUrl) {
+    // No gateway configured, or the link failed: the team sends it by hand.
+    for (const to of staffEmails()) {
+      await safeSend(to, `Stay ${v.ref} approved — send the payment link`,
+        `${v.ref} (${v.customerName}, ${stayDates(v)}) is approved, but no payment link could be created. Send one from the admin.`);
+    }
+    return;
+  }
+  const linkCode = v.paymentLinkUrl.split("/").pop() ?? "";
+  await sendWaNotification(
+    v.customerPhone,
+    "payment_link",
+    [v.customerName, money(v.currency, v.totalAmount), v.listing, stayDates(v), v.ref],
+    `Good news ${v.customerName} — your rooms at ${v.listing} are confirmed for ${stayDates(v)}. Pay ${money(v.currency, v.totalAmount)} here to secure them: ${v.paymentLinkUrl}`,
+    linkCode,
+  );
+  await safeSend(
+    v.customerEmail,
+    `Your rooms are available — complete your booking ${v.ref}`,
+    `Your rooms at ${v.listing} are confirmed for ${stayDates(v)}. Pay ${money(v.currency, v.totalAmount)} within 24 hours to secure them: ${v.paymentLinkUrl}`,
+    renderEmailHtml({
+      heading: "Your rooms are available",
+      bodyText: "Pay within 24 hours to secure them.",
+      details: [
+        { label: "Stay", value: v.listing },
+        { label: "Dates", value: stayDates(v) },
+        { label: "Rooms", value: stayRooms(v) },
+        { label: "Total", value: money(v.currency, v.totalAmount) },
+        { label: "Reference", value: v.ref },
+      ],
+      cta: { label: "Pay now", url: v.paymentLinkUrl },
+    }),
+  );
+}
+
+/** The team said no: the guest is told, nothing was charged; the team follows up. */
+export async function notifyStayDeclined(v: StayView): Promise<void> {
+  await sendWaNotification(
+    v.customerPhone,
+    "stay_unavailable",
+    [v.customerName, v.listing, stayDates(v)],
+    `Hi ${v.customerName}, unfortunately ${v.listing} is not available for ${stayDates(v)}. You have not been charged. Our team will contact you with other options.`,
+  );
+  await safeSend(
+    v.customerEmail,
+    `Your requested dates aren't available — ${v.ref}`,
+    `Unfortunately ${v.listing} is not available for ${stayDates(v)}. You have not been charged. Our team will be in touch with other options.`,
+  );
+  for (const to of staffEmails()) {
+    await safeSend(to, `Stay ${v.ref} declined (${v.partner?.name ?? "partner"})`,
+      `${v.customerName} (${v.customerPhone}) wanted ${v.listing}, ${stayDates(v)}, ${stayRooms(v)}, ${v.guests} guest(s).` +
+      `${v.declineReason ? ` Reason given: ${v.declineReason}.` : ""} Offer them another stay.`);
+  }
+}
+
+/**
+ * Paid: the guest hears the money arrived; the team is told to book it at the
+ * partner now. The property's name and address wait for that booking — until
+ * it is made, the stay is paid for but not yet held there.
+ */
+export async function notifyStayPaid(v: StayView): Promise<void> {
+  await sendWaNotification(
+    v.customerPhone,
+    "payment_confirmed",
+    [v.customerName, v.listing, stayDates(v), v.ref],
+    `Hi ${v.customerName}, your payment is received for ${v.listing}, ${stayDates(v)}. Reference ${v.ref}. We're finalising your booking and will send the stay details shortly.`,
+  );
+  await safeSend(
+    v.customerEmail,
+    `Payment received — ${v.ref}`,
+    `Your payment for ${v.listing}, ${stayDates(v)}, is received. We're finalising your booking and will send the property's details shortly.`,
+    renderEmailHtml({
+      heading: "Payment received",
+      bodyText: "We're finalising your booking and will send the property's details shortly.",
+      details: [
+        { label: "Stay", value: v.listing },
+        { label: "Dates", value: stayDates(v) },
+        { label: "Rooms", value: stayRooms(v) },
+        { label: "Paid", value: money(v.currency, v.totalAmount) },
+        { label: "Reference", value: v.ref },
+      ],
+    }),
+  );
+
+  const bookUrl = `${siteBase()}/admin/stays`;
+  const property = v.partner?.name ?? "the partner";
+  const text =
+    `Stay ${v.ref} is paid (${money(v.currency, v.totalAmount)}). Book it at ${property} now: ${stayRooms(v)}, ` +
+    `${stayDates(v)}, guest ${v.customerName}. Open Stay requests → Book at partner: ${bookUrl}`;
+  for (const phone of staffPhones()) {
+    await sendWaNotification(phone, "staff_stay_book_now", [v.ref, property, stayRooms(v), stayDates(v), v.customerName], text);
+  }
+  for (const to of staffEmails()) {
+    await safeSend(to, `Book now: stay ${v.ref} at ${property}`, text,
+      renderEmailHtml({
+        heading: `Paid — book ${v.ref} at ${property}`,
+        bodyText: "The guest has paid. Book the rooms on the partner's page, then record their confirmation number.",
+        details: [
+          { label: "Property", value: property },
+          { label: "Dates", value: stayDates(v) },
+          { label: "Rooms", value: stayRooms(v) },
+          { label: "Guests", value: String(v.guests) },
+          { label: "Guest", value: v.customerName },
+        ],
+        cta: { label: "Book at partner", url: bookUrl },
+      }));
+  }
+}
+
+/** Booked at the partner: now the guest learns where they are staying. */
+export async function notifyStayBookedAtPartner(v: StayView): Promise<void> {
+  const where = v.partner ? [v.partner.name, v.partner.address].filter(Boolean).join(", ") : v.listing;
+  const host = v.partner ? `${v.partner.contactName ?? v.partner.name}, ${v.partner.phone}` : "";
+  await sendWaNotification(
+    v.customerPhone,
+    "stay_booked",
+    [v.customerName, where, stayDates(v), v.ref],
+    `Hi ${v.customerName}, your stay is booked: ${where}, ${stayDates(v)}. Reference ${v.ref}.${host ? ` Host: ${host}.` : ""}`,
+  );
+  await safeSend(
+    v.customerEmail,
+    `Your stay is booked — ${v.ref}`,
+    `Your stay is booked for ${stayDates(v)}. You'll be staying at ${where}.${host ? ` Host contact: ${host}.` : ""}`,
+    renderEmailHtml({
+      heading: "Your stay is booked",
+      bodyText: "Here is where you'll be staying.",
+      details: [
+        { label: "Property", value: v.partner?.name ?? v.listing },
+        { label: "Address", value: v.partner?.address ?? "" },
+        { label: "Host", value: host },
+        { label: "Dates", value: stayDates(v) },
+        { label: "Rooms", value: stayRooms(v) },
+        { label: "Guests", value: String(v.guests) },
+        { label: "Paid", value: money(v.currency, v.totalAmount) },
+        { label: "Reference", value: v.ref },
+      ],
+    }),
+  );
+}
+
+/** A request still waiting for the team's OK after 4 hours: a nudge. */
+export async function notifyStayUnanswered(v: StayView): Promise<void> {
+  const text = `Stay request ${v.ref} (${v.partner?.name ?? "partner"}, ${stayDates(v)}) is still waiting for your OK after 4 hours — ${v.customerName} is waiting.`;
+  for (const to of staffEmails()) await safeSend(to, `Waiting 4h: stay request ${v.ref}`, `${text}\n\n${siteBase()}/partner/${v.partnerToken}`);
+  for (const phone of staffPhones()) {
+    await sendWaNotification(phone, "staff_stay_unanswered", [v.ref, v.partner?.name ?? "the partner", stayDates(v)], text, v.partnerToken);
   }
 }

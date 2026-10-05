@@ -24,6 +24,8 @@ import { fetchCharges, fetchPaymentMethods, computeCharges, type Charge, type Pa
 import { loadRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { track, analyticsSessionId } from "@/lib/analytics";
 import type { BookingText } from "@/lib/site-config";
+import StayRequestForm, { type StayInfo } from "@/components/StayRequestForm";
+import { publicApi } from "@/admin/adminApi";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -60,7 +62,20 @@ export default function BookingModal({
    */
   const { data: tripRules } = useGetTour(tourSlug, { query: { retry: false } } as never);
   const rules = tripRules ?? undefined;
-  const { data: slots, isLoading } = useGetAvailability({ tour: tourSlug });
+  const { data: slots, isLoading: slotsLoading } = useGetAvailability({ tour: tourSlug });
+  /**
+   * A partner stay books by dates and rooms, not by departure. Undefined while
+   * it is being asked, so a stay never flashes the "no departures" screen.
+   */
+  const [stay, setStay] = useState<StayInfo | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    publicApi<StayInfo>(`/tours/${tourSlug}/stay`)
+      .then((s) => { if (live) setStay(s.isStay ? s : null); })
+      .catch(() => { if (live) setStay(null); });
+    return () => { live = false; };
+  }, [tourSlug]);
+  const isLoading = slotsLoading || stay === undefined;
   // Booking mode is per-tour, so read it from the tour itself rather than
   // threading it through every parent that renders this modal.
   const { data: tour } = useGetTour(tourSlug);
@@ -491,7 +506,9 @@ export default function BookingModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          {bookingRef ? (
+          {stay ? (
+            <StayRequestForm slug={tourSlug} stay={stay} />
+          ) : bookingRef ? (
             <PayScreen
               bookingRef={bookingRef}
               booking={booking}

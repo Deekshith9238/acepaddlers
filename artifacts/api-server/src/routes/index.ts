@@ -36,12 +36,15 @@ import bookingIntentRouter from "./booking-intent";
 import adminUsersRouter from "./admin/users";
 import adminChargesRouter from "./admin/charges";
 import adminRedirectsRouter from "./admin/redirects";
+import staysRouter from "./stays";
+import adminStaysRouter from "./admin/stays";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(contentRouter);
 router.use(bookingRouter);
+router.use(staysRouter);
 router.use(webhooksRouter);
 router.use(enquiryRouter);
 router.use(trackRouter);
@@ -57,6 +60,7 @@ router.use(firebaseRouter);
 router.use("/admin", invalidateOnWrite);
 
 router.use("/admin", adminAuthRouter);
+router.use("/admin", adminStaysRouter);
 router.use("/admin", adminContentRouter);
 router.use("/admin", adminMediaRouter);
 router.use("/admin", adminBookingRouter);

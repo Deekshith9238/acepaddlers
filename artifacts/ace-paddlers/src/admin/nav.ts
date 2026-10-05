@@ -77,6 +77,8 @@ export const MODULES: NavModule[] = [
       { label: "Destinations", href: "/admin/destinations", need: "content" },
       { label: "Promotions", href: "/admin/coupons", need: "finance" },
       { label: "Media library", href: "/admin/media", need: "content" },
+      { label: "Stay partners", href: "/admin/partners", need: "content" },
+      { label: "Stay requests", href: "/admin/stays", need: "bookings" },
     ],
   },
   {

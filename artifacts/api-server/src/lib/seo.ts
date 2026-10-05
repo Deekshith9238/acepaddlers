@@ -347,7 +347,8 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
   }
 
   // Functional pages: reachable but kept out of search indexes.
-  if (/^\/booking\//.test(p) || p === "/admin" || p.startsWith("/admin/")) {
+  // A partner's Confirm / Can't host link is private to them: never indexed.
+  if (/^\/booking\//.test(p) || /^\/partner\//.test(p) || p === "/admin" || p.startsWith("/admin/")) {
     return {
       title: `${SITE_SUFFIX}`,
       description: "",

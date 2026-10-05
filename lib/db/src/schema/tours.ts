@@ -2,6 +2,7 @@ import { pgTable, uuid, text, integer, boolean, jsonb, timestamp } from "drizzle
 import { contentStatusEnum } from "./enums";
 import { destinations } from "./destinations";
 import { tourTypes, tourCategories } from "./tour-lookups";
+import { partners } from "./partners";
 
 export const tours = pgTable("tours", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -110,6 +111,11 @@ export const tours = pgTable("tours", {
   ogTitle: text("og_title"),
   ogDescription: text("og_description"),
   ogImage: text("og_image"),
+
+  /** The real property behind a stay listing sold under this trip's name.
+   *  Set only on partner stays; a trip with room types but no partner books
+   *  like any other request. */
+  partnerId: uuid("partner_id").references(() => partners.id, { onDelete: "set null" }),
 
   status: contentStatusEnum("status").default("draft").notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),

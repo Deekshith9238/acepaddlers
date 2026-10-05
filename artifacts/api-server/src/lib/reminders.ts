@@ -5,6 +5,8 @@ import { notifyTripReminder } from "./notify";
 import { releaseBookingCapacity } from "./booking";
 import { runDueReports } from "./scheduled-reports";
 import { pruneAnalytics } from "./analytics";
+import { escalateUnansweredStays } from "./stays";
+import { syncAllFeeds } from "./stay-calendars";
 
 /** IST is UTC+5:30 and has no daylight saving — a fixed offset is exact. */
 function tomorrowIst(): string {
@@ -107,6 +109,8 @@ export function startReminderScheduler(): void {
     sendTripReminders().catch((err) => logger.error({ err }, "trip reminder scheduler tick failed"));
     sweepAbandonedCarts().catch((err) => logger.error({ err }, "cart abandon sweep tick failed"));
     runDueReports().catch((err) => logger.error({ err }, "scheduled report tick failed"));
+    escalateUnansweredStays().catch((err) => logger.error({ err }, "stay escalation tick failed"));
+    syncAllFeeds().catch((err) => logger.error({ err }, "calendar feed sync tick failed"));
   };
   tick();
   setInterval(tick, INTERVAL_MS);

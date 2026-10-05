@@ -197,6 +197,27 @@
       "when": 1790582138680,
       "tag": "0027_reviews_in_navigation",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790622446939,
+      "tag": "0028_partner_stays",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790624273359,
+      "tag": "0029_stay_calendar_feeds",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790664351204,
+      "tag": "0030_book_at_partner",
+      "breakpoints": true
     }
   ]
 }

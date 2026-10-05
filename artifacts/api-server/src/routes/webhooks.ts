@@ -1,3 +1,4 @@
+import { applyStayPaymentEvent } from "../lib/stays";
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, payments } from "@workspace/db";
@@ -124,6 +125,15 @@ router.post("/webhooks/razorpay", async (req, res) => {
 
     const [row] = await db.select().from(payments).where(eq(payments.providerLinkId, providerId)).limit(1);
     if (!row) {
+      // Partner stays keep their payment link on the stay itself.
+      const linkStatus = event === "payment_link.paid" ? "paid"
+        : event === "payment_link.expired" ? "expired"
+        : event === "payment_link.cancelled" ? "cancelled"
+        : "";
+      if (link && linkStatus && (await applyStayPaymentEvent(providerId, linkStatus))) {
+        logger.info({ channel: "razorpay-webhook", event, providerId }, "stay payment webhook processed");
+        return;
+      }
       logger.error({ channel: "razorpay-webhook", providerId }, "webhook for unknown payment link/order");
       return;
     }

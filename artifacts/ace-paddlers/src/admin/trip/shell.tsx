@@ -20,6 +20,7 @@ export const TRIP_TABS: { key: string; label: string }[] = [
   { key: "itinerary", label: "Detailed itinerary" },
   { key: "booking-fields", label: "Extra booking fields" },
   { key: "addons", label: "Addons & cross-sells" },
+  { key: "stay", label: "Stay & rooms" },
   { key: "email", label: "E-mail notifications" },
   { key: "location", label: "Location" },
   { key: "reviews", label: "Guest reviews" },

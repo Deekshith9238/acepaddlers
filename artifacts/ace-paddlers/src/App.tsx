@@ -22,6 +22,7 @@ const Destinations = lazy(() => import("@/pages/Destinations"));
 const DestinationDetail = lazy(() => import("@/pages/DestinationDetail"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
 const Reviews = lazy(() => import("@/pages/Reviews"));
+const PartnerRequest = lazy(() => import("@/pages/PartnerRequest"));
 const Safety = lazy(() => import("@/pages/Safety"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Corporate = lazy(() => import("@/pages/Corporate"));
@@ -47,6 +48,8 @@ const AdminAvailability = lazy(() => import("@/pages/admin/AdminAvailability"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminGallery = lazy(() => import("@/pages/admin/AdminGallery"));
 const AdminReviews = lazy(() => import("@/pages/admin/AdminReviews"));
+const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
+const AdminStays = lazy(() => import("@/pages/admin/AdminStays"));
 const AdminPages = lazy(() => import("@/pages/admin/AdminPages"));
 const AdminPageEditor = lazy(() => import("@/pages/admin/AdminPageEditor"));
 const AdminTheme = lazy(() => import("@/pages/admin/AdminTheme"));
@@ -168,6 +171,8 @@ function AdminRoutes() {
           <Route path="/admin/settings" component={AdminSettings} />
           <Route path="/admin/gallery" component={AdminGallery} />
           <Route path="/admin/reviews" component={AdminReviews} />
+          <Route path="/admin/partners" component={AdminPartners} />
+          <Route path="/admin/stays" component={AdminStays} />
           <Route path="/admin/pages" component={AdminPages} />
           <Route path="/admin/pages/:slug" component={AdminPageEditor} />
           <Route path="/admin/theme" component={AdminTheme} />
@@ -215,6 +220,8 @@ function Router() {
   const isAgent = location === "/agent" || location.startsWith("/agent/");
   // Login has no session yet, so it renders outside the admin chrome.
   const isAdminLogin = location === "/admin/login";
+  // A partner answering a stay request: no site chrome, no booking card.
+  const isPartner = location.startsWith("/partner/");
 
   return (
     <>
@@ -222,6 +229,12 @@ function Router() {
       {isAdminLogin ? (
         <Suspense fallback={<PageFallback />}>
           <AdminLogin />
+        </Suspense>
+      ) : isPartner ? (
+        <Suspense fallback={<PageFallback />}>
+          <Switch>
+            <Route path="/partner/:token" component={PartnerRequest} />
+          </Switch>
         </Suspense>
       ) : isAgent ? (
         <AgentRoutes />

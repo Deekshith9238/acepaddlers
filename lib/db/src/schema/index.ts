@@ -22,3 +22,5 @@ export * from "./pages";
 export * from "./wa-sessions";
 export * from "./analytics";
 export * from "./reviews";
+export * from "./partners";
+export * from "./stays";
