@@ -3,8 +3,10 @@ import { useTourSection } from "./useTour";
 import { lazy, Suspense } from "react";
 import { richTextPlain } from "@/lib/richText";
 
-// The grid is a heavy dependency; it loads when this tab is opened, not with the admin.
+// The grid and the editors are heavy; they load when this tab is opened, not with the admin.
 const FactsGrid = lazy(() => import("@/admin/FactsGrid"));
+const FactTextEditor = lazy(() => import("@/admin/FactTextEditor"));
+const RichTextField = lazy(() => import("@/builder/RichTextField"));
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -28,6 +30,27 @@ const KEYS = ["difficulty", "season", "minAge", "maxWeightKg", "details"] as con
 
 /** Keys inside `details` that this tab owns. */
 const OWNED = ["groupSize", "minAge", "maxWeight", "stretchLength", "faqs", "rapidGrades", "activities", "facts", "factsReplace"] as const;
+
+/**
+ * Where the tab keeps the version it replaced on its last save, for Reset.
+ * One step only: saving a reset makes the version it replaced the previous one,
+ * so Reset can always go back across the last save — and back again.
+ */
+const PREVIOUS = "pageDetailsPrevious";
+
+type Snapshot = { difficulty: unknown; season: unknown; minAge: unknown; maxWeightKg: unknown; details: Record<string, unknown> };
+
+/** This tab's part of a trip, as saved or as about to be saved. */
+const snapshotOf = (t: Record<string, any> | undefined): Snapshot => {
+  const det = (t?.details ?? {}) as Record<string, unknown>;
+  return {
+    difficulty: t?.difficulty ?? null,
+    season: t?.season ?? null,
+    minAge: t?.minAge ?? null,
+    maxWeightKg: t?.maxWeightKg ?? null,
+    details: Object.fromEntries(OWNED.map((k) => [k, det[k] ?? null])),
+  };
+};
 
 /** Activities are stored as "Name — description", which is what the page splits on. */
 const splitActivity = (line: string): Activity => {
@@ -87,7 +110,7 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
       stretchLength: orNull(d.stretchLength),
       faqs: faqs
         .map((f) => ({ q: (f.q ?? "").trim(), a: (f.a ?? "").trim() }))
-        .filter((f) => f.q || f.a),
+        .filter((f) => richTextPlain(f.q) || richTextPlain(f.a)),
       rapidGrades: grades
         .map((g) => ({ grade: (g.grade ?? "").trim(), title: (g.title ?? "").trim(), desc: (g.desc ?? "").trim() }))
         .filter((g) => g.grade || g.title || g.desc),
@@ -103,12 +126,31 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
     for (const k of ["faqs", "rapidGrades", "activities", "facts"]) {
       if ((details[k] as unknown[]).length === 0) details[k] = null;
     }
-    s.save({
+    const next = {
       difficulty: orNull(v.difficulty),
       season: orNull(v.season),
       minAge: v.minAge === "" || v.minAge == null ? null : Number(v.minAge),
       maxWeightKg: v.maxWeightKg === "" || v.maxWeightKg == null ? null : Number(v.maxWeightKg),
-      details: Object.fromEntries(OWNED.map((k) => [k, details[k]])),
+      details: Object.fromEntries(OWNED.map((k) => [k, details[k]])) as Record<string, unknown>,
+    };
+    // Keep what this save replaces, so Reset can bring it back. A save that
+    // changes nothing keeps the older previous version.
+    const before = snapshotOf(s.tour as Record<string, any> | undefined);
+    if (JSON.stringify(before) !== JSON.stringify(snapshotOf(next))) next.details[PREVIOUS] = before;
+    s.save(next);
+  };
+
+  const previous = d[PREVIOUS] as Snapshot | undefined;
+  /** Put the previous version on screen; it is kept only when saved. */
+  const reset = () => {
+    if (!previous) return;
+    if (!window.confirm("Replace what's on screen with the version from before your last save? Nothing changes on the website until you click Save.")) return;
+    s.set({
+      difficulty: previous.difficulty ?? "",
+      season: previous.season ?? "",
+      minAge: previous.minAge ?? "",
+      maxWeightKg: previous.maxWeightKg ?? "",
+      details: { ...d, ...previous.details },
     });
   };
 
@@ -192,19 +234,14 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
           <div className="space-y-3">
             {faqs.map((f, i) => (
               <RowShell key={i} onRemove={() => setDetail({ faqs: faqs.filter((_, idx) => idx !== i) })}>
-                <input
-                  className={`${inputCls} font-semibold`}
-                  placeholder="Question"
-                  value={f.q ?? ""}
-                  onChange={(e) => setDetail({ faqs: patchAt(faqs, i, { q: e.target.value }) })}
-                />
-                <textarea
-                  rows={3}
-                  className={inputCls}
-                  placeholder="Answer"
-                  value={f.a ?? ""}
-                  onChange={(e) => setDetail({ faqs: patchAt(faqs, i, { a: e.target.value }) })}
-                />
+                <Suspense fallback={<p className="text-sm text-slate-400">Loading…</p>}>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Question</div>
+                  <FactTextEditor label={`Question ${i + 1}`} value={f.q} onChange={(q) => setDetail({ faqs: patchAt(faqs, i, { q }) })}
+                    className="ace-richtext min-h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <p className="text-[11px] text-slate-400">Select words in the question to format them.</p>
+                  <div className="pt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Answer</div>
+                  <RichTextField value={f.a} onChange={(a) => setDetail({ faqs: patchAt(faqs, i, { a: a === "<p></p>" ? "" : a }) })} />
+                </Suspense>
               </RowShell>
             ))}
           </div>
@@ -286,7 +323,12 @@ export function TripPageDetails({ tourId }: { tourId: string }) {
         )}
       </Card>
 
-      <SaveBar onSave={save} saving={s.saving} saved={s.saved} error={s.error} />
+      <SaveBar onSave={save} saving={s.saving} saved={s.saved} error={s.error}>
+        <button type="button" className={ghostBtnCls} onClick={reset} disabled={!previous}
+          title={previous ? "Bring back the version from before your last save" : "Nothing to go back to yet — Reset works after your first save"}>
+          Reset to previous version
+        </button>
+      </SaveBar>
     </>
   );
 }

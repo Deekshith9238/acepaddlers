@@ -53,6 +53,26 @@ function pairFloats(html: string): string {
 
 export const isHtml = (s: string): boolean => /^\s*</.test(s);
 
+/**
+ * Rich text for an inline spot (a heading, a FAQ question): sanitized, with a
+ * single unstyled paragraph unwrapped so short text stays truly inline, and
+ * any other block turned into a block-like span — the element it sits in is
+ * often an <h2> or <p>, where a nested <p> is invalid HTML.
+ */
+export function richTextInline(html: string | undefined): string {
+  const raw = (html ?? "").trim();
+  if (!raw) return "";
+  const clean = richTextHtml(raw);
+  const single = clean.match(/^<p>([\s\S]*)<\/p>$/);
+  if (single && !single[1].includes("<p")) return single[1];
+  return clean
+    .replace(/<(?:p|h2|h3|div|ul|ol|li)(\s[^>]*)?>/g, (_m, attrs: string | undefined) => {
+      const style = /style="([^"]*)"/.exec(attrs ?? "")?.[1] ?? "";
+      return `<span style="display:block;${style}">`;
+    })
+    .replace(/<\/(?:p|h2|h3|div|ul|ol|li)>/g, "</span>");
+}
+
 /** Rich text as plain words, for schema descriptions and previews. */
 export const richTextPlain = (s: string | undefined): string =>
   (s ?? "").replace(/<\/(p|h\d|li|div)>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n{3,}/g, "\n\n").trim();

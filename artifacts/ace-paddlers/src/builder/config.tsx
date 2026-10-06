@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link } from "wouter";
 import { Check, X, Minus, ShieldCheck } from "lucide-react";
 import type { Config, Field, SelectField, TextField } from "@measured/puck";
-import { richTextHtml, itineraryHtml, listItemHtml, richTextPlain } from "@/lib/richText";
+import { richTextHtml, richTextInline, itineraryHtml, listItemHtml, richTextPlain } from "@/lib/richText";
 import SmartImage from "@/components/SmartImage";
 import TripCard from "@/components/TripCard";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -130,22 +130,8 @@ const richTextField = (label: string): Field<string> => ({
  * and a single paragraph is unwrapped so short text stays truly inline.
  */
 function Rt({ html }: { html?: string }) {
-  const raw = (html ?? "").trim();
-  if (!raw) return null;
-  let clean = richTextHtml(raw);
-  // A single unstyled paragraph is unwrapped so short text stays truly inline.
-  const single = clean.match(/^<p>([\s\S]*)<\/p>$/);
-  if (single && !single[1].includes("<p")) clean = single[1];
-  else {
-    // Otherwise keep each block on its own line, but as spans: the block this
-    // text sits in is often a <h2> or <p>, where a nested <p> is invalid HTML.
-    clean = clean
-      .replace(/<(?:p|h2|h3|div|ul|ol|li)(\s[^>]*)?>/g, (_m, attrs: string | undefined) => {
-        const style = /style="([^"]*)"/.exec(attrs ?? "")?.[1] ?? "";
-        return `<span style="display:block;${style}">`;
-      })
-      .replace(/<\/(?:p|h2|h3|div|ul|ol|li)>/g, "</span>");
-  }
+  const clean = richTextInline(html);
+  if (!clean) return null;
   return <span className="ace-richtext" style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: clean }} />;
 }
 
@@ -1607,7 +1593,7 @@ export const builderConfig: Config<BuilderComponents> = {
         padY: padField,
         items: {
           type: "array", label: "Questions",
-          getItemSummary: (i: FaqItemT) => i.q || "Question",
+          getItemSummary: (i: FaqItemT) => richTextPlain(i.q) || "Question",
           arrayFields: { q: { type: "text", label: "Question" }, a: { type: "textarea", label: "Answer" } },
         },
       },
@@ -1622,10 +1608,10 @@ export const builderConfig: Config<BuilderComponents> = {
                 {(items ?? []).map((f, i) => (
                   <details key={i} className="group rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.mutedBorder }}>
                     <summary className={`cursor-pointer list-none px-6 py-4 font-semibold flex items-center justify-between ${bodyFont(questionSize) || "text-sm"}`} style={{ color: C.text }}>
-                      {f.q}
+                      <span><Rt html={f.q} /></span>
                       <span className="ml-4 transition-transform group-open:rotate-45 text-xl" style={{ color: C.riverTeal }}>+</span>
                     </summary>
-                    <p className={`px-6 pb-5 leading-relaxed ${bodyFont(answerSize) || "text-sm"}`} style={{ color: "#2e5a74" }}>{f.a}</p>
+                    <div className={`ace-richtext [&>*:last-child]:mb-0 px-6 pb-5 leading-relaxed ${bodyFont(answerSize) || "text-sm"}`} style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(f.a) }} />
                   </details>
                 ))}
               </div>
@@ -2637,10 +2623,10 @@ export const builderConfig: Config<BuilderComponents> = {
                 {faqs.map((f, i) => (
                   <details key={i} className="group rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.mutedBorder }}>
                     <summary className={`cursor-pointer list-none px-6 py-4 font-semibold flex items-center justify-between ${bodyFont(questionSize) || "text-sm"}`} style={{ color: C.text }}>
-                      {f.q}
+                      <span><Rt html={f.q} /></span>
                       <span className="ml-4 transition-transform group-open:rotate-45 text-xl" style={{ color: C.riverTeal }}>+</span>
                     </summary>
-                    <p className={`px-6 pb-5 leading-relaxed m-0 ${bodyFont(answerSize) || "text-sm"}`} style={{ color: "#2e5a74" }}>{f.a}</p>
+                    <div className={`ace-richtext [&>*:last-child]:mb-0 px-6 pb-5 leading-relaxed ${bodyFont(answerSize) || "text-sm"}`} style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(f.a) }} />
                   </details>
                 ))}
               </div>

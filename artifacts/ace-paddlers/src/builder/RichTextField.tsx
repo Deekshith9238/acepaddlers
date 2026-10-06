@@ -5,7 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-style";
+import { TextStyle, FontFamily, FontSize, Color, LineHeight } from "@tiptap/extension-text-style";
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, ImagePlus,
   Heading2, Heading3, AlignLeft, AlignCenter, AlignRight, AlignJustify, ZoomIn, ZoomOut, Trash2,
@@ -104,6 +104,20 @@ export function FontPicker({ editor }: { editor: Editor }) {
   );
 }
 const SIZES = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px", "40px"];
+/** Line spacing choices, shared with the fact and FAQ editors. */
+export const LINE_SPACINGS = ["1", "1.15", "1.5", "1.75", "2", "2.5"];
+
+/** Line spacing for the selected text — a dropdown like the font size. */
+export function LineSpacingPicker({ editor, style, className }: { editor: Editor; style?: React.CSSProperties; className?: string }) {
+  return (
+    <select title="Line spacing" aria-label="Line spacing" style={style} className={className}
+      value={(editor.getAttributes("textStyle").lineHeight as string) ?? ""}
+      onChange={(e) => (e.target.value ? editor.chain().focus().setLineHeight(e.target.value).run() : editor.chain().focus().unsetLineHeight().run())}>
+      <option value="">Spacing</option>
+      {LINE_SPACINGS.map((h) => <option key={h} value={h}>{h}</option>)}
+    </select>
+  );
+}
 
 const selectStyle: React.CSSProperties = {
   height: 30, border: "1px solid #cbd5e1", borderRadius: 6, background: "white",
@@ -194,6 +208,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         <option value="">Size</option>
         {SIZES.map((sz) => <option key={sz} value={sz}>{parseInt(sz, 10)}</option>)}
       </select>
+      <LineSpacingPicker editor={editor} style={selectStyle} />
       <label title="Text colour" style={{ display: "flex", alignItems: "center", gap: 2, padding: "0 4px", cursor: "pointer" }}>
         <input
           type="color"
@@ -344,6 +359,7 @@ export default function RichTextField({ value, onChange }: { value?: string; onC
       FontFamily,
       FontSize,
       Color,
+      LineHeight,
       AlignableImage.configure({ inline: false }),
       Link.configure({ openOnClick: false }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),

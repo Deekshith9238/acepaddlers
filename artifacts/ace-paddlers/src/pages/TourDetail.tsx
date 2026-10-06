@@ -14,7 +14,7 @@ import { useGetTour, useListTours } from "@workspace/api-client-react";
 import { adaptTour, useTourTypeLabels, priceLabel } from "@/lib/content";
 import { useReviews, initials, reviewDate } from "@/lib/reviews";
 import { C } from "@/data/constants";
-import { richTextHtml, richTextPlain, itineraryHtml, listItemHtml } from "@/lib/richText";
+import { richTextHtml, richTextInline, richTextPlain, itineraryHtml, listItemHtml } from "@/lib/richText";
 import { fetchSiteConfig, BOOKING_TEXT_DEFAULTS, BUSINESS_DEFAULTS, type BookingText } from "@/lib/site-config";
 
 const FactsTable = lazy(() => import("@/components/FactsTable"));
@@ -43,14 +43,14 @@ function FAQItem({ q, a, i }: { q: string; a: string; i: number }) {
           onClick={() => setOpen(o => !o)}
           className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left bg-white hover:bg-gray-50 transition-colors"
         >
-          <span className="font-semibold text-sm" style={{ color: C.text }}>{q}</span>
+          <span className="ace-richtext font-semibold text-sm" style={{ color: C.text }} dangerouslySetInnerHTML={{ __html: richTextInline(q) }} />
           {open
             ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: C.riverTeal }} />
             : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: "#8aabb8" }} />}
         </button>
         {open && (
           <div className="px-6 pb-5 bg-white border-t" style={{ borderColor: C.mutedBorder }}>
-            <p className="text-sm leading-relaxed pt-4" style={{ color: "#2e5a74" }}>{a}</p>
+            <div className="ace-richtext [&>*:last-child]:mb-0 text-sm leading-relaxed pt-4" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(a) }} />
           </div>
         )}
       </div>
@@ -169,8 +169,9 @@ function TourDetailContent({ slug }: { slug: string }) {
     "@type": "FAQPage",
     mainEntity: tour.faqs.map(f => ({
       "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
+      // Search engines get the words, not the formatting.
+      name: richTextPlain(f.q),
+      acceptedAnswer: { "@type": "Answer", text: richTextPlain(f.a) },
     })),
   } : null;
 

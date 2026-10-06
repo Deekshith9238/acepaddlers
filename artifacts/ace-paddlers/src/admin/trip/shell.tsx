@@ -140,17 +140,21 @@ export function SaveBar({
   saving,
   saved,
   error,
+  children,
 }: {
   onSave: () => void;
   saving: boolean;
   saved: boolean;
   error?: string | null;
+  /** More buttons beside Save, e.g. a reset. */
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-3">
       <button type="button" onClick={onSave} disabled={saving} className={btnCls}>
         {saving ? "Saving…" : "Save"}
       </button>
+      {children}
       {saved && <span className="text-sm text-emerald-600">Saved.</span>}
       {error && <span className="text-sm text-red-600">{error}</span>}
     </div>
