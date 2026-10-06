@@ -31,10 +31,6 @@ ${domain} {
 	encode gzip
 	import app
 }
-# Plain HTTP for the old load balancer only (security group), while DNS moves.
-:8080 {
-	import app
-}
 CADDY
 if [ -z "$(docker ps -q -f name=^caddy$)" ]; then
   docker rm -f caddy 2>/dev/null || true

@@ -74,42 +74,15 @@ resource "aws_route_table_association" "private" {
 }
 
 # ── Security groups ──
-resource "aws_security_group" "alb" {
-  name_prefix = "${local.name}-alb-"
-  vpc_id      = aws_vpc.main.id
-  description = "Application Load Balancer"
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Egress rules managed by standalone aws_security_group_rule
-
-  lifecycle { create_before_destroy = true }
-  tags = { Name = "${local.name}-alb" }
-}
-
 resource "aws_security_group" "ecs_tasks" {
   name_prefix = "${local.name}-ecs-tasks-"
   vpc_id      = aws_vpc.main.id
   description = "ECS Fargate tasks"
 
-  ingress {
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
+  # No ingress: only one-off tasks (e.g. acepaddlers-report) use this group now,
+  # to reach RDS. The site itself runs on the web server (ec2.tf). Explicitly
+  # empty, not omitted: omitting the block leaves the old ALB rule in place.
+  ingress = []
 
   egress {
     from_port   = 0
@@ -120,15 +93,6 @@ resource "aws_security_group" "ecs_tasks" {
 
   lifecycle { create_before_destroy = true }
   tags = { Name = "${local.name}-ecs-tasks" }
-}
-
-resource "aws_security_group_rule" "alb_to_ecs" {
-  type                     = "egress"
-  from_port                = 8080
-  to_port                  = 8080
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.ecs_tasks.id
-  security_group_id        = aws_security_group.alb.id
 }
 
 resource "aws_security_group" "rds" {

@@ -1,6 +1,6 @@
 # ── The web server: one small instance in place of the ALB + Fargate ──
-# The site is a single container, so a load balancer in front of one task cost
-# more than the task itself. Caddy on the instance terminates TLS (Let's
+# The site is a single container, so the load balancer that used to sit in
+# front of one Fargate task cost more than the task itself (removed 2026-10-06). Caddy on the instance terminates TLS (Let's
 # Encrypt) and proxies to the app container; deploys go through SSM Run Command
 # (document "${local.name}-deploy", see deploy.sh) — no SSH, no open port 22.
 
@@ -35,14 +35,6 @@ resource "aws_security_group" "web" {
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description     = "Plain HTTP from the old ALB while DNS moves"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -198,74 +190,6 @@ resource "aws_ssm_document" "deploy" {
       }
     }]
   })
-}
-
-# ── Cut-over plumbing on the old ALB (removed with it) ──
-# Let's Encrypt's HTTP challenge for www arrives at the ALB until DNS moves, so
-# the ALB passes /.well-known/acme-challenge/* to Caddy: the certificate is
-# ready before the switch. Then the ALB's default action points at the server
-# (:8080), so visitors whose DNS is stale still reach it.
-
-resource "aws_security_group_rule" "alb_to_web" {
-  for_each                 = toset(["80", "8080"])
-  type                     = "egress"
-  from_port                = tonumber(each.key)
-  to_port                  = tonumber(each.key)
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.web.id
-  security_group_id        = aws_security_group.alb.id
-}
-
-resource "aws_lb_target_group" "web_acme" {
-  name        = "${local.name}-web-acme"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "instance"
-  health_check {
-    path    = "/"
-    port    = "80"
-    matcher = "200-399"
-  }
-}
-
-resource "aws_lb_target_group_attachment" "web_acme" {
-  target_group_arn = aws_lb_target_group.web_acme.arn
-  target_id        = aws_instance.web.id
-  port             = 80
-}
-
-resource "aws_lb_listener_rule" "acme" {
-  listener_arn = aws_lb_listener.api.arn
-  priority     = 1
-  condition {
-    path_pattern { values = ["/.well-known/acme-challenge/*"] }
-  }
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.web_acme.arn
-  }
-}
-
-resource "aws_lb_target_group" "web" {
-  name        = "${local.name}-web"
-  port        = 8080
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "instance"
-  health_check {
-    path                = "/api/healthz"
-    port                = "8080"
-    interval            = 15
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-  }
-}
-
-resource "aws_lb_target_group_attachment" "web" {
-  target_group_arn = aws_lb_target_group.web.arn
-  target_id        = aws_instance.web.id
-  port             = 8080
 }
 
 output "web_ip" {
