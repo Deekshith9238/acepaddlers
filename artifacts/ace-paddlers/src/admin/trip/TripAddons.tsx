@@ -217,7 +217,7 @@ export function TripAddons({ tourId }: { tourId: string }) {
         <div className="mt-5">
           <Choice
             label="Show the trip itself as one of the choices"
-            help="The trip appears first in the list with its own price, ticked. Untick it and the customer pays for the add-ons alone — a jet ski without the package. The booking still takes a seat on the departure."
+            help="The trip appears first in the list with its own price, a tick box and a person counter, like the add-ons. Untick it and the customer pays for the add-ons alone — a jet ski without the package. Off: the trip is always booked, and only its person counter shows. The booking still takes a seat on the departure."
             checked={addonOnly}
             onChange={(v) => setDetails({ addonOnly: v })}
           />

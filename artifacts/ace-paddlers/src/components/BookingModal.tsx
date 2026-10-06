@@ -292,9 +292,10 @@ export default function BookingModal({
     () => addons.flatMap((a) => {
       const chosen = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
       if (chosen <= 0) return [];
-      // With the trip on the list a per-person extra follows the party; with
-      // the trip off it, the counter on the card is the party for that extra.
-      const qty = a.priceType === "per_person" && !addonsOnly ? Math.max(guests, a.minQty) : Math.max(chosen, a.minQty);
+      // Each extra is counted on its own card — a banana boat for six beside a
+      // trip for two. Only a required per-person extra, which has no counter,
+      // follows the trip's guests.
+      const qty = a.required && a.priceType === "per_person" && !addonsOnly ? Math.max(guests, a.minQty) : Math.max(chosen, a.minQty);
       return [{ addonId: a.id, qty }];
     }),
     [addons, addonQty, addonsOnly, guests],
@@ -339,7 +340,7 @@ export default function BookingModal({
     () => addons.flatMap((a) => {
       const qty = a.required ? Math.max(1, a.minQty) : (addonQty[a.id] ?? 0);
       if (qty <= 0) return [];
-      const perPeople = Math.max(a.priceType === "per_person" && addonsOnly ? qty : guests, a.minQty);
+      const perPeople = Math.max(a.required && !addonsOnly ? guests : qty, a.minQty);
       const amount = a.priceType === "per_person" ? a.price * perPeople
         : a.priceType === "per_booking" ? a.price
         : a.price * qty;
@@ -695,9 +696,10 @@ export default function BookingModal({
                 </div>
               </div>
 
-              {/* Add-ons alone are counted on their own cards, so one guest
-                  number for the whole booking would mean nothing here. */}
-              {!addonsOnly && (
+              {/* With add-ons, the trip is a row in the list with its own
+                  counter, and every extra counts its own people — one guest
+                  number at the top would pretend they are the same party. */}
+              {addons.length === 0 && (
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#5a8ea8" }}>
                   Guests
@@ -733,32 +735,49 @@ export default function BookingModal({
                     {/* The trip is an item on the list like any other, so it can
                         be taken off: someone who only wants the jet ski unticks
                         it. Offered only where the trip's editor allows it. */}
-                    {addonOnlyAllowed && (
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
-                        style={{ borderColor: !addonsOnly ? C.riverTeal : C.mutedBorder, backgroundColor: !addonsOnly ? C.riverTeal + "0d" : "transparent" }}>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
+                      style={{ borderColor: !addonsOnly ? C.riverTeal : C.mutedBorder, backgroundColor: !addonsOnly ? C.riverTeal + "0d" : "transparent" }}>
+                      {/* Optional only where the editor says so (Add-ons tab →
+                          "Show the trip itself as one of the choices"). */}
+                      {addonOnlyAllowed && (
                         <input type="checkbox" className="h-4 w-4 shrink-0" checked={!addonsOnly}
                           aria-label={tour?.title ?? "The trip itself"}
-                          onChange={(e) => setAddonsOnly(!e.target.checked)} />
-                        <div className="min-w-[8rem] flex-1">
-                          <div className="text-sm font-semibold" style={{ color: C.text }}>{tour?.title ?? "The trip"}</div>
-                          <div className="text-xs" style={{ color: "#5a8ea8" }}>{formatINR(estimateUnit)} per person</div>
+                          onChange={(e) => { setAddonsOnly(!e.target.checked); if (e.target.checked) setGuests(minGuests); }} />
+                      )}
+                      <div className="min-w-[8rem] flex-1">
+                        <div className="text-sm font-semibold" style={{ color: C.text }}>{tour?.title ?? "The trip"}</div>
+                        <div className="text-xs" style={{ color: "#5a8ea8" }}>
+                          {formatINR(estimateUnit)} per person
+                          {minGuests > 1 && ` · minimum ${minGuests} people`}
+                          {selected && showSeatCount && Number.isFinite(maxGuests) && ` · ${maxGuests} seats left`}
                         </div>
                       </div>
-                    )}
+                      {/* Below the trip's minimum it comes off the list — only
+                          where the editor lets the extras be booked alone. */}
+                      <Counter label={tour?.title ?? "the trip"} value={addonsOnly ? 0 : guests}
+                        onLess={() => {
+                          if (addonsOnly) return;
+                          if (guests > minGuests) setGuests(guests - 1);
+                          else if (addonOnlyAllowed) setAddonsOnly(true);
+                        }}
+                        onMore={() => {
+                          if (addonsOnly) { setAddonsOnly(false); setGuests(minGuests); }
+                          else setGuests(Math.min(maxGuests, guests + 1));
+                        }} />
+                    </div>
                     {addons.map((a) => {
                       const qty = addonQtyOf(a);
                       const step = Math.max(1, a.minQty);
                       const unitNote = a.priceType === "per_person" ? "per person" : a.priceType === "per_unit" ? "each" : "per booking";
-                      // Charged for the minimum party even when fewer are booked.
                       const minPeople = a.priceType === "per_person" && a.minQty > 1 ? a.minQty : 0;
-                      // Counted rather than ticked: per-unit extras always, and
-                      // per-person ones once they carry their own head count.
-                      const counted = a.priceType === "per_unit" || (addonsOnly && a.priceType === "per_person");
-                      const ceiling = a.priceType === "per_unit" ? (a.maxQty ?? 99) : Math.min(99, Number.isFinite(maxGuests) ? maxGuests : 99);
+                      // Counted rather than ticked: anything sold by the head or
+                      // by the piece. The first + jumps straight to the minimum.
+                      const counted = a.priceType !== "per_booking";
+                      const ceiling = a.maxQty ?? 99;
                       return (
                         <div key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5"
                           style={{ borderColor: qty > 0 ? C.riverTeal : C.mutedBorder, backgroundColor: qty > 0 ? C.riverTeal + "0d" : "transparent" }}>
-                          {!a.required && !counted && (
+                          {!a.required && (
                             <input type="checkbox" className="h-4 w-4 shrink-0" checked={qty > 0}
                               aria-label={a.label}
                               onChange={(e) => setAddonQty((q) => ({ ...q, [a.id]: e.target.checked ? step : 0 }))} />
@@ -770,31 +789,11 @@ export default function BookingModal({
                               {formatINR(a.price)} {unitNote}{a.required && " · included"}
                               {minPeople > 0 && ` · minimum ${minPeople} people`}
                             </div>
-                            {!addonsOnly && minPeople > guests && qty > 0 && (
-                              <div className="text-xs font-semibold" style={{ color: "#b45309" }}>
-                                Charged for {minPeople}
-                              </div>
-                            )}
                           </div>
                           {!a.required && counted && (
-                            <div className="ml-auto flex items-center gap-2 shrink-0">
-                              <button type="button" aria-label={`One less ${a.label}`}
-                                onClick={() => setAddonQty((q) => ({ ...q, [a.id]: qty - 1 < step ? 0 : qty - 1 }))}
-                                className="w-8 h-8 rounded-full border flex items-center justify-center"
-                                style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
-                              <span className="w-5 text-center text-sm font-semibold" style={{ color: C.text }}>{qty}</span>
-                              {addonsOnly && a.priceType === "per_person" && (
-                                <span className="text-xs" style={{ color: "#5a8ea8" }}>people</span>
-                              )}
-                              <button type="button" aria-label={`One more ${a.label}`}
-                                onClick={() => setAddonQty((q) => ({ ...q, [a.id]: Math.min(ceiling, qty === 0 ? step : qty + 1) }))}
-                                className="w-8 h-8 rounded-full border flex items-center justify-center"
-                                style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            <Counter label={a.label} value={qty}
+                              onLess={() => setAddonQty((q) => ({ ...q, [a.id]: qty - 1 < step ? 0 : qty - 1 }))}
+                              onMore={() => setAddonQty((q) => ({ ...q, [a.id]: Math.min(ceiling, qty === 0 ? step : qty + 1) }))} />
                           )}
                         </div>
                       );
@@ -1066,6 +1065,22 @@ function PayScreen({
         {opening ? "Opening…" : verify.isPending ? "Confirming…" : dismissedOnce ? "Try again" : `Pay ${current.currency} ${current.totalAmount.toLocaleString("en-IN")} now`}
       </button>
       <p className="text-xs" style={{ color: "#8aabb8" }}>Reference: {current.bookingRef} — this page updates automatically once paid.</p>
+    </div>
+  );
+}
+
+/** − n + for one row of the add-on list. */
+function Counter({ label, value, onLess, onMore }: { label: string; value: number; onLess: () => void; onMore: () => void }) {
+  const btn = "w-8 h-8 rounded-full border flex items-center justify-center";
+  return (
+    <div className="ml-auto flex items-center gap-2 shrink-0">
+      <button type="button" aria-label={`One less: ${label}`} onClick={onLess} className={btn} style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
+        <Minus className="w-3.5 h-3.5" />
+      </button>
+      <span className="w-6 text-center text-sm font-semibold" style={{ color: C.text }}>{value}</span>
+      <button type="button" aria-label={`One more: ${label}`} onClick={onMore} className={btn} style={{ borderColor: C.mutedBorder, color: C.riverTeal }}>
+        <Plus className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }

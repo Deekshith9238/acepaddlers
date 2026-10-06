@@ -220,12 +220,11 @@ export async function quoteBooking(input: QuoteInput): Promise<Quote> {
      */
     const perPerson = addon.priceType === "per_person";
     /**
-     * With the trip off the list there is no party booking it, so each extra
-     * carries its own head count — a speed boat for two and a banana boat for
-     * four in the same booking. With the trip on the list the party is the
-     * party, and the count is the guests.
+     * Each extra carries its own head count — a speed boat for two and a banana
+     * boat for six in the same booking, whatever the trip's own guest count. A
+     * required extra nobody counted follows the trip's guests.
      */
-    const perPersonCount = addonsOnly ? requested : numGuests;
+    const perPersonCount = chosen.has(addon.id) || addonsOnly ? requested : numGuests;
     const billedGuests = perPerson ? Math.max(perPersonCount, addon.minQty) : numGuests;
     if (!perPerson) {
       if (requested < addon.minQty) throw new PricingError("addon_below_min");
