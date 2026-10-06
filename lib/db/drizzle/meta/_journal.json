@@ -218,6 +218,13 @@
       "when": 1790664351204,
       "tag": "0030_book_at_partner",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791271964000,
+      "tag": "0031_partner_location",
+      "breakpoints": true
     }
   ]
 }

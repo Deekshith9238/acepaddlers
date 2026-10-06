@@ -830,6 +830,14 @@ export async function notifyStayPaid(v: StayView): Promise<void> {
 export async function notifyStayBookedAtPartner(v: StayView): Promise<void> {
   const where = v.partner ? [v.partner.name, v.partner.address].filter(Boolean).join(", ") : v.listing;
   const host = v.partner ? `${v.partner.contactName ?? v.partner.name}, ${v.partner.phone}` : "";
+  // The pin from Stay partners when there is one; otherwise Maps searches the
+  // property by name and address, which finds most homestays too.
+  const p = v.partner;
+  const mapUrl = p?.latitude && p?.longitude
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.latitude},${p.longitude}`)}`
+    : p?.address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name}, ${p.address}`)}`
+      : null;
   await sendWaNotification(
     v.customerPhone,
     "stay_booked",
@@ -839,10 +847,11 @@ export async function notifyStayBookedAtPartner(v: StayView): Promise<void> {
   await safeSend(
     v.customerEmail,
     `Your stay is booked — ${v.ref}`,
-    `Your stay is booked for ${stayDates(v)}. You'll be staying at ${where}.${host ? ` Host contact: ${host}.` : ""}`,
+    `Your stay is booked for ${stayDates(v)}. You'll be staying at ${where}.${host ? ` Host contact: ${host}.` : ""}${mapUrl ? ` Map: ${mapUrl}` : ""}`,
     renderEmailHtml({
       heading: "Your stay is booked",
       bodyText: "Here is where you'll be staying.",
+      ...(mapUrl ? { cta: { label: "Open in Google Maps", url: mapUrl } } : {}),
       details: [
         { label: "Property", value: v.partner?.name ?? v.listing },
         { label: "Address", value: v.partner?.address ?? "" },

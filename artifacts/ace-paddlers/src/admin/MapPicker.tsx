@@ -4,7 +4,7 @@ import { loadGoogleMaps, mapEmbedUrl, useMapsKey } from "@/lib/googleMaps";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Drop the pin for a trip.
+ * Drop the pin for a trip or a stay partner.
  *
  * Coordinates were typed in by hand, which meant copying them out of Google
  * Maps in another tab and hoping the two numbers did not get swapped. Here the
@@ -19,10 +19,13 @@ export default function MapPicker({
   lat,
   lng,
   onChange,
+  onPlace,
 }: {
   lat: number | null;
   lng: number | null;
   onChange: (lat: number, lng: number) => void;
+  /** A place picked from the search box: its name and Google's address for it. */
+  onPlace?: (place: { name: string; address: string }) => void;
 }) {
   const key = useMapsKey();
   const host = useRef<HTMLDivElement | null>(null);
@@ -31,6 +34,8 @@ export default function MapPicker({
   const marker = useRef<any>(null);
   const emit = useRef(onChange);
   emit.current = onChange;
+  const emitPlace = useRef(onPlace);
+  emitPlace.current = onPlace;
   const [error, setError] = useState<string | null>(null);
 
   // India's centre, so an unpinned trip opens somewhere useful rather than in
@@ -72,14 +77,16 @@ export default function MapPicker({
         // on the key, the map still pins by click.
         try {
           if (search.current && maps.places?.Autocomplete) {
-            const auto = new maps.places.Autocomplete(search.current, { fields: ["geometry"] });
+            const auto = new maps.places.Autocomplete(search.current, { fields: ["geometry", "name", "formatted_address"] });
             auto.bindTo("bounds", map.current);
             auto.addListener("place_changed", () => {
-              const spot = auto.getPlace()?.geometry?.location;
+              const place = auto.getPlace();
+              const spot = place?.geometry?.location;
               if (!spot) return;
               map.current.setCenter(spot);
               map.current.setZoom(15);
               move(spot);
+              if (place.formatted_address) emitPlace.current?.({ name: place.name ?? "", address: place.formatted_address });
             });
           }
         } catch {
@@ -113,7 +120,7 @@ export default function MapPicker({
       <div>
         {placed && (
           <div className="overflow-hidden rounded-xl border border-slate-200">
-            <iframe title="Trip location" className="w-full h-64 border-0" loading="lazy"
+            <iframe title="Location" className="w-full h-64 border-0" loading="lazy"
               referrerPolicy="no-referrer-when-downgrade" src={mapEmbedUrl("", lat as number, lng as number)} />
           </div>
         )}

@@ -17,6 +17,10 @@ export const partners = pgTable("partners", {
   phone: text("phone").notNull(),
   email: text("email"),
   address: text("address"),
+  /** The pin dropped on the map in Stay partners, stored like a trip's: text
+   *  decimal degrees. Gives the guest a map link once the stay is booked. */
+  latitude: text("latitude"),
+  longitude: text("longitude"),
   website: text("website"),
   /** Detected or entered: "stayflexi", "ezee", "none"… Informational for now. */
   bookingSystem: text("booking_system"),

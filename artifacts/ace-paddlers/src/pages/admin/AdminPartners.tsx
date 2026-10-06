@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import MapPicker from "@/admin/MapPicker";
 import { adminApi, stayError } from "@/admin/adminApi";
 
 /**
@@ -17,6 +18,8 @@ interface Partner {
   phone: string;
   email: string | null;
   address: string | null;
+  latitude: string | null;
+  longitude: string | null;
   website: string | null;
   bookingUrl: string | null;
   bookingSystem: string | null;
@@ -29,7 +32,7 @@ interface Partner {
 type Draft = Omit<Partner, "id" | "listings"> & { id?: string };
 
 const EMPTY: Draft = {
-  name: "", contactName: "", phone: "", email: "", address: "", website: "", bookingUrl: "",
+  name: "", contactName: "", phone: "", email: "", address: "", latitude: null, longitude: null, website: "", bookingUrl: "",
   bookingSystem: "", bookingSystemRef: "", notes: "", active: true,
 };
 
@@ -65,6 +68,9 @@ function Form({ draft, onCancel, onSaved }: { draft: Draft; onCancel: () => void
   const [detecting, setDetecting] = useState(false);
   const [found, setFound] = useState<string | null>(null);
   const set = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
+  const lat = Number(d.latitude);
+  const lng = Number(d.longitude);
+  const pin = d.latitude != null && d.longitude != null && Number.isFinite(lat) && Number.isFinite(lng);
 
   const detect = async () => {
     setDetecting(true);
@@ -124,7 +130,21 @@ function Form({ draft, onCancel, onSaved }: { draft: Draft; onCancel: () => void
         {field("contactName", "Contact person", "Owner or manager")}
         {field("phone", "Host phone — given to the guest after booking", "+91 98765 43210")}
         {field("email", "Email (optional)", "bookings@…")}
-        {field("address", "Address — sent to the guest after payment", "", true)}
+        <div className="sm:col-span-2">
+          <label className={lbl}>Address — sent to the guest after payment, with a map link</label>
+          <textarea className={inp} rows={2} value={d.address ?? ""} placeholder="Search for the property on the map below to fill this in"
+            onChange={(e) => set({ address: e.target.value })} />
+          <div className="mt-2">
+            <MapPicker lat={pin ? lat : null} lng={pin ? lng : null}
+              onChange={(la, ln) => set({ latitude: String(la), longitude: String(ln) })}
+              // A searched place fills the address — unless one was typed by hand.
+              onPlace={({ name, address }) => { if (!d.address?.trim()) set({ address: name && !address.startsWith(name) ? `${name}, ${address}` : address }); }} />
+            {pin && (
+              <button type="button" className="mt-1 text-xs font-semibold text-slate-500 hover:text-red-600"
+                onClick={() => set({ latitude: null, longitude: null })}>Remove the pin</button>
+            )}
+          </div>
+        </div>
         <div>
           <label className={lbl}>Website</label>
           <div className="flex gap-2">

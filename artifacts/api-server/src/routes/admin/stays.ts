@@ -33,6 +33,11 @@ function readPartner(body: unknown) {
   const website = str(b.website, 300);
   const bookingUrl = str(b.bookingUrl, 1000);
   const asUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : u ? `https://${u}` : null);
+  // The map pin: kept only as a real coordinate pair, never half of one.
+  const lat = Number(b.latitude);
+  const lng = Number(b.longitude);
+  const pinned = b.latitude != null && b.latitude !== "" && b.longitude != null && b.longitude !== ""
+    && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   return {
     values: {
       name,
@@ -40,6 +45,8 @@ function readPartner(body: unknown) {
       contactName: optional(b.contactName, 120),
       email: optional(b.email, 200),
       address: optional(b.address, 500),
+      latitude: pinned ? String(lat) : null,
+      longitude: pinned ? String(lng) : null,
       website: asUrl(website),
       bookingUrl: asUrl(bookingUrl),
       bookingSystem: optional(b.bookingSystem, 60),

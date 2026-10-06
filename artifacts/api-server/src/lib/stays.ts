@@ -316,6 +316,8 @@ export function stayView(
           phone: partner.phone,
           email: partner.email,
           address: partner.address,
+          latitude: partner.latitude,
+          longitude: partner.longitude,
           bookingUrl: partner.bookingUrl ?? partner.website,
         }
       : null,
