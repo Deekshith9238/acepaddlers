@@ -1,6 +1,8 @@
 import { randomInt } from "node:crypto";
 import { and, asc, count, desc, eq, ilike, ne, or, sql, sum } from "drizzle-orm";
-import { db, agents, bookings, type Agent } from "@workspace/db";
+import { db, agents, agentPayouts, bookings, type Agent } from "@workspace/db";
+import { queryBookings } from "./booking-filters";
+import { likeTerm, paged, type Page } from "./paging";
 
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -17,7 +19,62 @@ export type AgentStatus = (typeof AGENT_STATUSES)[number];
 export interface AgentTotals {
   totalBookings: number;
   totalValue: number;
+  /** Sum of the agent's earnings on those bookings. */
+  earned: number;
   lastBookingDate: string | null;
+}
+
+/**
+ * What an agent earns on one booking: their allowance on its value, less the
+ * discount they gave. Never negative — the allowance caps the discount, but
+ * an admin may have lowered it since a coupon was made.
+ */
+export function agentEarningFor(baseAmount: number, discountAmount: number, allowancePercent: number): number {
+  return Math.max(0, Math.round((baseAmount * allowancePercent) / 100) - discountAmount);
+}
+
+/** Bookings that never happened: they earn nothing and count for nothing. */
+const DEAD = new Set(["cancelled", "cart_abandoned"]);
+
+/**
+ * One agent's standing, the same numbers on their portal and in the admin.
+ *
+ * Direct bookings are the ones the agent made (source "agent"); coupon
+ * bookings came through a code of theirs. Earnings become payable when the
+ * customer has paid in full; what is owed is that, less payouts.
+ */
+export async function agentStats(agent: Pick<Agent, "id" | "commissionPercent">) {
+  const [list, earnings, payouts] = await Promise.all([
+    queryBookings({ agentId: agent.id, status: "" }),
+    db.select({ id: bookings.id, earning: bookings.agentEarning }).from(bookings).where(eq(bookings.agentId, agent.id)),
+    db.select({ total: sum(agentPayouts.amount).mapWith(Number) }).from(agentPayouts).where(eq(agentPayouts.agentId, agent.id)),
+  ]);
+  const earningOf = new Map(earnings.map((e) => [e.id, e.earning]));
+  const today = new Date().toISOString().slice(0, 10);
+  const live = list.filter((b) => !DEAD.has(b.status));
+  const direct = live.filter((b) => b.source === "agent");
+  const coupon = live.filter((b) => b.source !== "agent");
+  const value = (xs: typeof live) => xs.reduce((n, b) => n + b.totalAmount, 0);
+  const earned = (xs: typeof live) => xs.reduce((n, b) => n + (earningOf.get(b.id) ?? 0), 0);
+  const settled = live.filter((b) => b.paymentStatus === "paid");
+  const paidOut = Number(payouts[0]?.total ?? 0);
+  const earningsConfirmed = earned(settled);
+  return {
+    allowancePercent: agent.commissionPercent,
+    totalBookings: live.length,
+    totalValue: value(live),
+    direct: { bookings: direct.length, value: value(direct) },
+    coupon: { bookings: coupon.length, value: value(coupon) },
+    discountGiven: live.reduce((n, b) => n + (b.discountAmount ?? 0), 0),
+    customersPaid: live.reduce((n, b) => n + (b.amountPaid ?? 0), 0),
+    customersOwe: live.reduce((n, b) => n + (b.amountDue ?? 0), 0),
+    earningsConfirmed,
+    earningsPending: earned(live) - earningsConfirmed,
+    paidOut,
+    owed: Math.max(0, earningsConfirmed - paidOut),
+    upcomingDepartures: live.filter((b) => (b.date ?? "") >= today).length,
+    lastBookingDate: list.length ? list.map((b) => String(b.createdAt)).sort().pop() ?? null : null,
+  };
 }
 
 /**
@@ -35,6 +92,7 @@ export async function agentTotals(): Promise<Map<string, AgentTotals>> {
       agentId: bookings.agentId,
       totalBookings: count(),
       totalValue: sum(bookings.totalAmount).mapWith(Number),
+      earned: sum(bookings.agentEarning).mapWith(Number),
       // ISO 8601, not Postgres' own text format: "2026-09-05 06:33:36+00" is
       // parsed by Chrome but rejected by Safari, and this value is formatted
       // client-side.
@@ -52,6 +110,7 @@ export async function agentTotals(): Promise<Map<string, AgentTotals>> {
         {
           totalBookings: Number(r.totalBookings ?? 0),
           totalValue: Number(r.totalValue ?? 0),
+          earned: Number(r.earned ?? 0),
           lastBookingDate: r.lastBookingDate,
         },
       ]),
@@ -73,8 +132,9 @@ export function serializeAgent(a: Agent, totals?: AgentTotals) {
     notes: a.notes,
     totalBookings: totals?.totalBookings ?? 0,
     totalValue,
-    // Rounded to whole rupees, like every other money value on the wire.
-    commissionValue: Math.round((totalValue * a.commissionPercent) / 100),
+    // What the agent has earned: the unused part of their discount allowance,
+    // booking by booking (the field keeps its old name on the wire).
+    commissionValue: totals?.earned ?? 0,
     lastBookingDate: totals?.lastBookingDate ?? null,
     // Whether the agent can actually sign in, so the admin screen can offer
     // "invite" or "resend" rather than guessing.
@@ -92,11 +152,11 @@ export interface ListAgentsFilter {
   q?: string;
 }
 
-export async function listAgents(filter: ListAgentsFilter = {}) {
+export async function listAgents(filter: ListAgentsFilter = {}, page?: Page) {
   const where = [];
   if (filter.status) where.push(eq(agents.status, filter.status));
   if (filter.q) {
-    const like = `%${filter.q}%`;
+    const like = likeTerm(filter.q);
     const term = or(
       ilike(agents.name, like),
       ilike(agents.company, like),
@@ -107,16 +167,13 @@ export async function listAgents(filter: ListAgentsFilter = {}) {
     );
     if (term) where.push(term);
   }
-
-  const [rows, totals] = await Promise.all([
-    db
-      .select()
-      .from(agents)
-      .where(where.length ? and(...where) : undefined)
-      .orderBy(asc(agents.name)),
-    agentTotals(),
-  ]);
-  return rows.map((a) => serializeAgent(a, totals.get(a.id)));
+  const cond = where.length ? and(...where) : undefined;
+  const base = db.select().from(agents).where(cond).orderBy(asc(agents.name), asc(agents.id));
+  const [rows, totals] = await Promise.all([page ? base.limit(page.limit).offset(page.offset) : base, agentTotals()]);
+  const items = rows.map((a) => serializeAgent(a, totals.get(a.id)));
+  if (!page) return items;
+  const [{ n }] = await db.select({ n: count() }).from(agents).where(cond);
+  return paged(items, Number(n), page);
 }
 
 /** Counts for the Active / Awaiting tabs. */

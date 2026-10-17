@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNull, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNull, isNotNull, or, sql, type SQL } from "drizzle-orm";
 import { db, reviews, tours } from "@workspace/db";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
 import { firstPartyRating } from "../../lib/reviews";
+import { likeTerm, qstr, readPage } from "../../lib/paging";
 import {
   getGoogleReviewsState,
   importGoogleReviews,
@@ -118,22 +119,44 @@ router.post("/tours/:tourId/reviews", async (req, res) => {
  */
 router.get("/reviews", async (req, res) => {
   const status = String(req.query.status ?? "pending");
-  const where =
+  const where: SQL[] = [
     status === "published"
-      ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, true))
+      ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, true))!
       : status === "hidden"
-        ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, false))
-        : isNull(reviews.moderatedAt);
-  const rows = await db
-    .select({ review: reviews, tourTitle: tours.title })
-    .from(reviews)
-    .leftJoin(tours, eq(tours.id, reviews.tourId))
-    .where(where)
-    .orderBy(desc(reviews.reviewedOn), desc(reviews.createdAt))
-    .limit(500);
+        ? and(isNotNull(reviews.moderatedAt), eq(reviews.published, false))!
+        : isNull(reviews.moderatedAt),
+  ];
+  const q = qstr(req.query.q);
+  if (q) {
+    const like = likeTerm(q);
+    const term = or(ilike(reviews.authorName, like), ilike(reviews.body, like), ilike(tours.title, like));
+    if (term) where.push(term);
+  }
+  const rating = Number(req.query.rating);
+  if (Number.isInteger(rating) && rating >= 1 && rating <= 5) where.push(eq(reviews.rating, rating));
+  const source = qstr(req.query.source);
+  if (source) where.push(eq(reviews.source, source));
+  const cond = and(...where);
+
+  // Without paging the queue keeps its old ceiling, so it can never balloon.
+  const page = readPage(req.query as Record<string, unknown>) ?? { limit: 500, offset: 0 };
+  const [rows, [{ n }]] = await Promise.all([
+    db
+      .select({ review: reviews, tourTitle: tours.title })
+      .from(reviews)
+      .leftJoin(tours, eq(tours.id, reviews.tourId))
+      .where(cond)
+      .orderBy(desc(reviews.reviewedOn), desc(reviews.createdAt), desc(reviews.id))
+      .limit(page.limit)
+      .offset(page.offset),
+    db.select({ n: sql<number>`count(*)::int` }).from(reviews).leftJoin(tours, eq(tours.id, reviews.tourId)).where(cond),
+  ]);
   res.json({
     reviews: rows.map((r) => ({ ...detail(r.review), tourTitle: r.tourTitle })),
     pending: await pendingReviewCount(),
+    total: Number(n),
+    limit: page.limit,
+    offset: page.offset,
   });
 });
 

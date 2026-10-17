@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import {
-  useListCoupons,
   useCreateCoupon,
   useUpdateCoupon,
   useDeleteCoupon,
@@ -416,12 +417,18 @@ function CouponRow({ c, onChanged }: { c: CouponDetail; onChanged: () => void })
 
 function Inner() {
   const [q, setQ] = useState("");
+  const [active, setActive] = useState("");
+  const [owner, setOwner] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data, refetch, isLoading } = useListCoupons(q ? { q } : {});
+  const search = useDebounced(q);
+  const list = usePagedList<CouponDetail>("/coupons", { q: search, active, owner });
   const create = useCreateCoupon();
-  const rows: CouponDetail[] = Array.isArray(data) ? data : [];
+  const rows = list.items;
+  const isLoading = !list.loaded;
+  const refetch = list.refetch;
+  const ctl = "rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500";
 
   return (
     <>
@@ -460,20 +467,30 @@ function Inner() {
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className={`${ctl} w-72`}
           placeholder="Search code, name or batch…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        <select className={ctl} value={active} onChange={(e) => setActive(e.target.value)}>
+          <option value="">Active and switched off</option>
+          <option value="true">Active only</option>
+          <option value="false">Switched off only</option>
+        </select>
+        <select className={ctl} value={owner} onChange={(e) => setOwner(e.target.value)}>
+          <option value="">Made by anyone</option>
+          <option value="staff">Made by your team</option>
+          <option value="agent">Made by agents</option>
+        </select>
       </div>
 
       {isLoading ? (
         <p className="text-slate-400 text-sm">Loading…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
-          <p className="text-sm text-slate-400">{q ? "No coupons match that search." : "No coupons yet."}</p>
+          <p className="text-sm text-slate-400">{q || active || owner ? "No coupons match these filters." : "No coupons yet."}</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
@@ -489,6 +506,10 @@ function Inner() {
             </thead>
             <tbody>{rows.map((c) => <CouponRow key={c.id} c={c} onChanged={refetch} />)}</tbody>
           </table>
+          <div className="border-t border-slate-100 px-4">
+            <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+              onPage={list.setPage} onPageSize={list.setPageSize} noun="coupons" />
+          </div>
         </div>
       )}
     </>

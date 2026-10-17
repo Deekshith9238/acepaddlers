@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import {
-  useListRedirects,
   useCreateRedirect,
   useUpdateRedirect,
   useDeleteRedirect,
@@ -25,15 +26,20 @@ function errMsg(err: unknown, fallback = "Something went wrong."): string {
 }
 
 function Inner() {
-  const { data, refetch, isLoading } = useListRedirects();
+  const [q, setQ] = useState("");
+  const search = useDebounced(q);
+  const list = usePagedList<RedirectDetail>("/redirects", { q: search }, { itemsKey: "redirects" });
+  const refetch = list.refetch;
+  const isLoading = !list.loaded;
   const create = useCreateRedirect();
   const update = useUpdateRedirect();
   const remove = useDeleteRedirect();
   const [form, setForm] = useState({ fromPath: "", toPath: "", statusCode: "301" });
   const [error, setError] = useState<string | null>(null);
 
-  const rows: RedirectDetail[] = data?.redirects ?? [];
-  const chains = data?.chains ?? [];
+  const rows = list.items;
+  // Chains are found across every rule on the server, whatever page is shown.
+  const chains: { from: string; to: string; then: string }[] = list.raw?.chains ?? [];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +89,16 @@ function Inner() {
         {error && <p className="sm:col-span-4 text-sm text-red-600">{error}</p>}
       </form>
 
+      <div className="mb-3">
+        <input className="w-72 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          placeholder="Search the old or new address…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+
       {isLoading ? (
         <p className="text-slate-400 text-sm">Loading…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
-          <p className="text-sm text-slate-400">No redirects yet.</p>
+          <p className="text-sm text-slate-400">{q ? "No redirects match that search." : "No redirects yet."}</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
@@ -122,6 +133,10 @@ function Inner() {
               ))}
             </tbody>
           </table>
+          <div className="border-t border-slate-100 px-4">
+            <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+              onPage={list.setPage} onPageSize={list.setPageSize} noun="redirects" />
+          </div>
         </div>
       )}
     </>

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import { Link } from "wouter";
 import { Star } from "lucide-react";
 
@@ -198,31 +200,37 @@ function GoogleCard({ state, onChange }: { state: GoogleState | null; onChange: 
 
 export default function AdminReviews() {
   const [tab, setTab] = useState<Tab>("pending");
-  const [rows, setRows] = useState<AdminReview[] | null>(null);
+  const [q, setQ] = useState("");
+  const [rating, setRating] = useState("");
+  const [source, setSource] = useState("");
   const [google, setGoogle] = useState<GoogleState | null>(null);
   const [working, setWorking] = useState<string | null>(null);
+  const search = useDebounced(q);
+  const list = usePagedList<AdminReview>("/reviews", { status: tab, q: search, rating, source }, { itemsKey: "reviews", pageSize: 25 });
+  const rows = list.loaded ? list.items : null;
 
-  const load = useCallback(() => {
-    api<{ reviews: AdminReview[] }>(`/reviews?status=${tab}`).then((r) => setRows(r.reviews)).catch(() => setRows([]));
+  const loadGoogle = useCallback(() => {
     api<GoogleState>("/google-reviews").then(setGoogle).catch(() => undefined);
-  }, [tab]);
+  }, []);
+  useEffect(() => { loadGoogle(); }, [loadGoogle]);
+  const load = useCallback(() => { list.refetch(); loadGoogle(); }, [list, loadGoogle]);
 
-  useEffect(() => { setRows(null); load(); }, [load]);
-
-  const decide = async (id: string, action: "approve" | "hide") => {
+  const decide = async (id: string, action: "approve" | "hide", reload = true) => {
     setWorking(id);
     try {
       await api(`/reviews/${id}/${action}`, { method: "POST" });
-      setRows((r) => r?.filter((x) => x.id !== id) ?? r);
-      api<GoogleState>("/google-reviews").then(setGoogle).catch(() => undefined);
+      if (reload) load();
     } finally {
       setWorking(null);
     }
   };
 
+  // The reviews on this page — the rest are a page turn away.
   const approveAll = async () => {
-    for (const r of rows ?? []) await decide(r.id, "approve");
+    for (const r of rows ?? []) await decide(r.id, "approve", false);
+    load();
   };
+  const ctl = "rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500";
 
   return (
     <>
@@ -248,9 +256,23 @@ export default function AdminReviews() {
         {tab === "pending" && (rows?.length ?? 0) > 1 && (
           <button type="button" onClick={approveAll} disabled={!!working}
             className={`${btn} ml-auto mb-1 border border-slate-300 text-slate-700 hover:bg-slate-50`}>
-            Approve all
+            Approve all on this page
           </button>
         )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <input className={`${ctl} w-64`} placeholder="Search name, words or trip…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select className={ctl} value={rating} onChange={(e) => setRating(e.target.value)}>
+          <option value="">Any rating</option>
+          {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{"★".repeat(n)} {n}</option>)}
+        </select>
+        <select className={ctl} value={source} onChange={(e) => setSource(e.target.value)}>
+          <option value="">Any source</option>
+          {[["google", "Google"], ["website", "Website"], ["tripadvisor", "Tripadvisor"], ["justdial", "Justdial"], ["facebook", "Facebook"], ["other", "Other"]].map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
       </div>
 
       <div className="mt-4 space-y-3">
@@ -258,7 +280,7 @@ export default function AdminReviews() {
           <p className="text-sm text-slate-400">Loading…</p>
         ) : rows.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">
-            {tab === "pending" ? "Nothing waiting. New Google reviews will appear here." : tab === "published" ? "No reviews shown yet." : "Nothing hidden."}
+            {q || rating || source ? "No reviews match these filters." : tab === "pending" ? "Nothing waiting. New Google reviews will appear here." : tab === "published" ? "No reviews shown yet." : "Nothing hidden."}
           </p>
         ) : (
           rows.map((r) => (
@@ -300,6 +322,8 @@ export default function AdminReviews() {
           ))
         )}
       </div>
+      <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+        onPage={list.setPage} onPageSize={list.setPageSize} noun="reviews" />
     </>
   );
 }
@@ -313,8 +337,11 @@ export function ReviewsWaiting() {
   const [rows, setRows] = useState<AdminReview[] | null>(null);
   const [working, setWorking] = useState<string | null>(null);
 
+  const [waiting, setWaiting] = useState(0);
   useEffect(() => {
-    api<{ reviews: AdminReview[] }>("/reviews?status=pending").then((r) => setRows(r.reviews)).catch(() => setRows([]));
+    api<{ reviews: AdminReview[]; total: number }>("/reviews?status=pending&limit=5")
+      .then((r) => { setRows(r.reviews); setWaiting(r.total); })
+      .catch(() => setRows([]));
   }, []);
 
   const decide = async (id: string, action: "approve" | "hide") => {
@@ -322,12 +349,13 @@ export function ReviewsWaiting() {
     try {
       await api(`/reviews/${id}/${action}`, { method: "POST" });
       setRows((r) => r?.filter((x) => x.id !== id) ?? r);
+      setWaiting((n) => Math.max(0, n - 1));
     } finally {
       setWorking(null);
     }
   };
 
-  const count = rows?.length ?? 0;
+  const count = waiting;
   return (
     <section className="rounded-2xl border bg-white p-5" style={{ borderColor: count ? "#f59e0b" : "#e2e8f0" }}>
       <div className="mb-3 flex items-center justify-between">

@@ -15,6 +15,7 @@ import {
   resolveCustomer,
 } from "../../lib/customers";
 import { toBookingDetail } from "../../lib/booking";
+import { likeTerm, paged, qstr, readPage } from "../../lib/paging";
 import { listEnquiries } from "../../lib/enquiries";
 
 const router: IRouter = Router();
@@ -45,62 +46,78 @@ function toDetail(c: Customer, stats: CustomerRowStats) {
 router.get("/customers", async (req, res) => {
   // Merged-away records are tombstones — never list them.
   const where: SQL[] = [isNull(customers.mergedIntoId)];
-  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const q = qstr(req.query.q);
   if (q) {
-    const like = `%${q}%`;
+    const like = likeTerm(q);
+    const digits = q.replace(/\D/g, "");
     const term = or(
       ilike(customers.name, like),
       ilike(customers.email, like),
       ilike(customers.phone, like),
       ilike(customers.customerRef, like),
+      // "+91 95510 95085" finds a phone saved as "9551095085".
+      ...(digits.length >= 4 ? [sql`regexp_replace(${customers.phone}, '[^0-9]', '', 'g') like ${`%${digits.slice(-10)}%`}`] : []),
     );
     if (term) where.push(term);
   }
-  const tag = typeof req.query.tag === "string" ? req.query.tag.trim() : "";
+  const tag = qstr(req.query.tag);
   if (tag) where.push(sql`${customers.tags} ? ${tag}`);
 
-  const rows = await db
-    .select()
-    .from(customers)
-    .where(and(...where))
-    .orderBy(desc(customers.createdAt));
-
-  // Stats come from two grouped passes rather than a correlated subquery per
-  // column: three queries total however many customers there are, and no
-  // reliance on how the query builder qualifies the outer row's columns.
-  const bookingAgg = await db
+  // Stats from two grouped subqueries joined in, so the "at least N bookings"
+  // filter, the count and the page are all the database's work.
+  const bookingAgg = db
     .select({
       customerId: bookings.customerId,
-      total: sql<number>`count(*)::int`,
-      last: sql<string | null>`max(${bookings.createdAt})::text`,
-      value: sql<number>`coalesce(sum(${bookings.totalAmount}) filter (where ${bookings.paymentStatus} = 'paid'), 0)::int`,
+      total: sql<number>`count(*)::int`.as("total"),
+      last: sql<string | null>`max(${bookings.createdAt})::text`.as("last"),
+      value: sql<number>`coalesce(sum(${bookings.totalAmount}) filter (where ${bookings.paymentStatus} = 'paid'), 0)::int`.as("value"),
     })
     .from(bookings)
     .where(isNotNull(bookings.customerId))
-    .groupBy(bookings.customerId);
-  const enquiryAgg = await db
-    .select({ customerId: enquiries.customerId, total: sql<number>`count(*)::int` })
+    .groupBy(bookings.customerId)
+    .as("ba");
+  const enquiryAgg = db
+    .select({ customerId: enquiries.customerId, total: sql<number>`count(*)::int`.as("enquiry_total") })
     .from(enquiries)
     .where(isNotNull(enquiries.customerId))
-    .groupBy(enquiries.customerId);
-
-  const byBooking = new Map(bookingAgg.map((r) => [r.customerId!, r]));
-  const byEnquiry = new Map(enquiryAgg.map((r) => [r.customerId!, r.total]));
+    .groupBy(enquiries.customerId)
+    .as("ea");
 
   const min = Number(req.query.minBookings);
-  const detailed = rows.map((c) => {
-    const b = byBooking.get(c.id);
-    return toDetail(c, {
-      totalBookings: b?.total ?? 0,
-      totalEnquiries: byEnquiry.get(c.id) ?? 0,
-      lastBookingDate: b?.last ?? null,
-      lifetimeValue: b?.value ?? 0,
-    });
-  });
+  if (Number.isFinite(min) && min > 0) where.push(sql`coalesce(${bookingAgg.total}, 0) >= ${min}`);
 
-  res.json(
-    Number.isFinite(min) && min > 0 ? detailed.filter((c) => c.totalBookings >= min) : detailed,
+  const base = db
+    .select({ c: customers, total: bookingAgg.total, last: bookingAgg.last, value: bookingAgg.value, enquiries: enquiryAgg.total })
+    .from(customers)
+    .leftJoin(bookingAgg, eq(bookingAgg.customerId, customers.id))
+    .leftJoin(enquiryAgg, eq(enquiryAgg.customerId, customers.id))
+    .where(and(...where))
+    .orderBy(desc(customers.createdAt), desc(customers.id));
+  const page = readPage(req.query as Record<string, unknown>);
+  const rows = page ? await base.limit(page.limit).offset(page.offset) : await base;
+  const detailed = rows.map((r) =>
+    toDetail(r.c, {
+      totalBookings: r.total ?? 0,
+      totalEnquiries: r.enquiries ?? 0,
+      lastBookingDate: r.last ?? null,
+      lifetimeValue: r.value ?? 0,
+    }),
   );
+  if (!page) return void res.json(detailed);
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(customers)
+    .leftJoin(bookingAgg, eq(bookingAgg.customerId, customers.id))
+    .where(and(...where));
+  res.json(paged(detailed, Number(n), page));
+});
+
+/** Every tag in use, for the list's tag filter — independent of the page shown. */
+router.get("/customers/tags", async (_req, res) => {
+  const rows = await db.execute<{ tag: string }>(
+    sql`select distinct jsonb_array_elements_text(${customers.tags}) as tag from ${customers} where ${customers.mergedIntoId} is null order by 1`,
+  );
+  res.json(rows.rows.map((r) => r.tag));
 });
 
 router.get("/customers/duplicates", async (_req, res) => {

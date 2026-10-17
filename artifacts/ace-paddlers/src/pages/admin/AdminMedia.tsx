@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useListMedia, useDeleteMedia, useForceDeleteMedia, type MediaAsset, type ListMediaKind } from "@workspace/api-client-react";
+import { useDeleteMedia, useForceDeleteMedia, type MediaAsset, type ListMediaKind } from "@workspace/api-client-react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import { uploadMedia } from "@/admin/upload";
 import { useCropExisting } from "@/admin/useCropUpload";
 
@@ -10,14 +12,17 @@ function bytesLabel(m: MediaAsset): string {
 function Inner() {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<ListMediaKind | "">("");
-  const { data, refetch, isLoading } = useListMedia({ ...(q ? { q } : {}), ...(kind ? { kind } : {}) });
+  const search = useDebounced(q);
+  const list = usePagedList<MediaAsset>("/media", { q: search, kind }, { pageSize: 50 });
+  const refetch = list.refetch;
+  const isLoading = !list.loaded;
   const remove = useDeleteMedia();
   const forceRemove = useForceDeleteMedia();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const rows: MediaAsset[] = Array.isArray(data) ? data : [];
+  const rows = list.items;
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -82,7 +87,7 @@ function Inner() {
         <select className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm" value={kind} onChange={(e) => setKind(e.target.value as ListMediaKind | "")}>
           <option value="">All files</option><option value="image">Images</option><option value="video">Videos</option>
         </select>
-        <span className="text-xs text-slate-400">{rows.length} file(s)</span>
+        <span className="text-xs text-slate-400">{list.total.toLocaleString("en-IN")} file(s)</span>
       </div>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -133,6 +138,10 @@ function Inner() {
             </div>
           ))}
         </div>
+      )}
+      {list.total > 0 && (
+        <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+          onPage={list.setPage} onPageSize={list.setPageSize} noun="files" />
       )}
       {cropper}
     </>

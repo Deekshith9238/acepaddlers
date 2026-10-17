@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import { and, eq, sql, isNull, or, gt } from "drizzle-orm";
-import { db, coupons, couponRedemptions } from "@workspace/db";
+import { db, agents, coupons, couponRedemptions } from "@workspace/db";
 import type { Coupon } from "@workspace/db";
 
 /**
@@ -57,6 +57,8 @@ export interface CouponEvaluation {
   discount: number;
   /** Base after the discount — what taxes and fees are then computed on. */
   discountedBase: number;
+  /** An agent's own code: the booking is credited to them, at this allowance. */
+  agent?: { id: string; allowancePercent: number };
 }
 
 function istDateString(d: Date): string {
@@ -98,9 +100,21 @@ export async function evaluateCoupon(code: string, ctx: CouponContext): Promise<
   const normalized = normalizeCode(code);
   if (!normalized) return fail("not_found");
 
-  const [coupon] = await db.select().from(coupons).where(eq(coupons.code, normalized)).limit(1);
-  if (!coupon) return fail("not_found");
-  if (!coupon.active) return fail("inactive", coupon);
+  const [found] = await db.select().from(coupons).where(eq(coupons.code, normalized)).limit(1);
+  if (!found) return fail("not_found");
+  if (!found.active) return fail("inactive", found);
+
+  // An agent's code works only while the agent trades, and never gives more
+  // than their allowance today — it may have been lowered since the code was
+  // made. The capped copy is what everything below prices with.
+  let coupon = found;
+  let agent: CouponEvaluation["agent"];
+  if (found.agentId) {
+    const [owner] = await db.select().from(agents).where(eq(agents.id, found.agentId)).limit(1);
+    if (!owner || owner.status !== "active") return fail("inactive", found);
+    agent = { id: owner.id, allowancePercent: owner.commissionPercent };
+    coupon = { ...found, discountValue: Math.min(found.discountValue, owner.commissionPercent) };
+  }
 
   const today = istDateString(ctx.now ?? new Date());
   if (coupon.validFrom && today < coupon.validFrom) return fail("not_yet_valid", coupon);
@@ -138,7 +152,7 @@ export async function evaluateCoupon(code: string, ctx: CouponContext): Promise<
   }
 
   const discount = computeDiscount(coupon, ctx.baseAmount);
-  return { ok: true, coupon, discount, discountedBase: ctx.baseAmount - discount };
+  return { ok: true, coupon, discount, discountedBase: ctx.baseAmount - discount, agent };
 }
 
 /**

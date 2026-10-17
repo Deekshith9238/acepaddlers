@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
+import { adminApi } from "@/admin/adminApi";
 import {
-  useListAgents,
   useCreateAgent,
   type AgentDetail,
 } from "@workspace/api-client-react";
@@ -17,7 +19,7 @@ const ERRORS: Record<string, string> = {
   email_exists: "An agent with that email address already exists.",
   invalid_email: "That doesn't look like an email address.",
   name_required: "The agent needs a name.",
-  invalid_commission: "Commission must be between 0 and 100.",
+  invalid_commission: "The discount allowance must be between 0 and 100.",
   invalid_status: "Pick a valid status.",
 };
 
@@ -95,8 +97,8 @@ function InviteForm({ onCreated }: { onCreated: () => void }) {
         <div><label className={labelCls}>Phone</label><input className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
         <div><label className={labelCls}>City</label><input className={inputCls} value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Bangalore" /></div>
         <div>
-          <label className={labelCls}>Commission %</label>
-          <input type="number" min={0} max={100} className={inputCls} value={form.commissionPercent} onChange={(e) => set("commissionPercent", e.target.value)} placeholder="10" />
+          <label className={labelCls}>Discount allowance %</label>
+          <input type="number" min={0} max={100} className={inputCls} value={form.commissionPercent} onChange={(e) => set("commissionPercent", e.target.value)} placeholder="20" />
         </div>
       </div>
       <div className="mt-4">
@@ -118,20 +120,19 @@ export default function AdminAgents() {
   const [q, setQ] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const { data, refetch, isLoading } = useListAgents({
-    ...(status ? { status } : {}),
-    ...(q ? { q } : {}),
-  });
-  const rows: AgentDetail[] = Array.isArray(data) ? data : [];
+  const search = useDebounced(q);
+  const list = usePagedList<AgentDetail>("/agents", { status, q: search });
+  const rows = list.items;
+  const isLoading = !list.loaded;
+  const refetch = () => { list.refetch(); loadCounts(); };
 
-  // Counts come off an unfiltered read so the tabs don't change as you search.
-  const { data: allData } = useListAgents({});
-  const all: AgentDetail[] = Array.isArray(allData) ? allData : [];
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { active: 0, invited: 0, inactive: 0, "": all.length };
-    for (const a of all) c[a.status] = (c[a.status] ?? 0) + 1;
-    return c;
-  }, [all]);
+  // Tab counts from the server, so they don't change as you search.
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const loadCounts = () =>
+    adminApi<Record<string, number>>("/agents/counts")
+      .then((c) => setCounts({ ...c, "": Object.values(c).reduce((n, x) => n + x, 0) }))
+      .catch(() => undefined);
+  useEffect(() => { loadCounts(); }, []);
 
   return (
     <>
@@ -195,7 +196,7 @@ export default function AdminAgents() {
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Bookings</th>
                 <th className="px-4 py-3 text-right">Value</th>
-                <th className="px-4 py-3 text-right">Commission</th>
+                <th className="px-4 py-3 text-right">Earned</th>
                 <th className="px-4 py-3">Last booking</th>
               </tr>
             </thead>
@@ -220,7 +221,7 @@ export default function AdminAgents() {
                     {a.commissionPercent > 0 ? (
                       <>
                         <span className="text-slate-700">{rupees(a.commissionValue)}</span>
-                        <span className="block text-xs text-slate-400">at {a.commissionPercent}%</span>
+                        <span className="block text-xs text-slate-400">up to {a.commissionPercent}% off</span>
                       </>
                     ) : (
                       <span className="text-slate-300">—</span>
@@ -231,6 +232,10 @@ export default function AdminAgents() {
               ))}
             </tbody>
           </table>
+          <div className="border-t border-slate-100 px-4">
+            <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+              onPage={list.setPage} onPageSize={list.setPageSize} noun="agents" />
+          </div>
         </div>
       )}
     </>

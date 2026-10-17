@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, uuid, text, integer, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, timestamp, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * A travel agent or reseller who sends business your way.
@@ -27,7 +27,12 @@ export const agents = pgTable(
      *  active  — trading
      *  inactive — kept for history, no longer sent business */
     status: text("status").default("invited").notNull(),
-    /** Whole percent of the booking value the agent earns. 0 = none agreed. */
+    /**
+     * The agent's discount allowance, whole percent (the column predates the
+     * name). The agent may give a customer any discount up to this, on a
+     * direct booking or through a coupon of their own, and earns whatever part
+     * of it they do not give away: a 20% allowance and a 15% coupon earns 5%.
+     */
     commissionPercent: integer("commission_percent").default(0).notNull(),
     notes: text("notes"),
 
@@ -74,6 +79,32 @@ export const agentSessions = pgTable("agent_sessions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * Money paid to an agent against what they have earned. The earnings
+ * themselves live on each booking (`bookings.agent_earning`); what is owed is
+ * earnings on paid bookings minus these.
+ */
+export const agentPayouts = pgTable(
+  "agent_payouts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    agentId: uuid("agent_id")
+      .references(() => agents.id, { onDelete: "cascade" })
+      .notNull(),
+    /** Whole rupees. */
+    amount: integer("amount").notNull(),
+    paidOn: date("paid_on").notNull(),
+    /** UPI, bank transfer, cash… */
+    method: text("method"),
+    /** Their UTR or transaction id, so either side can trace it. */
+    reference: text("reference"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("agent_payouts_agent_idx").on(t.agentId)],
+);
+
 export type Agent = typeof agents.$inferSelect;
+export type AgentPayout = typeof agentPayouts.$inferSelect;
 export type AgentSession = typeof agentSessions.$inferSelect;
 export type InsertAgent = typeof agents.$inferInsert;

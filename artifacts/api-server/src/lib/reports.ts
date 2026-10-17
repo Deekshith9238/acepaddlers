@@ -405,9 +405,9 @@ const agentBookingsReport: ReportDefinition = {
         bookings: sql<number>`count(*)::int`,
         guests: sql<number>`coalesce(sum(${bookings.numGuests}), 0)::int`,
         revenue: sql<number>`coalesce(sum(${bookings.totalAmount}), 0)::int`,
-        // Commission is stored per agent, so it has to be applied per row here
-        // rather than to the total — two agents rarely share a rate.
-        commission: sql<number>`round(coalesce(sum(${bookings.totalAmount} * coalesce(${agents.commissionPercent}, 0)), 0) / 100.0)::int`,
+        // What the agent earned: fixed on each booking when it was made (the
+        // unused part of their discount allowance).
+        commission: sql<number>`coalesce(sum(${bookings.agentEarning}), 0)::int`,
         lastBooked: sql<string>`max(${bookings.createdAt})::date::text`,
       })
       .from(bookings)

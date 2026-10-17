@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { desc, eq } from "drizzle-orm";
+import { qstr, readPage } from "../../lib/paging";
 import { db, redirects } from "@workspace/db";
 import { CreateRedirectBody, UpdateRedirectBody } from "@workspace/api-zod";
 import { requireAdmin } from "../../middlewares/requireAdmin";
@@ -23,9 +24,20 @@ function toDetail(r: Row) {
   };
 }
 
-router.get("/redirects", async (_req, res) => {
-  const rows = await db.select().from(redirects).orderBy(desc(redirects.createdAt));
-  res.json({ redirects: rows.map(toDetail), chains: findChains(rows) });
+router.get("/redirects", async (req, res) => {
+  // Chains are found across every rule — a loop can run through rules on
+  // different pages — but only the requested page is sent.
+  const rows = await db.select().from(redirects).orderBy(desc(redirects.createdAt), desc(redirects.id));
+  const q = qstr(req.query.q)?.toLowerCase();
+  const matching = q ? rows.filter((r) => r.fromPath.toLowerCase().includes(q) || r.toPath.toLowerCase().includes(q)) : rows;
+  const page = readPage(req.query as Record<string, unknown>);
+  const slice = page ? matching.slice(page.offset, page.offset + page.limit) : matching;
+  res.json({
+    redirects: slice.map(toDetail),
+    chains: findChains(rows),
+    total: matching.length,
+    ...(page ? { limit: page.limit, offset: page.offset } : {}),
+  });
 });
 
 /** Rejects the ways a redirect rule can quietly break a site. */

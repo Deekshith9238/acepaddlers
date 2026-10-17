@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db, coupons, couponRedemptions, bookings, tours } from "@workspace/db";
 import type { Coupon } from "@workspace/db";
 import { CreateCouponBody, UpdateCouponBody, GenerateCouponBatchBody } from "@workspace/api-zod";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
 import { generateCouponCode, normalizeCode, describeCoupon } from "../../lib/coupons";
+import { likeTerm, paged, readPage } from "../../lib/paging";
 
 const router: IRouter = Router();
 router.use(requireAdmin, requireCapability("finance"));
@@ -57,18 +58,21 @@ router.get("/coupons", async (req, res) => {
     where.push(eq(coupons.batchId, req.query.batchId));
   }
   if (typeof req.query.q === "string" && req.query.q.trim()) {
-    const like = `%${req.query.q.trim()}%`;
+    const like = likeTerm(req.query.q.trim());
     const term = or(ilike(coupons.code, like), ilike(coupons.label, like), ilike(coupons.batchLabel, like));
     if (term) where.push(term);
   }
+  // Agents' own codes or the team's.
+  if (req.query.owner === "agent") where.push(isNotNull(coupons.agentId));
+  if (req.query.owner === "staff") where.push(isNull(coupons.agentId));
 
-  const rows = await db
-    .select()
-    .from(coupons)
-    .where(where.length > 0 ? and(...where) : undefined)
-    .orderBy(desc(coupons.createdAt));
+  const cond = where.length > 0 ? and(...where) : undefined;
+  const base = db.select().from(coupons).where(cond).orderBy(desc(coupons.createdAt), desc(coupons.id));
+  const page = readPage(req.query as Record<string, unknown>);
+  const rows = page ? await base.limit(page.limit).offset(page.offset) : await base;
+  const total = page ? Number((await db.select({ n: sql<number>`count(*)::int` }).from(coupons).where(cond))[0].n) : rows.length;
   if (rows.length === 0) {
-    res.json([]);
+    res.json(page ? paged([], total, page) : []);
     return;
   }
 
@@ -83,7 +87,8 @@ router.get("/coupons", async (req, res) => {
     .groupBy(couponRedemptions.couponId);
   const byCoupon = new Map(totals.map((t) => [t.couponId, t.total]));
 
-  res.json(rows.map((c) => toDetail(c, byCoupon.get(c.id) ?? 0)));
+  const items = rows.map((c) => toDetail(c, byCoupon.get(c.id) ?? 0));
+  res.json(page ? paged(items, total, page) : items);
 });
 
 router.post("/coupons", async (req, res) => {

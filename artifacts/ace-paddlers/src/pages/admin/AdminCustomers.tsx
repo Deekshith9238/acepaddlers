@@ -1,6 +1,8 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
+import { adminApi } from "@/admin/adminApi";
 import {
-  useListCustomers,
   useGetCustomer,
   useUpdateCustomer,
   useCreateCustomer,
@@ -229,15 +231,14 @@ function Inner() {
   const [tag, setTag] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { data, refetch, isLoading } = useListCustomers({
-    ...(q ? { q } : {}),
-    ...(minBookings ? { minBookings: Number(minBookings) } : {}),
-    ...(tag ? { tag } : {}),
-  });
-  const rows: CustomerDetail[] = Array.isArray(data) ? data : [];
-  // Every tag in use, so the filter offers what actually exists rather than a
-  // free-text box you have to spell correctly.
-  const allTags = Array.from(new Set(rows.flatMap((r) => r.tags ?? []))).sort();
+  const search = useDebounced(q);
+  const list = usePagedList<CustomerDetail>("/customers", { q: search, minBookings, tag });
+  const rows = list.items;
+  const isLoading = !list.loaded;
+  const refetch = list.refetch;
+  // Every tag in use across all customers, not just this page.
+  const [allTags, setAllTags] = useState<string[]>([]);
+  useEffect(() => { adminApi<string[]>("/customers/tags").then(setAllTags).catch(() => undefined); }, [list.total]);
 
   return (
     <>
@@ -284,7 +285,7 @@ function Inner() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <span className="text-xs text-slate-400">{rows.length} record(s)</span>
+        <span className="text-xs text-slate-400">{list.total.toLocaleString("en-IN")} record(s)</span>
       </div>
 
       {isLoading ? (
@@ -368,6 +369,10 @@ function Inner() {
               ))}
             </tbody>
           </table>
+          <div className="border-t border-slate-100 px-4">
+            <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+              onPage={list.setPage} onPageSize={list.setPageSize} noun="customers" />
+          </div>
         </div>
       )}
     </>

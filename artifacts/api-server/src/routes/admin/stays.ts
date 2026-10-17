@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { likeTerm, paged, qstr, readPage } from "../../lib/paging";
 import { db, partners, stayBookings, stayCalendarBlocks, stayRoomTypes, tours } from "@workspace/db";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
@@ -249,6 +250,27 @@ router.put("/tours/:id/stay", ...content, async (req, res) => {
 router.get("/stays", ...bookings, async (req, res) => {
   const status = typeof req.query.status === "string" ? req.query.status : "";
   const open = ["requested", "confirmed"];
+  const where: SQL[] = [];
+  if (status === "open") where.push(inArray(stayBookings.status, open));
+  // Paid by the guest, not yet booked at the partner: the team's to-do list.
+  else if (status === "to_book") where.push(and(eq(stayBookings.status, "paid"), isNull(stayBookings.partnerBookedAt))!);
+  else if (status) where.push(eq(stayBookings.status, status));
+  const q = qstr(req.query.q);
+  if (q) {
+    const like = likeTerm(q);
+    const term = or(
+      ilike(stayBookings.ref, like),
+      ilike(stayBookings.customerName, like),
+      ilike(stayBookings.customerEmail, like),
+      ilike(stayBookings.customerPhone, like),
+      ilike(tours.title, like),
+      ilike(partners.name, like),
+    );
+    if (term) where.push(term);
+  }
+  const cond = where.length > 0 ? and(...where) : undefined;
+  // Without paging the list keeps its old ceiling.
+  const page = readPage(req.query as Record<string, unknown>);
   const rows = await db
     .select({
       stay: stayBookings,
@@ -261,21 +283,12 @@ router.get("/stays", ...bookings, async (req, res) => {
     .from(stayBookings)
     .innerJoin(tours, eq(tours.id, stayBookings.tourId))
     .leftJoin(partners, eq(partners.id, stayBookings.partnerId))
-    .where(
-      status === "open"
-        ? inArray(stayBookings.status, open)
-        : // Paid by the guest, not yet booked at the partner: the team's to-do list.
-          status === "to_book"
-          ? and(eq(stayBookings.status, "paid"), isNull(stayBookings.partnerBookedAt))
-          : status
-            ? eq(stayBookings.status, status)
-            : undefined,
-    )
-    .orderBy(desc(stayBookings.createdAt))
-    .limit(300);
+    .where(cond)
+    .orderBy(desc(stayBookings.createdAt), desc(stayBookings.id))
+    .limit(page?.limit ?? 300)
+    .offset(page?.offset ?? 0);
   const site = process.env.PUBLIC_SITE_URL ?? "https://www.acepaddlers.com";
-  res.json(
-    rows.map(({ stay, listing, partnerName, partnerPhone, partnerBookingUrl, partnerWebsite }) => {
+  const items = rows.map(({ stay, listing, partnerName, partnerPhone, partnerBookingUrl, partnerWebsite }) => {
       // The autofill code is handed out only by "Book at partner", not listed.
       const { partnerToken, autofillCode: _code, ...rest } = stay;
       return {
@@ -288,8 +301,15 @@ router.get("/stays", ...bookings, async (req, res) => {
         // The approve link, in case the WhatsApp to the team never arrived.
         partnerLink: stay.status === "requested" ? `${site}/partner/${partnerToken}` : null,
       };
-    }),
-  );
+    });
+  if (!page) return void res.json(items);
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(stayBookings)
+    .innerJoin(tours, eq(tours.id, stayBookings.tourId))
+    .leftJoin(partners, eq(partners.id, stayBookings.partnerId))
+    .where(cond);
+  res.json(paged(items, Number(n), page));
 });
 
 /** Approve or decline from the admin, as the WhatsApp link does. */

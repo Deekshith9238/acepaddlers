@@ -9,6 +9,18 @@ import {
 } from "@workspace/api-client-react";
 import { StatusBadge, rupees, fmtDate, fmtDateTime } from "@/admin/booking/sections";
 import { firebaseSignOut } from "@/lib/firebase";
+import AgentTrips from "./AgentTrips";
+import AgentNewBooking from "./AgentNewBooking";
+import AgentCoupons from "./AgentCoupons";
+
+type Section = "dashboard" | "trips" | "book" | "coupons" | "bookings";
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "trips", label: "Trips & prices" },
+  { key: "book", label: "New booking" },
+  { key: "coupons", label: "Coupons" },
+  { key: "bookings", label: "Bookings" },
+];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -97,10 +109,14 @@ export default function AgentPortal() {
   const [status, setStatus] = useState("open");
   const [q, setQ] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [section, setSection] = useState<Section>("dashboard");
+  const [bookTrip, setBookTrip] = useState<string | null>(null);
 
   const { data: me, isFetching } = useAgentMe({ query: { retry: false } as never });
-  const { data: summary } = useAgentSummary({ query: { enabled: !!me } } as never);
-  const { data: bookingData } = useAgentBookings(
+  const { data: summaryData, refetch: refetchSummary } = useAgentSummary({ query: { enabled: !!me } } as never);
+  // The summary grew past its generated type: direct/coupon split, payouts.
+  const summary = summaryData as any;
+  const { data: bookingData, refetch: refetchBookings } = useAgentBookings(
     { ...(status ? { status } : {}), ...(q ? { q } : {}) },
     { query: { enabled: !!me } } as never,
   );
@@ -153,21 +169,54 @@ export default function AgentPortal() {
       <main className="max-w-5xl mx-auto px-6 py-8">
         {showPassword && <ChangePassword onDone={() => navigate("/agent/login")} />}
 
+        <nav className="mb-6 flex flex-wrap gap-1 border-b border-slate-200">
+          {SECTIONS.map((x) => (
+            <button key={x.key} type="button" onClick={() => setSection(x.key)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold ${section === x.key ? "border-cyan-600 text-cyan-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+              {x.label}
+            </button>
+          ))}
+        </nav>
+
+        {section === "dashboard" && (
+          <>
+            <h1 className="text-2xl font-semibold text-slate-800 mb-1">Hello, {me.name}</h1>
+            <p className="text-sm text-slate-500 mb-6">
+              You can give your customers up to <span className="font-semibold text-slate-700">{summary?.allowancePercent ?? me.commissionPercent}% off</span> —
+              on bookings you make, or through your coupons — and you earn whatever part of it you don't give away.
+            </p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <Stat label="Bookings" value={summary?.totalBookings ?? "—"} hint={summary ? `${summary.direct.bookings} made by you · ${summary.coupon.bookings} by coupon` : undefined} />
+              <Stat label="Booking value" value={summary ? rupees(summary.totalValue) : "—"} />
+              <Stat label="Customers still to pay" value={summary ? rupees(summary.customersOwe) : "—"} hint={summary ? `${rupees(summary.customersPaid)} paid so far` : undefined} />
+              <Stat label="Upcoming departures" value={summary?.upcomingDepartures ?? "—"} />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <Stat label="You've earned" value={summary ? rupees(summary.earningsConfirmed) : "—"} hint="on bookings your customers have paid" />
+              <Stat label="Still to come" value={summary ? rupees(summary.earningsPending) : "—"} hint="once those customers pay" />
+              <Stat label="Paid to you" value={summary ? rupees(summary.paidOut) : "—"} />
+              <Stat label="Owed to you" value={summary ? rupees(summary.owed) : "—"} />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => setSection("book")} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">+ New booking</button>
+              <button type="button" onClick={() => setSection("coupons")} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Make a coupon</button>
+              <button type="button" onClick={() => setSection("trips")} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">See trips & prices</button>
+            </div>
+          </>
+        )}
+
+        {section === "trips" && <AgentTrips onBook={(id) => { setBookTrip(id); setSection("book"); }} />}
+        {section === "book" && (
+          <AgentNewBooking initialTripId={bookTrip}
+            onDone={() => { setBookTrip(null); refetchBookings(); refetchSummary(); setSection("bookings"); }} />
+        )}
+        {section === "coupons" && <AgentCoupons allowance={summary?.allowancePercent ?? me.commissionPercent} />}
+
+        {section === "bookings" && <>
         <h1 className="text-2xl font-semibold text-slate-800 mb-1">Your bookings</h1>
         <p className="text-sm text-slate-500 mb-6">
-          Everything credited to {me.company ?? me.name}. Cancelled bookings don't count toward your totals.
+          Everything credited to {me.company ?? me.name}: bookings you made, and bookings your customers made with your coupons.
         </p>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Stat label="Bookings" value={summary?.totalBookings ?? "—"} />
-          <Stat label="Value" value={summary ? rupees(summary.totalValue) : "—"} />
-          <Stat
-            label="Your commission"
-            value={summary ? rupees(summary.commissionValue) : "—"}
-            hint={summary ? `at ${summary.commissionPercent}%` : undefined}
-          />
-          <Stat label="Upcoming departures" value={summary?.upcomingDepartures ?? "—"} />
-        </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {TABS.map((t) => (
@@ -206,7 +255,7 @@ export default function AgentPortal() {
                     <th className="px-4 py-3">Trip</th>
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3 text-right">Value</th>
-                    <th className="px-4 py-3 text-right">Your commission</th>
+                    <th className="px-4 py-3 text-right">You earn</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
@@ -234,15 +283,20 @@ export default function AgentPortal() {
                       </td>
                       <td className="px-4 py-3 align-top text-right text-sm text-slate-700 tabular-nums">
                         {rupees(b.totalAmount, b.currency)}
+                        {b.discountAmount > 0 && <div className="text-xs text-slate-400">{rupees(b.discountAmount, b.currency)} off</div>}
+                        <div className="text-xs text-slate-400">{b.channel === "direct" ? "made by you" : b.couponCode ? `coupon ${b.couponCode}` : "credited to you"}</div>
                       </td>
                       <td className="px-4 py-3 align-top text-right text-sm tabular-nums">
-                        {b.commissionValue > 0 ? (
-                          <span className="text-emerald-700 font-medium">{rupees(b.commissionValue, b.currency)}</span>
+                        {b.earning > 0 ? (
+                          <span className="text-emerald-700 font-medium">{rupees(b.earning, b.currency)}</span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 align-top"><StatusBadge status={b.status} /></td>
+                      <td className="px-4 py-3 align-top">
+                        <StatusBadge status={b.status} />
+                        <div className="mt-1 text-xs text-slate-400">{b.paymentStatus === "paid" ? "paid" : b.paymentStatus === "deposit" ? "part paid" : "not paid yet"}</div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -250,6 +304,7 @@ export default function AgentPortal() {
             </div>
           </div>
         )}
+        </>}
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+import { likeTerm, paged, type Page } from "./paging";
 import { and, desc, eq, gte, ilike, isNull, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { db, bookings, tours, tourSlots, tourVariants, agents, payments } from "@workspace/db";
 import type { BookingDetail } from "@workspace/api-zod";
@@ -53,7 +54,8 @@ type PayStatus = typeof bookings.$inferSelect.paymentStatus;
  * Returns fully-formed BookingDetails including each booking's settled
  * balance, computed in a single grouped pass over the ledger.
  */
-export async function queryBookings(filter: BookingFilter): Promise<BookingDetail[]> {
+/** The SQL conditions one booking filter stands for. */
+function bookingWhere(filter: BookingFilter): SQL[] {
   const where: SQL[] = [];
   // "open" is the working set — what still needs someone's attention.
   if (filter.status === "open") {
@@ -78,7 +80,7 @@ export async function queryBookings(filter: BookingFilter): Promise<BookingDetai
   if (filter.departsFrom) where.push(gte(tourSlots.date, filter.departsFrom));
   if (filter.departsTo) where.push(lte(tourSlots.date, filter.departsTo));
   if (filter.q) {
-    const like = `%${filter.q}%`;
+    const like = likeTerm(filter.q);
     const digits = filter.q.replace(/\D/g, "");
     const parts = [
       ilike(bookings.bookingRef, like),
@@ -97,7 +99,19 @@ export async function queryBookings(filter: BookingFilter): Promise<BookingDetai
     if (term) where.push(term);
   }
 
-  const rows = await db
+  // Settled balance from the ledger, in SQL so a page of "balance due" can be
+  // counted and sliced by the database like any other filter.
+  if (filter.balanceDue) {
+    where.push(sql`${bookings.status} <> 'cancelled' and ${bookings.totalAmount} > coalesce((
+      select sum(case when p.kind = 'payment' then p.amount when p.kind = 'refund' then -p.amount else 0 end)
+      from ${payments} p where p.booking_id = ${bookings.id} and p.status = 'paid'
+    ), 0)`);
+  }
+  return where;
+}
+
+const bookingRows = (where: SQL[]) =>
+  db
     .select({ b: bookings, t: tours, s: tourSlots, v: tourVariants, ag: agents })
     .from(bookings)
     .leftJoin(tours, eq(bookings.tourId, tours.id))
@@ -105,11 +119,45 @@ export async function queryBookings(filter: BookingFilter): Promise<BookingDetai
     .leftJoin(tourVariants, eq(bookings.variantId, tourVariants.id))
     .leftJoin(agents, eq(bookings.agentId, agents.id))
     .where(where.length > 0 ? and(...where) : undefined)
-    .orderBy(desc(bookings.createdAt));
+    .orderBy(desc(bookings.createdAt), desc(bookings.id));
 
+/**
+ * The one place booking filtering lives, so the list, the CSV export and any
+ * future report can never disagree about what a filter means.
+ *
+ * Returns fully-formed BookingDetails including each booking's settled
+ * balance, computed in a single grouped pass over the ledger.
+ */
+export async function queryBookings(filter: BookingFilter): Promise<BookingDetail[]> {
+  return toDetails(await bookingRows(bookingWhere(filter)));
+}
+
+/** One page of the same, and how many bookings match in all. */
+export async function queryBookingsPage(filter: BookingFilter, page: Page) {
+  const where = bookingWhere(filter);
+  const [rows, [{ n, value, due }]] = await Promise.all([
+    bookingRows(where).limit(page.limit).offset(page.offset),
+    db
+      .select({
+        n: sql<number>`count(*)::int`,
+        // Across every match, not just this page: the list's header totals.
+        value: sql<number>`coalesce(sum(${bookings.totalAmount}), 0)::int`,
+        due: sql<number>`coalesce(sum(case when ${bookings.status} = 'cancelled' then 0 else greatest(0, ${bookings.totalAmount} - coalesce((
+          select sum(case when p.kind = 'payment' then p.amount when p.kind = 'refund' then -p.amount else 0 end)
+          from ${payments} p where p.booking_id = ${bookings.id} and p.status = 'paid'
+        ), 0)) end), 0)::int`,
+      })
+      .from(bookings)
+      .leftJoin(tours, eq(bookings.tourId, tours.id))
+      .leftJoin(tourSlots, eq(bookings.slotId, tourSlots.id))
+      .where(where.length > 0 ? and(...where) : undefined),
+  ]);
+  return { ...paged(await toDetails(rows), Number(n), page), totals: { value: Number(value), due: Number(due) } };
+}
+
+async function toDetails(rows: Awaited<ReturnType<typeof bookingRows>>): Promise<BookingDetail[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.b.id);
-
   const paymentRows = await db.select().from(payments).where(inArray(payments.bookingId, ids));
   const latest = latestPaymentsByBooking(paymentRows);
 
@@ -129,10 +177,9 @@ export async function queryBookings(filter: BookingFilter): Promise<BookingDetai
   const details = rows.map((r) =>
     toBookingDetail(r.b, r.t, r.s, latest.get(r.b.id), netByBooking.get(r.b.id) ?? 0, r.v?.label ?? null, r.ag?.name ?? null),
   );
-  // Applied after the balance is known — it is a property of the ledger, not
-  // of any single column we could push into SQL cleanly.
-  return filter.balanceDue ? details.filter((d) => d.amountDue > 0 && d.status !== "cancelled") : details;
+  return details;
 }
+
 
 function csvCell(v: unknown): string {
   const s = v === null || v === undefined ? "" : String(v);

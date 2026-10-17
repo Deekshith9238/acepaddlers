@@ -4,7 +4,8 @@ import { db, enquiries, tours } from "@workspace/db";
 import { CreateAdminEnquiryBody, UpdateEnquiryBody } from "@workspace/api-zod";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
-import { createEnquiry, listEnquiries, getEnquiry, enquiryCounts, type EnquiryStatus } from "../../lib/enquiries";
+import { createEnquiry, listEnquiries, listEnquiriesPage, getEnquiry, enquiryCounts, type EnquiryStatus } from "../../lib/enquiries";
+import { readPage } from "../../lib/paging";
 import { notifyNewEnquiry } from "../../lib/notify";
 
 const router: IRouter = Router();
@@ -12,15 +13,15 @@ router.use(requireAdmin, requireCapability("bookings"));
 
 router.get("/enquiries", async (req, res) => {
   const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
-  res.json(
-    await listEnquiries({
-      status: str(req.query.status),
-      source: str(req.query.source),
-      assigneeId: str(req.query.assigneeId),
-      tourId: str(req.query.tourId),
-      q: str(req.query.q),
-    }),
-  );
+  const filter = {
+    status: str(req.query.status),
+    source: str(req.query.source),
+    assigneeId: str(req.query.assigneeId),
+    tourId: str(req.query.tourId),
+    q: str(req.query.q),
+  };
+  const page = readPage(req.query as Record<string, unknown>);
+  res.json(page ? await listEnquiriesPage(filter, page) : await listEnquiries(filter));
 });
 
 // Registered before "/enquiries/:id" so "counts" is never read as an id.

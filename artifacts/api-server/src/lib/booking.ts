@@ -12,6 +12,7 @@ import { notifyPaymentConfirmed } from "./notify";
 import { upsertCustomer } from "./customers";
 import { recomputeBookingPaymentStatus } from "./payments-ledger";
 import { evaluateCoupon, claimCouponUse, recordRedemption, computeDiscount } from "./coupons";
+import { agentEarningFor } from "./agents";
 import { loadRateCard, quoteBooking, PricingError, type ParticipantSelection, type AddonSelection } from "./pricing";
 
 export class BookingError extends Error {
@@ -128,6 +129,12 @@ export interface CreateBookingInput {
   /** How the customer said they would pay — decides which method-scoped
    *  charges apply, and is snapshotted onto the booking. */
   paymentMethod?: string | null;
+  /**
+   * A booking an agent makes for their customer: credited to them, with the
+   * discount they chose (already checked against their allowance). A coupon
+   * code is ignored on these — the agent's discount is the discount.
+   */
+  agent?: { id: string; allowancePercent: number; discountPercent: number };
 }
 
 /** Create a booking, atomically locking and decrementing slot capacity. */
@@ -187,7 +194,7 @@ export async function createBooking(input: CreateBookingInput): Promise<{
     throw err;
   }
 
-  const couponEval = input.couponCode
+  const couponEval = input.couponCode && !input.agent
     ? await evaluateCoupon(input.couponCode, {
         baseAmount: undiscounted.baseAmount,
         tourId: preSlot.tourId,
@@ -233,7 +240,9 @@ export async function createBooking(input: CreateBookingInput): Promise<{
     // last redemption. If it loses, the booking proceeds at full price rather
     // than failing — losing the sale over a discount code would be worse than
     // not applying it.
-    let discountAmount = 0;
+    let discountAmount = input.agent
+      ? Math.min(undiscounted.baseAmount, Math.round((undiscounted.baseAmount * input.agent.discountPercent) / 100))
+      : 0;
     let appliedCoupon: { id: string; code: string } | null = null;
     if (couponEval?.ok && couponEval.coupon) {
       const c = couponEval.coupon;
@@ -244,6 +253,18 @@ export async function createBooking(input: CreateBookingInput): Promise<{
         appliedCoupon = { id: c.id, code: c.code };
       }
     }
+
+    // Who the booking is credited to, and what they earn on it: the unused
+    // part of their allowance, fixed now so a later change to the allowance
+    // never rewrites what this booking paid them.
+    const creditedAgent = input.agent
+      ? input.agent
+      : appliedCoupon && couponEval?.agent
+        ? couponEval.agent
+        : null;
+    const agentEarning = creditedAgent
+      ? agentEarningFor(undiscounted.baseAmount, discountAmount, creditedAgent.allowancePercent)
+      : 0;
 
     // Re-quoted with the discount that was actually claimed, so taxes land on
     // the amount the customer really pays.
@@ -281,6 +302,8 @@ export async function createBooking(input: CreateBookingInput): Promise<{
         addonsBreakdown: quote.addonLines,
         couponId: appliedCoupon?.id ?? null,
         couponCode: appliedCoupon?.code ?? null,
+        agentId: creditedAgent?.id ?? null,
+        agentEarning,
         discountAmount: quote.discountAmount,
         totalAmount: quote.totalAmount,
         currency: quote.currency,

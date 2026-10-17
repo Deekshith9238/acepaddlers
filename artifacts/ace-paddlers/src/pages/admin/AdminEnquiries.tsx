@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import {
-  useListEnquiries,
   useUpdateEnquiry,
   useDeleteEnquiry,
   useGetEnquiryCounts,
@@ -337,16 +338,16 @@ function Inner() {
   const [q, setQ] = useState("");
   const [source, setSource] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
+  const [tourId, setTourId] = useState("");
   const [showForm, setShowForm] = useState(false);
   const counts = useGetEnquiryCounts();
   const { data: staff } = useListAdminUsers();
-  const { data, refetch, isLoading } = useListEnquiries({
-    status: stage,
-    ...(q ? { q } : {}),
-    ...(source ? { source } : {}),
-    ...(assigneeId ? { assigneeId } : {}),
-  });
-  const rows: EnquiryDetail[] = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const { data: tripList } = useListAdminTours();
+  const search = useDebounced(q);
+  const list = usePagedList<EnquiryDetail>("/enquiries", { status: stage, q: search, source, assigneeId, tourId });
+  const rows = list.items;
+  const isLoading = !list.loaded;
+  const refetch = list.refetch;
 
   const refresh = () => {
     refetch();
@@ -407,6 +408,13 @@ function Inner() {
           <option value="unassigned">Unassigned</option>
           {(staff ?? []).map((u: any) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
         </select>
+        <select
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm max-w-[12rem] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          value={tourId}
+          onChange={(e) => setTourId(e.target.value)}>
+          <option value="">Any trip</option>
+          {(Array.isArray(tripList) ? tripList : []).map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
+        </select>
         <input
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           placeholder="Search name, phone, email, ref…"
@@ -420,7 +428,7 @@ function Inner() {
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center">
           <p className="text-sm text-slate-400">
-            {q ? "No enquiries match that search." : "Nothing in this stage."}
+            {q || source || assigneeId || tourId ? "No enquiries match these filters." : "Nothing in this stage."}
           </p>
         </div>
       ) : (
@@ -443,6 +451,10 @@ function Inner() {
               ))}
             </tbody>
           </table>
+          <div className="border-t border-slate-100 px-4">
+            <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+              onPage={list.setPage} onPageSize={list.setPageSize} noun="enquiries" />
+          </div>
         </div>
       )}
     </>

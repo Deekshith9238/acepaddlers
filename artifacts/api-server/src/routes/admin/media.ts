@@ -1,9 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
-import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db, mediaAssets } from "@workspace/db";
 import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
+import { likeTerm, paged, readPage } from "../../lib/paging";
 import { processUpload, UnsupportedMediaError } from "../../lib/media";
 import { mediaUsageCounts } from "../../lib/media-usage";
 
@@ -16,28 +17,26 @@ const router: IRouter = Router();
 router.use(requireAdmin, requireCapability("content"));
 
 router.get("/media", async (req, res) => {
+  const page = readPage(req.query as Record<string, unknown>);
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const kind = typeof req.query.kind === "string" ? req.query.kind : "";
   const where: SQL[] = [];
   if (q) {
-    const like = `%${q}%`;
+    const like = likeTerm(q);
     const term = or(ilike(mediaAssets.filename, like), ilike(mediaAssets.url, like));
     if (term) where.push(term);
   }
   if (kind === "image" || kind === "video") where.push(eq(mediaAssets.kind, kind));
 
-  const rows = await db
-    .select()
-    .from(mediaAssets)
-    .where(where.length > 0 ? and(...where) : undefined)
-    .orderBy(desc(mediaAssets.createdAt));
+  const cond = where.length > 0 ? and(...where) : undefined;
+  const base = db.select().from(mediaAssets).where(cond).orderBy(desc(mediaAssets.createdAt), desc(mediaAssets.id));
+  const rows = page ? await base.limit(page.limit).offset(page.offset) : await base;
 
   // "In use" is what makes deletion safe — the old platform showed this and
   // it's the difference between confidently clearing out 400 stale photos and
   // never touching the library at all.
   const usage = await mediaUsageCounts(rows.map((r) => r.url ?? "").filter(Boolean));
-  res.json(
-    rows.map((m) => ({
+  const items = rows.map((m) => ({
       id: m.id,
       kind: m.kind,
       status: m.status,
@@ -50,8 +49,10 @@ router.get("/media", async (req, res) => {
       height: m.height,
       usageCount: m.url ? (usage.get(m.url) ?? 0) : 0,
       createdAt: m.createdAt.toISOString(),
-    })),
-  );
+    }));
+  if (!page) return void res.json(items);
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(mediaAssets).where(cond);
+  res.json(paged(items, Number(n), page));
 });
 
 router.post("/media", upload.single("file"), async (req, res) => {

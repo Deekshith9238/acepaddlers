@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { RESOURCES } from "@/admin/resources";
-import { useListBookings, useUpdateBookingStatus, useAdminMe, type BookingDetail } from "@workspace/api-client-react";
+import { useUpdateBookingStatus, useAdminMe, type BookingDetail } from "@workspace/api-client-react";
+import { usePagedList } from "@/admin/usePagedList";
 import OperationsDashboard from "@/admin/OperationsDashboard";
 import { StatusBadge } from "@/admin/booking/sections";
 import { ReviewsWaiting } from "@/pages/admin/AdminReviews";
@@ -34,16 +35,14 @@ function Inner() {
   const seesBookings = me?.role === "viewer" || (me?.capabilities ?? []).includes("bookings");
   // Approving a review is a content decision; the panel follows the same rule.
   const seesReviews = (me?.capabilities ?? []).includes("content");
-  const { data, refetch } = useListBookings(undefined, { query: { enabled: seesBookings } } as never);
+  // Just what the two panels show: six pending requests, six newest bookings.
+  // The list itself (and its totals) lives on the Bookings page.
+  const pendingList = usePagedList<BookingDetail>("/bookings", { status: "pending" }, { pageSize: 6, enabled: seesBookings });
+  const recentList = usePagedList<BookingDetail>("/bookings", {}, { pageSize: 6, enabled: seesBookings });
   const update = useUpdateBookingStatus();
-  const bookings: BookingDetail[] = Array.isArray(data) ? data : [];
-  const today = new Date().toISOString().slice(0, 10);
-  const pending = bookings.filter((b) => b.status === "pending");
-  const upcoming = bookings
-    .filter((b) => b.status === "confirmed" && (b.date ?? "") >= today)
-    .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
-    .slice(0, 6);
-  const recent = bookings.slice(0, 6);
+  const pending = pendingList.items;
+  const recent = recentList.items;
+  const refetch = () => { pendingList.refetch(); recentList.refetch(); };
 
   const confirm = (id: string) => update.mutate({ id, data: { status: "confirmed" } }, { onSuccess: () => refetch() });
 

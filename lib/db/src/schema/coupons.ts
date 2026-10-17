@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { bookings } from "./bookings";
+import { agents } from "./agents";
 import { customers } from "./customers";
 
 /**
@@ -60,6 +61,9 @@ export const coupons = pgTable(
     active: boolean("active").default(true).notNull(),
 
     // Set on codes generated together as a series.
+    /** The agent who made this code, if an agent did. Bookings that use it are
+     *  credited to them, and its percent can never exceed their allowance. */
+    agentId: uuid("agent_id").references(() => agents.id, { onDelete: "cascade" }),
     batchId: uuid("batch_id"),
     batchLabel: text("batch_label"),
 

@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import { paymentDueAt } from "../../lib/trip-rules";
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, tours, tourVariants, tourSlots, bookings, agents, payments } from "@workspace/db";
 import {
@@ -13,13 +12,14 @@ import { requireAdmin } from "../../middlewares/requireAdmin";
 import { requireCapability } from "../../middlewares/requireCapability";
 import { toBookingDetail, releaseBookingCapacity, createBookingCalendarEvent, markBookingPaidAndConfirm } from "../../lib/booking";
 import { getCalendarClient } from "../../lib/calendar";
-import { createPaymentLink, cancelPaymentLink, PaymentProviderError } from "../../lib/razorpay";
+import { cancelPaymentLink, PaymentProviderError } from "../../lib/razorpay";
+import { sendBookingPaymentLink, PaymentLinkError } from "../../lib/payment-links";
 import { syncBookingWithRazorpay } from "../../lib/razorpay-sync";
-import { notifyPaymentLink } from "../../lib/notify";
 import { logger } from "../../lib/logger";
 import { releaseCouponUse } from "../../lib/coupons";
 import { loadRateCard, quoteBooking } from "../../lib/pricing";
-import { parseBookingFilter, queryBookings, bookingsToCsv } from "../../lib/booking-filters";
+import { parseBookingFilter, queryBookings, queryBookingsPage, bookingsToCsv } from "../../lib/booking-filters";
+import { readPage } from "../../lib/paging";
 import {
   recordManualEntry,
   recomputeBookingPaymentStatus,
@@ -178,7 +178,10 @@ router.post("/slots/bulk-delete", async (req, res) => {
 
 // ── Bookings ──
 router.get("/bookings", async (req, res) => {
-  res.json(await queryBookings(parseBookingFilter(req.query as Record<string, unknown>)));
+  const query = req.query as Record<string, unknown>;
+  const page = readPage(query);
+  const filter = parseBookingFilter(query);
+  res.json(page ? await queryBookingsPage(filter, page) : await queryBookings(filter));
 });
 
 // Registered before "/bookings/:id" so the literal path isn't read as an id.
@@ -402,82 +405,16 @@ router.delete("/bookings/:id", async (req, res) => {
 
 // ── Payments ──
 router.post("/bookings/:id/payment-link", async (req, res) => {
-  const [existing] = await db.select().from(bookings).where(eq(bookings.id, req.params.id)).limit(1);
-  if (!existing) {
-    res.status(404).json({ error: "not_found" });
-    return;
-  }
-  if (existing.paymentStatus === "paid") {
-    res.status(409).json({ error: "already_paid" });
-    return;
-  }
-  const [tour] = await db.select().from(tours).where(eq(tours.id, existing.tourId)).limit(1);
-  const [slot] = await db.select().from(tourSlots).where(eq(tourSlots.id, existing.slotId)).limit(1);
-
-  /**
-   * Ask for what is still owed, not the sticker price.
-   *
-   * With deposits enabled a booking can already be part-paid, and raising a
-   * link for `totalAmount` would invoice the customer a second time for money
-   * they have handed over. The ledger is the authority on the balance.
-   */
-  const summary = await bookingPaymentSummary(existing.id);
-  const amountDue = summary.due > 0 ? summary.due : existing.totalAmount;
-
-  let link;
   try {
-    link = await createPaymentLink({
-      bookingRef: existing.bookingRef,
-      amount: amountDue,
-      currency: existing.currency,
-      // The trip's payment deadline, so an unpaid hold does not sit open forever.
-      expiresAt: tour ? paymentDueAt(tour) : null,
-      customerName: existing.customerName,
-      customerEmail: existing.customerEmail,
-      customerPhone: existing.customerPhone,
-      description: `${tour?.title ?? "Ace Paddlers booking"} — ${existing.bookingRef}`,
-    });
+    const sent = await sendBookingPaymentLink(req.params.id);
+    res.json(toBookingDetail(sent.booking, sent.tour, sent.slot, sent.payment));
   } catch (err) {
-    if (err instanceof PaymentProviderError) {
+    if (err instanceof PaymentProviderError || err instanceof PaymentLinkError) {
       res.status(err.status).json({ error: err.code });
       return;
     }
     throw err;
   }
-
-  const [payment] = await db
-    .insert(payments)
-    .values({
-      bookingId: existing.id,
-      provider: "razorpay",
-      providerLinkId: link.id,
-      shortUrl: link.shortUrl,
-      amount: existing.totalAmount,
-      currency: existing.currency,
-      status: link.status,
-    })
-    .returning();
-
-  try {
-    await notifyPaymentLink({
-      bookingRef: existing.bookingRef,
-      customerName: existing.customerName,
-      customerEmail: existing.customerEmail,
-      customerPhone: existing.customerPhone,
-      tourTitle: tour?.title ?? "your tour",
-      date: slot?.date ?? null,
-      startTime: slot?.startTime ?? null,
-      totalAmount: existing.totalAmount,
-      currency: existing.currency,
-      paymentUrl: link.shortUrl,
-    });
-  } catch (err) {
-    // The link exists and is usable even if the notification failed to send —
-    // don't fail the request; admin can see/copy the link from the response.
-    logger.error({ err, bookingId: existing.id }, "payment link notification failed");
-  }
-
-  res.json(toBookingDetail(existing, tour, slot, payment));
 });
 
 // ── Payment ledger ──

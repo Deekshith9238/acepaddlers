@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { useListBookings, type BookingDetail } from "@workspace/api-client-react";
+import { type BookingDetail } from "@workspace/api-client-react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import { StatusBadge, Pill, rupees, fmtDateTime, fmtDate } from "@/admin/booking/sections";
 import BookingFilters, {
   EMPTY_FILTERS,
@@ -62,24 +64,24 @@ function Inner() {
   const [filters, setFilters] = useState<BookingFilterState>(EMPTY_FILTERS);
   const set = (patch: Partial<BookingFilterState>) => setFilters((f) => ({ ...f, ...patch }));
 
+  // The search box waits for typing to pause before asking the server.
+  const q = useDebounced(filters.q);
   // Blank fields are dropped rather than sent as empty strings, so the server
   // never has to distinguish "unset" from "match the empty string".
   const params = useMemo(() => {
     const p: Record<string, string | boolean> = {};
-    for (const [k, v] of Object.entries(filters)) {
+    for (const [k, v] of Object.entries({ ...filters, q })) {
       if (v === "" || v === false) continue;
       p[k] = v as string | boolean;
     }
     return p;
-  }, [filters]);
+  }, [filters, q]);
 
-  const { data, isLoading } = useListBookings(params);
-  const rows: BookingDetail[] = Array.isArray(data) ? data : [];
-
-  const totals = useMemo(
-    () => rows.reduce((a, b) => ({ value: a.value + b.totalAmount, due: a.due + b.amountDue }), { value: 0, due: 0 }),
-    [rows],
-  );
+  // One page from the server; the totals cover every booking that matches.
+  const list = usePagedList<BookingDetail>("/bookings", params);
+  const rows = list.items;
+  const totals = (list.raw?.totals as { value: number; due: number } | undefined) ?? { value: 0, due: 0 };
+  const isLoading = !list.loaded;
 
   const exportCsv = () => {
     const qs = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]));
@@ -107,7 +109,7 @@ function Inner() {
         onChange={set}
         onReset={() => setFilters(EMPTY_FILTERS)}
         onExportCsv={exportCsv}
-        resultCount={rows.length}
+        resultCount={list.total}
       />
 
       <div className="flex-1 min-w-0">
@@ -151,6 +153,10 @@ function Inner() {
                   {rows.map((b) => <BookingRow key={b.id} b={b} />)}
                 </tbody>
               </table>
+            </div>
+            <div className="border-t border-slate-100 px-4">
+              <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+                onPage={list.setPage} onPageSize={list.setPageSize} noun="bookings" />
             </div>
           </div>
         )}

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePagedList, useDebounced } from "@/admin/usePagedList";
+import Pager from "@/admin/Pager";
 import { adminApi, stayError } from "@/admin/adminApi";
 import { autofillBookmarklet } from "@/admin/autofillBookmarklet";
 
@@ -92,15 +94,18 @@ function AutofillSetup() {
 
 export default function AdminStays() {
   const [filter, setFilter] = useState<string>("to_book");
-  const [rows, setRows] = useState<Stay[] | null>(null);
+  const [q, setQ] = useState("");
+  const search = useDebounced(q);
+  const list = usePagedList<Stay>("/stays", { status: filter, q: search }, { pageSize: 25 });
+  const rows = list.loaded ? list.items : null;
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [codes, setCodes] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
-    adminApi<Stay[]>(`/stays${filter ? `?status=${filter}` : ""}`).then(setRows).catch(() => setRows([]));
-  }, [filter]);
-  useEffect(() => { setRows(null); load(); }, [load]);
+    list.refetch();
+  }, [list]);
+
 
   const run = async (s: Stay, work: () => Promise<void>) => {
     setBusy(s.id);
@@ -196,6 +201,8 @@ export default function AdminStays() {
             {f.label}
           </button>
         ))}
+        <input className="mb-1 ml-auto w-64 self-center rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          placeholder="Search ref, guest, listing, partner…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       {message && <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{message}</p>}
@@ -302,6 +309,10 @@ export default function AdminStays() {
             );
           })}
         </div>
+      )}
+      {list.total > 0 && (
+        <Pager page={list.page} pageSize={list.pageSize} total={list.total} loading={list.loading}
+          onPage={list.setPage} onPageSize={list.setPageSize} noun="stay requests" />
       )}
     </>
   );

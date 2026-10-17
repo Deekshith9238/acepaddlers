@@ -1,3 +1,4 @@
+import { likeTerm, paged, type Page } from "./paging";
 import { randomInt } from "node:crypto";
 import { and, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db, enquiries, tours, destinations, adminUsers } from "@workspace/db";
@@ -148,7 +149,7 @@ export interface ListEnquiriesFilter {
   q?: string;
 }
 
-export async function listEnquiries(filter: ListEnquiriesFilter = {}): Promise<EnquiryDetail[]> {
+function enquiryWhere(filter: ListEnquiriesFilter): SQL[] {
   const where: SQL[] = [];
   // "new & active" is the working queue — the tab the team lives in.
   if (filter.status === "open") {
@@ -163,7 +164,7 @@ export async function listEnquiries(filter: ListEnquiriesFilter = {}): Promise<E
   else if (filter.assigneeId) where.push(eq(enquiries.assigneeId, filter.assigneeId));
   if (filter.tourId) where.push(eq(enquiries.tourId, filter.tourId));
   if (filter.q) {
-    const like = `%${filter.q}%`;
+    const like = likeTerm(filter.q);
     const term = or(
       ilike(enquiries.customerName, like),
       ilike(enquiries.customerEmail, like),
@@ -175,7 +176,11 @@ export async function listEnquiries(filter: ListEnquiriesFilter = {}): Promise<E
     if (term) where.push(term);
   }
 
-  const rows = await db
+  return where;
+}
+
+const enquiryRows = (where: SQL[]) =>
+  db
     .select({
       enquiry: enquiries,
       tourTitle: tours.title,
@@ -189,7 +194,18 @@ export async function listEnquiries(filter: ListEnquiriesFilter = {}): Promise<E
     .where(where.length > 0 ? and(...where) : undefined)
     .orderBy(desc(enquiries.createdAt));
 
-  return rows.map(row2detail);
+export async function listEnquiries(filter: ListEnquiriesFilter = {}): Promise<EnquiryDetail[]> {
+  return (await enquiryRows(enquiryWhere(filter))).map(row2detail);
+}
+
+/** One page of the same list, and how many enquiries match in all. */
+export async function listEnquiriesPage(filter: ListEnquiriesFilter, page: Page) {
+  const where = enquiryWhere(filter);
+  const [rows, [{ n }]] = await Promise.all([
+    enquiryRows(where).limit(page.limit).offset(page.offset),
+    db.select({ n: sql<number>`count(*)::int` }).from(enquiries).where(where.length > 0 ? and(...where) : undefined),
+  ]);
+  return paged(rows.map(row2detail), Number(n), page);
 }
 
 export async function getEnquiry(id: string): Promise<EnquiryDetail | null> {

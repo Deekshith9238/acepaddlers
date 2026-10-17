@@ -56,6 +56,9 @@ export const bookings = pgTable("bookings", {
   // The agent this booking is credited to, if it came through one. Set null on
   // delete rather than cascading — losing an agent must never lose a booking.
   agentId: uuid("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  // What the credited agent earns on this booking, whole rupees, fixed when it
+  // is made: their allowance on the booking's value less the discount given.
+  agentEarning: integer("agent_earning").default(0).notNull(),
   // Answers to the trip's own extra booking questions, keyed by field key.
   extraFields: jsonb("extra_fields").$type<Record<string, string>>().default({}).notNull(),
   // Deduplicated identity behind this booking. Nullable so a booking is never
