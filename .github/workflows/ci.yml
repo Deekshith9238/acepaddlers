@@ -1,0 +1,55 @@
+# Type checks and self-checks. Runs on every branch push and pull request, and
+# is called by the deploy workflow so nothing reaches the site without passing.
+name: Checks
+
+on:
+  push:
+    branches-ignore: [main] # main runs these as the first job of Deploy
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0 # the version the Dockerfile builds with
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: |
+          pnpm -w run typecheck:libs
+          pnpm --filter @workspace/api-server run typecheck
+          pnpm --filter @workspace/ace-paddlers run typecheck
+
+      - name: Server self-checks
+        working-directory: artifacts/api-server
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://unused@localhost/unused
+        run: |
+          for f in lib/stays lib/pricing middlewares/publicForms; do
+            node_modules/.bin/esbuild "src/$f.check.ts" --bundle --platform=node --format=cjs \
+              --external:pg-native --log-level=warning --outfile=dist/check.cjs
+            node dist/check.cjs
+          done
+
+      - name: Site self-checks
+        working-directory: artifacts/ace-paddlers
+        run: |
+          ../api-server/node_modules/.bin/esbuild src/lib/consent.check.ts --bundle --platform=node --format=esm \
+            --define:import.meta.env.VITE_API_URL='""' --log-level=warning --outfile="$RUNNER_TEMP/consent.check.mjs"
+          node "$RUNNER_TEMP/consent.check.mjs"

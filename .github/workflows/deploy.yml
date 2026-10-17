@@ -1,0 +1,135 @@
+# Build the image in the cloud and put it live on the web server.
+#
+# Every push to main deploys; "Run workflow" deploys any branch by hand.
+# AWS access is a short-lived OIDC role (infra/terraform/github.tf) — no keys
+# are stored in GitHub.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, and never cancel one half-way.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-south-1
+  AWS_DEPLOY_ROLE: arn:aws:iam::653487753276:role/acepaddlers-prod-github-deploy
+  ECR_REPOSITORY: acepaddlers-prod-api
+  DB_INSTANCE: acepaddlers-prod
+  WEB_INSTANCE: i-0692edf1a559e79e3
+  SSM_DOCUMENT: acepaddlers-prod-deploy
+  SITE: https://www.acepaddlers.com
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # to compare against what is live
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: What is live now
+        id: live
+        run: |
+          echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          tags=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=latest \
+            --query 'imageDetails[0].imageTags' --output text 2>/dev/null || true)
+          live=$(echo "$tags" | tr '\t' '\n' | grep -E '^[0-9a-f]{7,40}$' | head -1 || true)
+          echo "sha=$live" >> "$GITHUB_OUTPUT"
+          echo "Live commit: ${live:-unknown} → deploying ${GITHUB_SHA::7}"
+
+      # The app runs its migrations as it starts, so any change under
+      # lib/db/drizzle gets a database snapshot first. Unknown live commit →
+      # snapshot anyway; a spare snapshot is cheap, a lost table is not.
+      - name: Snapshot the database if this deploy changes it
+        env:
+          LIVE: ${{ steps.live.outputs.sha }}
+        run: |
+          if [ -n "$LIVE" ] && git cat-file -e "$LIVE^{commit}" 2>/dev/null \
+             && [ -z "$(git diff --name-only "$LIVE" HEAD -- lib/db/drizzle)" ]; then
+            echo "No database changes since $LIVE — no snapshot needed."
+            exit 0
+          fi
+          id="$DB_INSTANCE-predeploy-$(date -u +%Y%m%d-%H%M)-${GITHUB_SHA::7}"
+          aws rds create-db-snapshot --db-instance-identifier "$DB_INSTANCE" --db-snapshot-identifier "$id" >/dev/null
+          echo "Waiting for snapshot $id…"
+          aws rds wait db-snapshot-available --db-snapshot-identifier "$id"
+          echo "Snapshot $id is ready."
+
+      - name: Keep the live image for rollback
+        run: |
+          manifest=$(aws ecr batch-get-image --repository-name "$ECR_REPOSITORY" --image-ids imageTag=latest \
+            --query 'images[0].imageManifest' --output text 2>/dev/null || true)
+          if [ -n "$manifest" ] && [ "$manifest" != "None" ]; then
+            tag="rollback-$(date -u +%Y%m%d-%H%M)"
+            aws ecr put-image --repository-name "$ECR_REPOSITORY" --image-tag "$tag" --image-manifest "$manifest" >/dev/null
+            echo "Previous image kept as $tag"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: artifacts/api-server/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.live.outputs.tag }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The server starts the new container beside the old one and switches
+      # once it is healthy (infra/terraform/deploy.sh), so a failed start
+      # leaves the old version serving.
+      - name: Deploy to the web server
+        env:
+          TAG: ${{ steps.live.outputs.tag }}
+        run: |
+          id=$(aws ssm send-command --instance-ids "$WEB_INSTANCE" --document-name "$SSM_DOCUMENT" \
+            --parameters "tag=$TAG" --comment "GitHub ${GITHUB_SHA::7} run $GITHUB_RUN_ID" \
+            --query Command.CommandId --output text)
+          for _ in $(seq 1 90); do
+            status=$(aws ssm get-command-invocation --command-id "$id" --instance-id "$WEB_INSTANCE" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in Success|Failed|Cancelled|TimedOut) break ;; esac
+            sleep 10
+          done
+          aws ssm get-command-invocation --command-id "$id" --instance-id "$WEB_INSTANCE" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text | grep -vE '^\s*$' | tail -25
+          echo "Deploy status: $status"
+          [ "$status" = "Success" ]
+
+      - name: Check the live site
+        run: |
+          for _ in $(seq 1 12); do
+            if curl -fsS -o /dev/null "$SITE/api/healthz" && curl -fsS -o /dev/null "$SITE/"; then
+              echo "$SITE is up on ${GITHUB_SHA::7}"; exit 0
+            fi
+            sleep 5
+          done
+          echo "The site did not answer after deploying" >&2
+          exit 1
