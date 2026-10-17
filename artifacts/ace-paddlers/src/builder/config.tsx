@@ -1101,10 +1101,11 @@ export const builderConfig: Config<BuilderComponents> = {
       render: ({ columns, imageHeight, background, padY, titleSize, bodySize, items }: CardsProps) => (
         <section className="px-6 py-6 md:py-8" style={sectionStyle(background, C.bg, padY)}>
           <div className={`max-w-7xl mx-auto grid gap-6 sm:grid-cols-2 ${columns === "4" ? "lg:grid-cols-4" : columns === "2" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
-            {(items ?? []).map((it, i) => (
-              <Link key={i} href={it.href || "#"} className="group rounded-2xl overflow-hidden bg-white border no-underline block" style={{ borderColor: C.mutedBorder }}>
+            {(items ?? []).map((it, i) => {
+              const className = "group rounded-2xl overflow-hidden bg-white border no-underline block";
+              const content = <>
                 <div className={`relative ${IMG_HEIGHT[it.imageHeight || imageHeight || "md"]} overflow-hidden`}>
-                  <SmartImage src={it.image} alt={it.title} wrapperClassName="absolute inset-0" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <SmartImage src={it.image} alt={richTextPlain(it.title || it.text)} wrapperClassName="absolute inset-0" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   {it.tag && (
                     <span
                       className="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full"
@@ -1128,8 +1129,11 @@ export const builderConfig: Config<BuilderComponents> = {
                     {it.text}
                   </p>
                 </div>
-              </Link>
-            ))}
+              </>;
+              return it.href
+                ? <Link key={i} href={it.href} className={className} style={{ borderColor: C.mutedBorder }}>{content}</Link>
+                : <div key={i} className={className} style={{ borderColor: C.mutedBorder }}>{content}</div>;
+            })}
           </div>
         </section>
       ),
@@ -1339,7 +1343,7 @@ export const builderConfig: Config<BuilderComponents> = {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {imgs.map((g) => (
                   <div key={g.id} className="relative h-56 overflow-hidden rounded-xl">
-                    <SmartImage src={g.src} alt={g.alt ?? ""} wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />
+                    <SmartImage src={g.src} alt={g.alt?.trim() || g.caption?.trim() || `${g.category} with Ace Paddlers`} wrapperClassName="absolute inset-0" className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -1468,7 +1472,7 @@ export const builderConfig: Config<BuilderComponents> = {
               <div
                 className={`ace-richtext leading-relaxed ${TEXT_SIZE[size ?? "md"]}`}
                 style={{ color: bodyColor(dk), fontFamily: FONT_VAR[font ?? "body"] }}
-                dangerouslySetInnerHTML={{ __html: richTextHtml(fillTokens(body, biz)) }}
+                dangerouslySetInnerHTML={{ __html: richTextHtml(fillTokens(body, biz), richTextPlain(heading)) }}
               />
             </div>
           </section>
@@ -2324,7 +2328,7 @@ export const builderConfig: Config<BuilderComponents> = {
               <div
                 className={`ace-richtext leading-relaxed ${bodyFont(bodySize) || "text-base"}`}
                 style={{ color: subColor(dk) }}
-                dangerouslySetInnerHTML={{ __html: richTextHtml(t.description) }}
+                dangerouslySetInnerHTML={{ __html: richTextHtml(t.description, t.title) }}
               />
             </div>
           </section>

@@ -8,25 +8,10 @@ import PageMeta from "@/components/PageMeta";
 import PageHero from "@/components/PageHero";
 import LocationModal from "@/components/LocationModal";
 import { C } from "@/data/constants";
+import ExternalMap from "@/components/ExternalMap";
 
 const OFFICE_ADDRESS = "T. Shettigeri, Virajpet, Kodagu (Coorg) — 571218, Karnataka, India";
 
-const SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "Ace Paddlers",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "T. Shettigeri",
-    addressLocality: "Virajpet",
-    addressRegion: "Kodagu",
-    postalCode: "571218",
-    addressCountry: "IN",
-  },
-  telephone: "+91-9480987672",
-  openingHours: "Mo-Su 07:00-18:00",
-  url: "https://acepaddlers.com",
-};
 
 export default function Contact() {
   return <EditablePage slug="contact"><ContactContent /></EditablePage>;
@@ -42,7 +27,6 @@ function ContactContent() {
           title="Contact Ace Paddlers | White Water Rafting in Coorg"
           description={`Contact ${biz.name} for white water rafting bookings in Coorg & Chikmagalur. Call ${biz.phones[0]}.${biz.addressLine ? ` Located at ${biz.addressLine}.` : ""}`}
           url="/contact"
-          schema={{ ...SCHEMA, name: biz.name, telephone: biz.phones[0] ?? SCHEMA.telephone }}
         />
         {showLocation && <LocationModal label="Ace Paddlers Office" query={OFFICE_ADDRESS} onClose={() => setShowLocation(false)} />}
 
@@ -146,9 +130,9 @@ function ContactContent() {
                   Find Us
                 </h2>
                 <div className="rounded-2xl overflow-hidden border" style={{ borderColor: C.mutedBorder, height: "420px" }}>
-                  <iframe
+                  <ExternalMap
                     title="Ace Paddlers location — T. Shettigeri, Virajpet, Kodagu"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15668.87!2d75.868!3d12.138!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba51a9fd8b2d5ab%3A0x8ef5eb2e0b2b0b1a!2sVirajpet%2C%20Karnataka%20571218!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(OFFICE_ADDRESS)}&output=embed`}
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}

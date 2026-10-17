@@ -6,4 +6,4 @@ Allow: /
 Disallow: /admin
 Disallow: /agent
 
-Sitemap: https://acepaddlers.com/sitemap.xml
+Sitemap: https://www.acepaddlers.com/sitemap.xml

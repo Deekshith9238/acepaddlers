@@ -33,6 +33,8 @@ export async function publicApi<T>(path: string, init?: RequestInit): Promise<T>
 
 /** Server error codes for stays, as sentences a person can act on. */
 export const STAY_ERRORS: Record<string, string> = {
+  invalid: "Check your name, email and phone, then try again.",
+  rate_limited: "Too many submissions. Please wait a few minutes or call us.",
   invalid_date: "Pick valid dates.",
   check_in_in_past: "Check-in can't be in the past.",
   check_out_before_check_in: "Check-out must be after check-in.",

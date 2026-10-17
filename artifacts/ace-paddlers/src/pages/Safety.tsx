@@ -70,12 +70,6 @@ const PROTOCOLS = [
   },
 ];
 
-const SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  name: "Safety — Ace Paddlers White Water Rafting",
-  description: "Ace Paddlers' comprehensive safety certifications, protocols, and 20+ year zero-accident track record in white water rafting and adventure tourism.",
-};
 
 export default function Safety() {
   return <EditablePage slug="safety"><SafetyContent /></EditablePage>;
@@ -90,7 +84,6 @@ function SafetyContent() {
           title="Safety & Certifications | Ace Paddlers White Water Rafting"
           description="NOLS, WFR, CPR & Rescue 3 certified guides. 20+ years of white water rafting with zero serious incidents. Learn about Ace Paddlers' safety standards and protocols."
           url="/safety"
-          schema={SCHEMA}
         />
 
         {/* Hero */}

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchTheme, applyTheme } from "@/lib/theme";
 import { fetchTypography, applyTypography } from "@/lib/typography";
 import { track } from "@/lib/analytics";
+import { CONSENT_EVENT } from "@/lib/consent";
 import Layout from "@/components/Layout";
 import { CurrentTourProvider } from "@/components/CurrentTourContext";
 import AdminLayout from "@/admin/AdminLayout";
@@ -30,6 +31,7 @@ const Blog = lazy(() => import("@/pages/Blog"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const BookingConfirmation = lazy(() => import("@/pages/BookingConfirmation"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("@/pages/TermsAndConditions"));
 const CancellationPolicy = lazy(() => import("@/pages/CancellationPolicy"));
 const DataDeletion = lazy(() => import("@/pages/DataDeletion"));
 const CustomPage = lazy(() => import("@/pages/CustomPage"));
@@ -94,8 +96,10 @@ function PageFallback() {
 function PageTracker() {
   const [location] = useLocation();
   useEffect(() => {
-    if (location.startsWith("/admin")) return;
-    track("pageview", { path: location });
+    const pageview = () => track("pageview", { path: location });
+    pageview();
+    window.addEventListener(CONSENT_EVENT, pageview);
+    return () => window.removeEventListener(CONSENT_EVENT, pageview);
   }, [location]);
   return null;
 }
@@ -132,6 +136,7 @@ function PublicRoutes() {
             <Route path="/blog/:slug" component={BlogPost} />
             <Route path="/booking/:ref" component={BookingConfirmation} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
+            <Route path="/terms-and-conditions" component={TermsAndConditions} />
             <Route path="/cancellation-policy" component={CancellationPolicy} />
             <Route path="/data-deletion" component={DataDeletion} />
             <Route path="/p/:slug" component={CustomPage} />

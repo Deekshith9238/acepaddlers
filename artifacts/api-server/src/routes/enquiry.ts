@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { CreateEnquiryBody } from "@workspace/api-zod";
+import { PublicEnquiryBody } from "../middlewares/publicForms";
 import { createEnquiry } from "../lib/enquiries";
 import { notifyNewEnquiry } from "../lib/notify";
 import { trackEvent } from "../lib/analytics";
@@ -15,7 +15,7 @@ const router: IRouter = Router();
  * echoing it back would leak the assignee and internal notes on later reads.
  */
 router.post("/enquiries", async (req, res) => {
-  const parsed = CreateEnquiryBody.safeParse(req.body);
+  const parsed = PublicEnquiryBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid", issues: parsed.error.issues });
     return;
@@ -38,10 +38,10 @@ router.post("/enquiries", async (req, res) => {
     const [t] = await db.select({ title: tours.title }).from(tours).where(eq(tours.id, enquiry.tourId)).limit(1);
     tourTitle = t?.title ?? null;
   }
-  trackEvent({
+  if (input.analyticsSessionId) trackEvent({
     type: "enquiry_created",
     path: "/enquiry",
-    sessionId: input.analyticsSessionId || `server:${enquiry.enquiryRef}`,
+    sessionId: input.analyticsSessionId,
     tourId: enquiry.tourId,
   }).catch(() => undefined);
 

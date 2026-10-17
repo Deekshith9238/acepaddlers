@@ -9,13 +9,6 @@ import { C } from "@/data/constants";
 import { useListBlogPosts } from "@workspace/api-client-react";
 import { adaptBlogSummary } from "@/lib/content";
 
-const SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "Blog",
-  name: "Ace Paddlers Blog — White Water Rafting & Adventure in Coorg",
-  description: "Guides, tips, and river knowledge from Ace Paddlers — South India's most experienced white water rafting operator.",
-  url: "https://acepaddlers.com/blog",
-};
 
 export default function Blog() {
   return <EditablePage slug="blog"><BlogContent /></EditablePage>;
@@ -30,7 +23,6 @@ function BlogContent() {
           title="Blog | White Water Rafting Guides & Tips | Ace Paddlers"
           description="Expert guides on white water rafting in Coorg, best seasons, river comparisons, safety certifications, and packing lists from Ace Paddlers — 20+ years on the Barapole & Bhadra rivers."
           url="/blog"
-          schema={SCHEMA}
         />
 
         {/* Hero */}

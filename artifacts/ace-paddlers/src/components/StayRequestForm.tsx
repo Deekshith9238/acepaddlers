@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, CheckCircle2 } from "lucide-react";
 import { C } from "@/data/constants";
 import { publicApi, stayError } from "@/admin/adminApi";
+import FormSpamTrap from "./FormSpamTrap";
 
 export interface StayInfo {
   isStay: boolean;
@@ -82,12 +83,13 @@ export default function StayRequestForm({ slug, stay }: { slug: string; stay: St
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const website = new FormData(e.currentTarget as HTMLFormElement).get("website");
     setBusy(true);
     setError(null);
     try {
       const r = await publicApi<{ ref: string; status: string; paymentLinkUrl: string | null }>("/stays", {
         method: "POST",
-        body: JSON.stringify({ slug, checkIn, checkOut, rooms, guests, customerName: name, customerEmail: email, customerPhone: phone, notes }),
+        body: JSON.stringify({ slug, checkIn, checkOut, rooms, guests, customerName: name, customerEmail: email, customerPhone: phone, notes, website }),
       });
       setSent(r);
     } catch (err) {
@@ -133,15 +135,16 @@ export default function StayRequestForm({ slug, stay }: { slug: string; stay: St
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <FormSpamTrap />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={label} style={{ color: "#5a8ea8" }}>Check-in</label>
-          <input type="date" required className={inputCls} style={{ borderColor: C.mutedBorder }} min={todayIso()} value={checkIn}
+          <input type="date" aria-label="Check-in" required className={inputCls} style={{ borderColor: C.mutedBorder }} min={todayIso()} value={checkIn}
             onChange={(e) => { setCheckIn(e.target.value); if (checkOut <= e.target.value) setCheckOut(plusDays(e.target.value, 1)); }} />
         </div>
         <div>
           <label className={label} style={{ color: "#5a8ea8" }}>Check-out</label>
-          <input type="date" required className={inputCls} style={{ borderColor: C.mutedBorder }} min={plusDays(checkIn, 1)} value={checkOut}
+          <input type="date" aria-label="Check-out" required className={inputCls} style={{ borderColor: C.mutedBorder }} min={plusDays(checkIn, 1)} value={checkOut}
             onChange={(e) => setCheckOut(e.target.value)} />
         </div>
       </div>
@@ -198,11 +201,11 @@ export default function StayRequestForm({ slug, stay }: { slug: string; stay: St
         </div>
       </div>
 
-      <input className={inputCls} style={{ borderColor: C.mutedBorder }} placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-      <input className={inputCls} style={{ borderColor: C.mutedBorder }} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <input className={inputCls} style={{ borderColor: C.mutedBorder }} placeholder="Phone (WhatsApp)" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+      <input className={inputCls} style={{ borderColor: C.mutedBorder }} aria-label="Full name" autoComplete="name" minLength={2} maxLength={120} pattern=".*\S.*" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <input className={inputCls} style={{ borderColor: C.mutedBorder }} type="email" aria-label="Email" autoComplete="email" maxLength={254} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <input className={inputCls} style={{ borderColor: C.mutedBorder }} type="tel" aria-label="Phone (WhatsApp)" autoComplete="tel" minLength={7} maxLength={32} pattern="[+0-9\s.\(\)\-]{7,32}" placeholder="Phone (WhatsApp)" value={phone} onChange={(e) => setPhone(e.target.value)} required />
       <textarea className={`${inputCls} min-h-[3.5rem]`} style={{ borderColor: C.mutedBorder }} placeholder="Anything the host should know? (optional)"
-        value={notes} onChange={(e) => setNotes(e.target.value)} />
+        aria-label="Anything the host should know? (optional)" maxLength={5000} value={notes} onChange={(e) => setNotes(e.target.value)} />
 
       <div className="space-y-1.5 rounded-lg p-3 text-sm" style={{ backgroundColor: C.muted }}>
         {quote ? (
@@ -225,7 +228,8 @@ export default function StayRequestForm({ slug, stay }: { slug: string; stay: St
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <p className="text-xs" style={{ color: C.text }}>Review our <a href="/terms-and-conditions" target="_blank" rel="noreferrer" className="underline">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank" rel="noreferrer" className="underline">Cancellation Policy</a>, and <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a> before booking.</p>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <button type="submit" disabled={busy || !quote}
         className="w-full rounded-full py-3.5 font-semibold disabled:opacity-60" style={{ backgroundColor: C.riverTeal, color: "white" }}>
         {busy ? "Sending…" : quote?.mode === "instant" ? "Book & pay now" : "Request these rooms"}

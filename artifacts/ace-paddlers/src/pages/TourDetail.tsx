@@ -1,3 +1,4 @@
+import NotFound from "./not-found";
 import { Link, useParams } from "wouter";
 import { Clock, MapPin, Users, ShieldCheck, Check, X, Minus, ArrowLeft, Phone, AlertTriangle, Calendar, Star, ChevronDown, ChevronUp, Weight } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -116,12 +117,7 @@ function TourDetailContent({ slug }: { slug: string }) {
   }
 
   if (!apiTour) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
-          <h1 className="text-4xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>Tour Not Found</h1>
-          <Link href="/tours" className="no-underline" style={{ color: C.riverTeal }}>← Back to all tours</Link>
-        </div>
-    );
+    return <NotFound />;
   }
 
   const tour = adaptTour(apiTour, typeLabels);
@@ -130,54 +126,8 @@ function TourDetailContent({ slug }: { slug: string }) {
   const heroImages = (apiTour.images?.length ? apiTour.images : [tour.heroImg]).filter(Boolean);
   const avgRating = rating.value;
 
-  const touristSchema = {
-    "@context": "https://schema.org",
-    "@type": "TouristAttraction",
-    name: tour.title,
-    description: richTextPlain(tour.description).split("\n\n")[0],
-    url: `https://acepaddlers.com/tours/${tour.slug}`,
-    image: `https://acepaddlers.com${tour.heroImg}`,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "T. Shettigeri",
-      addressLocality: "Virajpet",
-      addressRegion: "Kodagu",
-      postalCode: "571218",
-      addressCountry: "IN",
-    },
-    offers: {
-      "@type": "Offer",
-      price: tour.priceValue,
-      priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
-    },
-    ...(avgRating ? {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: avgRating,
-        // The count must match what the average was taken over — first-party
-        // reviews only. Averaging one set and counting another is precisely
-        // the kind of inflated markup that earns a manual action.
-        reviewCount: rating.count,
-        bestRating: 5,
-      }
-    } : {}),
-  };
-
-  const faqSchema = tour.faqs ? {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: tour.faqs.map(f => ({
-      "@type": "Question",
-      // Search engines get the words, not the formatting.
-      name: richTextPlain(f.q),
-      acceptedAnswer: { "@type": "Answer", text: richTextPlain(f.a) },
-    })),
-  } : null;
-
-  const combinedSchema = tour.faqs
-    ? [touristSchema, faqSchema]
-    : touristSchema;
+  // The trip's structured data (product, offer, rating, FAQs) is in the page's
+  // HTML from the server — see api-server/src/lib/seo.ts.
 
   // Only days that carry something worth showing: the editor's day builder
   // leaves an empty row behind when someone adds a day and changes their mind.
@@ -207,7 +157,6 @@ function TourDetailContent({ slug }: { slug: string }) {
           description={tour.ogDescription ?? tour.metaDescription ?? `${tour.tagline} ${tour.price}/person. NOLS-certified guides. ${tour.season ?? "Year-round"}. Book with Ace Paddlers — 20+ years, zero accidents.`}
           url={`/tours/${tour.slug}`}
           image={tour.ogImage ?? tour.heroImg}
-          schema={combinedSchema}
         />
 
         {/* Hero */}
@@ -335,7 +284,7 @@ function TourDetailContent({ slug }: { slug: string }) {
                   <h2 className="text-2xl mb-6" style={{ fontFamily: "var(--app-font-serif)", color: C.secondary }}>
                     About this Experience
                   </h2>
-                  <div className="ace-richtext leading-relaxed text-base" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(tour.description) }} />
+                  <div className="ace-richtext leading-relaxed text-base" style={{ color: "#2e5a74" }} dangerouslySetInnerHTML={{ __html: richTextHtml(tour.description, tour.title) }} />
                 </div>
               </Animate>
 

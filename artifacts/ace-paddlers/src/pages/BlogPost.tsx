@@ -1,3 +1,4 @@
+import NotFound from "./not-found";
 import { useState, useEffect } from "react";
 import { useBusiness } from "@/lib/useBusiness";
 import { Link, useParams } from "wouter";
@@ -26,12 +27,7 @@ export default function BlogPost() {
   }
 
   if (!apiPost) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
-          <h1 className="text-4xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>Post Not Found</h1>
-          <Link href="/blog" className="no-underline" style={{ color: C.riverTeal }}>← Back to Blog</Link>
-        </div>
-    );
+    return <NotFound />;
   }
 
   const post = adaptBlogPost(apiPost);

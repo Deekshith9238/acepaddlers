@@ -17,29 +17,6 @@ import { adaptTour, useTourTypeLabels } from "@/lib/content";
 
 const BuilderRender = lazy(() => import("@/builder/BuilderRender"));
 
-const LOCAL_BUSINESS_SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "Ace Paddlers",
-  description: "South India's premier white water rafting operator. NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. Rafting on Barapole & Bhadra rivers in Coorg & Chikmagalur.",
-  url: "https://acepaddlers.com",
-  telephone: "+91-9480987672",
-  priceRange: "₹₹",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "T. Shettigeri",
-    addressLocality: "Virajpet",
-    addressRegion: "Kodagu",
-    postalCode: "571218",
-    addressCountry: "IN",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: "12.138",
-    longitude: "75.868",
-  },
-  openingHours: "Mo-Su 07:00-18:00",
-};
 
 export default function Home() {
   const biz = useBusiness();
@@ -65,19 +42,6 @@ export default function Home() {
           title="White Water Rafting in Coorg & Chikmagalur | Ace Paddlers"
           description="Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur."
           url="/"
-          schema={{
-            ...LOCAL_BUSINESS_SCHEMA,
-            name: biz.name,
-            telephone: biz.phones[0] ?? LOCAL_BUSINESS_SCHEMA.telephone,
-            // The profiles Google should tie to this business — only the ones
-            // set under Settings → Business details. These were hardcoded to
-            // instagram.com/acepaddlers and facebook.com/acepaddlers, which
-            // nobody had checked belonged to the business.
-            ...(() => {
-              const sameAs = [biz.instagram, biz.facebook, biz.youtube, biz.tripadvisor].filter(Boolean);
-              return sameAs.length ? { sameAs } : {};
-            })(),
-          }}
         />
 
         {/* ── Hero ── */}

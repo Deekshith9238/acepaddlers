@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { withinLeadTime } from "../lib/trip-rules";
 import { db, tours, tourSlots, bookings, payments } from "@workspace/db";
-import { CreateBookingBody, VerifyBookingPaymentBody, ValidateCouponBody, QuoteBookingBody } from "@workspace/api-zod";
+import { VerifyBookingPaymentBody, ValidateCouponBody, QuoteBookingBody } from "@workspace/api-zod";
+import { PublicBookingBody } from "../middlewares/publicForms";
 import { createBooking, toBookingDetail, BookingError, issueBookingOrder, markBookingPaidAndConfirm } from "../lib/booking";
 import { notifyNewBooking } from "../lib/notify";
 import { verifyPaymentSignature } from "../lib/razorpay";
@@ -240,7 +241,7 @@ router.post("/quote", async (req, res) => {
 });
 
 router.post("/bookings", async (req, res) => {
-  const parsed = CreateBookingBody.safeParse(req.body);
+  const parsed = PublicBookingBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid", issues: parsed.error.issues });
     return;
@@ -260,14 +261,11 @@ router.post("/bookings", async (req, res) => {
     const detail = toBookingDetail(booking, tour, slot, payment);
     // Fire-and-forget notifications — never block/break the booking on these.
     // Recorded here and *only* here, so a booking is never counted twice.
-    // The browser passes its anonymous session id so the booking joins up with
-    // that visitor's pageviews; bookings with no browser behind them (the
-    // WhatsApp bot, an admin entry) fall back to a per-booking id, which counts
-    // the sale without inventing a visitor who browsed.
-    trackEvent({
+    // Only join the booking to analytics when the visitor opted in.
+    if (parsed.data.analyticsSessionId) trackEvent({
       type: "booking_created",
       path: `/tours/${detail.tourSlug ?? ""}`,
-      sessionId: parsed.data.analyticsSessionId || `server:${detail.bookingRef}`,
+      sessionId: parsed.data.analyticsSessionId,
       tourId: detail.tourId,
       value: detail.totalAmount,
     }).catch(() => undefined);

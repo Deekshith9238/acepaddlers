@@ -121,7 +121,7 @@ function GalleryContent() {
                       boxShadow: "0 2px 8px rgba(13,45,64,0.10)",
                     }}
                     onClick={() => setLightboxIndex(idx)}>
-                    <SmartImage src={item.src} alt={item.alt ?? ""} loading="lazy"
+                    <SmartImage src={item.src} alt={item.alt?.trim() || item.caption?.trim() || `${item.category} with Ace Paddlers`} loading="lazy"
                       wrapperClassName="relative w-full h-full"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <Overlay item={item} />
@@ -135,7 +135,7 @@ function GalleryContent() {
                     className="group relative mb-4 overflow-hidden rounded-xl cursor-pointer break-inside-avoid"
                     style={{ boxShadow: "0 2px 8px rgba(13,45,64,0.10)" }}
                     onClick={() => setLightboxIndex(idx)}>
-                    <SmartImage src={item.src} alt={item.alt ?? ""} loading="lazy"
+                    <SmartImage src={item.src} alt={item.alt?.trim() || item.caption?.trim() || `${item.category} with Ace Paddlers`} loading="lazy"
                       wrapperClassName={`relative w-full ${item.tall ? "h-72 sm:h-80" : "h-52 sm:h-60"}`}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <Overlay item={item} />
@@ -178,7 +178,7 @@ function GalleryContent() {
                 </>
               )}
 
-              <img src={lightbox.src} alt={lightbox.alt ?? ""}
+              <img src={lightbox.src} alt={lightbox.alt?.trim() || lightbox.caption?.trim() || `${lightbox.category} with Ace Paddlers`}
                 className="w-full max-h-[80vh] object-contain rounded-xl" />
               <div className="mt-4 text-center">
                 <span className="text-xs font-bold uppercase tracking-wider mr-3"

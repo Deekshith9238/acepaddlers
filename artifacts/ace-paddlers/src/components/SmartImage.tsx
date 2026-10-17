@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type SmartImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+  alt: string;
   /**
    * Classes applied to the positioning wrapper (sizing, aspect ratio, rounding, etc.).
    * Should include a positioning class (`relative` or `absolute`) so the shimmer
@@ -44,7 +45,7 @@ export default function SmartImage({ src, alt, wrapperClassName = "", className 
       {missing ? null : <img
         ref={imgRef}
         src={src}
-        alt={alt}
+        alt={alt ?? ""}
         onLoad={() => setLoaded(true)}
         className={`${className} transition-opacity duration-700 ease-out ${loaded ? "opacity-100" : "opacity-0"}`}
         {...rest}

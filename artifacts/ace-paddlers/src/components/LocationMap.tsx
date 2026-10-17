@@ -1,4 +1,5 @@
 import { C } from "@/data/constants";
+import ExternalMap from "./ExternalMap";
 import { mapEmbedUrl, mapsDirectionsUrl, useMapsKey } from "@/lib/googleMaps";
 
 /**
@@ -27,7 +28,7 @@ export default function LocationMap({
   return (
     <div>
       <div className="overflow-hidden rounded-xl border" style={{ borderColor: dark ? "rgba(255,255,255,0.18)" : C.mutedBorder }}>
-        <iframe
+        <ExternalMap
           title={title}
           className="block w-full border-0"
           style={{ height }}

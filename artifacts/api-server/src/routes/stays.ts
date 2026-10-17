@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, tours } from "@workspace/db";
+import { PublicContactBody } from "../middlewares/publicForms";
 import {
   StayError,
   autofillFor,
@@ -83,6 +84,11 @@ router.post("/stays/quote", async (req, res) => {
 });
 
 router.post("/stays", async (req, res) => {
+  const contact = PublicContactBody.safeParse(req.body);
+  if (!contact.success || (req.body?.notes != null && (typeof req.body.notes !== "string" || req.body.notes.length > 5000))) {
+    res.status(400).json({ error: "invalid" });
+    return;
+  }
   const tour = await publishedTour(String(req.body?.slug ?? ""));
   if (!tour) {
     res.status(404).json({ error: "not_found" });
@@ -91,9 +97,7 @@ router.post("/stays", async (req, res) => {
   try {
     const row = await createStayRequest(tour, {
       ...readRequest(req.body),
-      customerName: String(req.body?.customerName ?? ""),
-      customerEmail: String(req.body?.customerEmail ?? ""),
-      customerPhone: String(req.body?.customerPhone ?? ""),
+      ...contact.data,
       notes: typeof req.body?.notes === "string" ? req.body.notes : null,
     });
     res.status(201).json({

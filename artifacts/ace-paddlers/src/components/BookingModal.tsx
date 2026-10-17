@@ -26,6 +26,7 @@ import { track, analyticsSessionId } from "@/lib/analytics";
 import type { BookingText } from "@/lib/site-config";
 import StayRequestForm, { type StayInfo } from "@/components/StayRequestForm";
 import { publicApi } from "@/admin/adminApi";
+import FormSpamTrap from "./FormSpamTrap";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -128,6 +129,7 @@ export default function BookingModal({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cphone, setCphone] = useState("");
+  const [contactForHelp, setContactForHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [charges, setCharges] = useState<Charge[]>([]);
   // Only asked for when a live charge actually depends on it — otherwise the
@@ -164,7 +166,7 @@ export default function BookingModal({
    * number, and only ever fires once.
    */
   useEffect(() => {
-    if (intentSent.current) return;
+    if (intentSent.current || !contactForHelp) return;
     const cleanName = name.trim();
     const digits = cphone.replace(/\D/g, "");
     if (cleanName.length < 2 || digits.length < 10) return;
@@ -181,7 +183,7 @@ export default function BookingModal({
       }).catch(() => undefined);
     }, 2500);
     return () => clearTimeout(timer);
-  }, [name, cphone, tourSlug]);
+  }, [name, cphone, tourSlug, contactForHelp]);
 
   // Re-priced whenever the method changes, because that is exactly what a
   // method-scoped charge keys off.
@@ -452,6 +454,7 @@ export default function BookingModal({
           customerName: name,
           customerEmail: email,
           customerPhone: cphone,
+          ...{ website: new FormData(e.currentTarget as HTMLFormElement).get("website") },
           numGuests: partySize,
           addons: addonSelections,
           addonsOnly,
@@ -473,7 +476,7 @@ export default function BookingModal({
         },
         onError: (err: unknown) => {
           const status = (err as { status?: number })?.status;
-          setError(status === 409 ? "Sorry, that slot just filled up. Pick another date." : "Could not complete booking. Please try again.");
+          setError(status === 429 ? "Too many submissions. Please wait a few minutes or call us." : status === 409 ? "Sorry, that slot just filled up. Pick another date." : "Could not complete booking. Please check your details and try again.");
         },
       },
     );
@@ -646,6 +649,7 @@ export default function BookingModal({
             )
           ) : (
             <form onSubmit={submit} className="space-y-4">
+              <FormSpamTrap />
               <div>
                 <button type="button" onClick={backToCalendar}
                   className="flex items-center gap-1.5 text-xs font-semibold mb-3" style={{ color: C.riverTeal }}>
@@ -803,11 +807,19 @@ export default function BookingModal({
               )}
 
               <input className={inputCls} style={{ borderColor: C.mutedBorder }} placeholder="Full name"
+                aria-label="Full name" autoComplete="name" minLength={2} maxLength={120} pattern=".*\S.*"
                 value={name} onChange={(e) => setName(e.target.value)} required />
               <input className={inputCls} style={{ borderColor: C.mutedBorder }} type="email" placeholder="Email"
+                aria-label="Email" autoComplete="email" maxLength={254}
                 value={email} onChange={(e) => setEmail(e.target.value)} required />
               <input className={inputCls} style={{ borderColor: C.mutedBorder }} placeholder="Phone (WhatsApp)"
+                type="tel" aria-label="Phone (WhatsApp)" autoComplete="tel" minLength={7} maxLength={32} pattern="[+0-9\s.\(\)\-]{7,32}"
                 value={cphone} onChange={(e) => setCphone(e.target.value)} required />
+              <label className="flex gap-2 text-sm" style={{ color: C.text }}>
+                <input type="checkbox" checked={contactForHelp} onChange={(e) => setContactForHelp(e.target.checked)} />
+                You may contact me to help complete this booking before I submit it (optional).
+              </label>
+              <p className="text-xs" style={{ color: C.text }}>Review our <a href="/terms-and-conditions" target="_blank" rel="noreferrer" className="underline">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank" rel="noreferrer" className="underline">Cancellation Policy</a>, and <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a> before booking.</p>
 
               {payMethodRequired && payMethods.length > 0 && (
                 <div>
@@ -906,7 +918,7 @@ export default function BookingModal({
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
               {addonsOnly && addonSelections.length === 0 && (
                 <p className="text-sm" style={{ color: "#b45309" }}>Pick at least one add-on to continue.</p>

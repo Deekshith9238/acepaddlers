@@ -9,6 +9,7 @@ import PageHero from "@/components/PageHero";
 import { C } from "@/data/constants";
 import { useCreateEnquiry } from "@workspace/api-client-react";
 import { analyticsSessionId } from "@/lib/analytics";
+import FormSpamTrap from "@/components/FormSpamTrap";
 
 const PACKAGES = [
   {
@@ -42,19 +43,6 @@ const BENEFITS = [
   { icon: <Briefcase className="w-6 h-6" />, title: "Corporate Safety Standards", desc: "Our NOLS and Rescue 3 certified guides meet the safety requirements of leading Indian corporates. Zero incidents across thousands of corporate guests." },
 ];
 
-const SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "TouristAttraction",
-  name: "Ace Paddlers Corporate Team Outing — Coorg",
-  description: "Corporate team outings in Coorg featuring white water rafting, camping, and leadership activities for groups of 10–100 people.",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Virajpet",
-    addressRegion: "Kodagu",
-    postalCode: "571218",
-    addressCountry: "IN",
-  },
-};
 
 export default function Corporate() {
   return <EditablePage slug="corporate"><CorporateContent /></EditablePage>;
@@ -74,9 +62,7 @@ function CorporateContent() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    // "25 people" / "about 30" — the field is free text by design, so pull the
-    // first number out of it and keep the original wording in `extra`.
-    const guests = Number.parseInt(form.groupSize.replace(/\D/g, ""), 10);
+    const guests = Number(form.groupSize);
     createEnquiry.mutate(
       {
         data: {
@@ -88,6 +74,7 @@ function CorporateContent() {
           message: form.message.trim() || null,
           source: "corporate",
           analyticsSessionId: analyticsSessionId(),
+          ...{ website: new FormData(e.currentTarget as HTMLFormElement).get("website") },
           extra: {
             "Activity of interest": form.activity,
             "Group size (as entered)": form.groupSize,
@@ -97,7 +84,7 @@ function CorporateContent() {
       },
       {
         onSuccess: () => setSubmitted(true),
-        onError: () => setError(`Something went wrong sending that. Please call us on ${biz.phones[0]} and we'll sort it out.`),
+        onError: (err: unknown) => setError((err as { status?: number })?.status === 429 ? "Too many submissions. Please wait a few minutes or call us." : `Please check your details and try again, or call us on ${biz.phones[0]}.`),
       },
     );
   };
@@ -108,7 +95,6 @@ function CorporateContent() {
           title="Corporate Team Outing Coorg | White Water Rafting | Ace Paddlers"
           description="Corporate team outings in Coorg featuring white water rafting on the Barapole River. Groups of 10–100 people. Fully managed packages from ₹1,200/person. NOLS-certified guides."
           url="/corporate-groups"
-          schema={SCHEMA}
         />
 
         {/* Hero */}
@@ -233,19 +219,27 @@ function CorporateContent() {
                 </div>
               ) : (
                 <form onSubmit={submit} className="bg-white rounded-2xl p-8 border space-y-5" style={{ borderColor: C.mutedBorder }}>
+                  <FormSpamTrap />
                   <div className="grid sm:grid-cols-2 gap-5">
                     {[
                       { name: "name", label: "Your Name *", placeholder: "Rahul Sharma", type: "text", required: true },
                       { name: "company", label: "Company / Organisation *", placeholder: "Acme Corp", type: "text", required: true },
                       { name: "email", label: "Email Address *", placeholder: "rahul@company.com", type: "email", required: true },
                       { name: "phone", label: "Phone Number *", placeholder: "+91 98765 43210", type: "tel", required: true },
-                      { name: "groupSize", label: "Estimated Group Size *", placeholder: "25 people", type: "text", required: true },
-                      { name: "date", label: "Preferred Date(s)", placeholder: "September 2025", type: "text", required: false },
+                      { name: "groupSize", label: "Estimated Group Size *", placeholder: "25", type: "number", required: true },
+                      { name: "date", label: "Preferred Date(s)", placeholder: "Your preferred travel dates", type: "text", required: false },
                     ].map(field => (
                       <div key={field.name}>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>{field.label}</label>
+                        <label htmlFor={`corporate-${field.name}`} className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>{field.label}</label>
                         <input
                           type={field.type}
+                          id={`corporate-${field.name}`}
+                          min={field.type === "number" ? 1 : undefined}
+                          max={field.type === "number" ? 1000 : undefined}
+                          step={field.type === "number" ? 1 : undefined}
+                          minLength={field.name === "name" ? 2 : undefined}
+                          maxLength={field.name === "email" ? 254 : field.name === "phone" ? 32 : 200}
+                          pattern={field.name === "phone" ? "[+0-9\\s.\\(\\)\\-]{7,32}" : field.required && field.type === "text" ? ".*\\S.*" : undefined}
                           name={field.name}
                           required={field.required}
                           placeholder={field.placeholder}
@@ -261,8 +255,8 @@ function CorporateContent() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>Activity of Interest</label>
-                    <select name="activity" value={form.activity} onChange={handle}
+                    <label htmlFor="corporate-activity" className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>Activity of Interest</label>
+                    <select id="corporate-activity" name="activity" value={form.activity} onChange={handle}
                       className="w-full rounded-xl px-4 py-3 text-sm border"
                       style={{ borderColor: C.mutedBorder, color: C.text, backgroundColor: C.bg }}>
                       <option>Rafting Day Outing</option>
@@ -273,8 +267,8 @@ function CorporateContent() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>Additional Requirements</label>
-                    <textarea name="message" value={form.message} onChange={handle} rows={4}
+                    <label htmlFor="corporate-message" className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>Additional Requirements</label>
+                    <textarea id="corporate-message" name="message" maxLength={5000} value={form.message} onChange={handle} rows={4}
                       placeholder="Any special requirements, budget range, or questions..."
                       className="w-full rounded-xl px-4 py-3 text-sm border resize-none"
                       style={{ borderColor: C.mutedBorder, color: C.text, backgroundColor: C.bg }}
@@ -283,7 +277,8 @@ function CorporateContent() {
                     />
                   </div>
 
-                  {error && <p className="text-sm" style={{ color: "#b91c1c" }}>{error}</p>}
+                  <p className="text-xs">We use these details to respond to your enquiry. <a href="/privacy-policy" className="underline">Privacy Policy</a></p>
+                  {error && <p role="alert" className="text-sm" style={{ color: "#b91c1c" }}>{error}</p>}
 
                   <button type="submit"
                     disabled={createEnquiry.isPending}

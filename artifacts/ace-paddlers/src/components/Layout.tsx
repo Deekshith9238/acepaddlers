@@ -14,6 +14,7 @@ import { useBusiness } from "@/lib/useBusiness";
 import { BookingModalContext } from "@/lib/bookingModalContext";
 import BookingModal from "./BookingModal";
 import FloatingPrice from "./FloatingPrice";
+import CookieConsent from "./CookieConsent";
 
 function DropMenu({ items, visible }: { items: DropItem[]; visible: boolean }) {
   return (
@@ -475,8 +476,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4 flex-wrap justify-center">
               <span>© 2026, Ace Paddlers. All rights reserved.</span>
               <Link href="/privacy-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Privacy Policy</Link>
+              <Link href="/terms-and-conditions" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Terms & Conditions</Link>
               <Link href="/cancellation-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Cancellation Policy</Link>
               <Link href="/data-deletion" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Data Deletion</Link>
+              <CookieConsent />
             </div>
             <div className="flex gap-6">
               {/* Only what is set. These used to be three links all pointing at

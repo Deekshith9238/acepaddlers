@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { invalidateOnWrite } from "../middlewares/invalidateOnWrite";
+import { protectPublicForm } from "../middlewares/publicForms";
 import healthRouter from "./health";
 import contentRouter from "./content";
 import bookingRouter from "./booking";
@@ -42,6 +43,7 @@ import adminStaysRouter from "./admin/stays";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.post(["/enquiries", "/bookings", "/stays", "/booking-intent"], protectPublicForm);
 router.use(contentRouter);
 router.use(bookingRouter);
 router.use(staysRouter);

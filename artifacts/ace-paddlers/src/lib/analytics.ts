@@ -1,3 +1,5 @@
+import { cookieConsent } from "./consent";
+
 /**
  * Anonymous first-party page tracking.
  *
@@ -13,7 +15,8 @@ function baseUrl(): string {
   return (import.meta.env.VITE_API_URL as string) || "";
 }
 
-export function analyticsSessionId(): string {
+export function analyticsSessionId(): string | null {
+  if (cookieConsent() !== "accepted") return null;
   try {
     let id = sessionStorage.getItem(SESSION_KEY);
     if (!id) {
@@ -67,6 +70,7 @@ function attribution(): Attribution {
 export type TrackType = "pageview" | "booking_started" | "booking_created" | "enquiry_created";
 
 export function track(type: TrackType, opts: { path?: string; tourId?: string | null; value?: number | null } = {}): void {
+  if (cookieConsent() !== "accepted" || /^\/(admin|agent|partner|booking)(\/|$)/.test(window.location.pathname)) return;
   try {
     const attr = attribution();
     const body = JSON.stringify({

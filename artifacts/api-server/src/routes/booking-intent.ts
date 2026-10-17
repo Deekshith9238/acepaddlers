@@ -6,6 +6,7 @@ import { getSiteConfig } from "../lib/site-config";
 import { shouldAlertFormStart } from "../lib/form-intent";
 import { notifyBookingFormStarted } from "../lib/notify";
 import { logger } from "../lib/logger";
+import { PublicContactBody } from "../middlewares/publicForms";
 
 const router: IRouter = Router();
 
@@ -18,7 +19,7 @@ const router: IRouter = Router();
  * to make.
  */
 router.post("/booking-intent", (req, res) => {
-  const parsed = ReportBookingIntentBody.safeParse(req.body);
+  const parsed = ReportBookingIntentBody.extend(PublicContactBody.pick({ customerName: true, customerPhone: true }).shape).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid" });
     return;

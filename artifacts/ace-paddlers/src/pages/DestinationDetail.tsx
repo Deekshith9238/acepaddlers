@@ -1,3 +1,4 @@
+import NotFound from "./not-found";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import EditablePage from "@/builder/EditablePage";
@@ -35,12 +36,7 @@ function DestinationDetailContent({ slug }: { slug: string }) {
   }
 
   if (!dest) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
-          <h1 className="text-4xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>Destination Not Found</h1>
-          <Link href="/destinations" className="no-underline" style={{ color: C.riverTeal }}>← All destinations</Link>
-        </div>
-    );
+    return <NotFound />;
   }
 
   const view: DestView = {

@@ -1,10 +1,10 @@
 import PageMeta from "@/components/PageMeta";
 import EditablePage from "@/builder/EditablePage";
 import { useBusiness } from "@/lib/useBusiness";
-import { telHref, waHref } from "@/lib/site-config";
+import { telHref } from "@/lib/site-config";
 import { C } from "@/data/constants";
 
-const UPDATED = "July 2026";
+const UPDATED = "15 October 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -35,46 +35,50 @@ function PrivacyPolicyContent() {
             <Section title="Protecting Consumer Privacy">
               <p>
                 At Ace Paddlers, we strongly believe in protecting consumer privacy. That's why we only ask you for
-                information related to the services we provide. We never sell, rent, share, trade or give away any of
-                your personal information to anyone. This privacy policy describes what information we collect from
+                information related to the services we provide. We do not sell or rent your personal information.
+                We share it with service providers where needed to arrange and support your booking, as described below.
+                This privacy policy describes what information we collect from
                 you, how it is used and what security measures we take to protect it.
               </p>
             </Section>
 
-            <Section title="IP Addresses & Cookies">
+            <Section title="Cookies, Storage & Analytics">
               <p>
-                In order for us to provide an attractive and easy-to-navigate website, we must occasionally use our
-                visitors' IP addresses for purposes such as optimising our use of search engines or diagnosing
-                problems with our server. Furthermore, to better tailor our website and product offerings to our
-                customers, we may use analytics tools to collect information on how visitors navigate our website.
-                Cookies are used to collect aggregated data that allows us to see the origins of web traffic, amount
-                of visitors, visitors' operating systems, browser types, etc. This data does not personally identify
-                you in any way. You can choose not to accept cookies by disabling them in the settings of your web
-                browser.
+                Essential cookies and browser storage support sign-in, security, and your privacy preferences.
+                Your analytics choice is saved in local storage as ap_cookie_consent_v1. Optional first-party analytics
+                starts only when you choose Allow analytics. It records page paths, referring sites, campaign information,
+                and booking or enquiry events. The session identifier (ap_sid) and attribution (ap_attr) stay in
+                session storage for the tab. Choose Essential only to decline, or use Cookie settings in the footer
+                to change your choice and clear this tab’s analytics identifiers. We also process IP addresses in
+                server logs and to protect forms against abuse.
               </p>
+              <p>Interactive maps load only when you request them. Maps, sign-in, payments, and externally hosted fonts
+                or images connect to their respective providers, which receive connection information and may use
+                their own storage or cookies. Their privacy notices apply to those services.</p>
             </Section>
 
             <Section title="Bookings & Payments">
               <p>
                 When you book a tour on our website, we require contact information, such as your name and e-mail
                 address and, in some cases, partial or full postal address or telephone number. This information is
-                only used to contact you with information about your tour. In rare cases, we may need to share your
-                contact information with tour guides who are responsible for the booked tour. Otherwise, we do not
-                sell or share this information with any third parties.
+                used to respond to your request and arrange your trip. We may share necessary information with
+                guides, accommodation partners, payment, hosting, email, and WhatsApp service providers supporting
+                your booking. If you select the optional booking-help checkbox, we may contact you to help complete
+                an unfinished booking. Otherwise, booking contact details are sent when you submit the form.
               </p>
               <p>
                 At the time of booking, we may also ask you for payment. Online payments are processed securely by
                 our payment partner — your card, UPI, or bank details are entered directly with the payment gateway
-                and are never stored on our servers. We use the utmost level of online security to safeguard your
-                personal data.
+                and are not stored on our servers. We retain payment references and status to manage your booking.
               </p>
             </Section>
 
             <Section title="Online Security">
               <p>
-                Our website is protected by the utmost level of online security, meaning your personal data is safe
-                with us. All transactions on the site are secured with industry-standard encryption, and any data we
-                gather from users is securely stored and safeguarded by the best firewalls available.
+                We use access controls and encrypted connections to protect information. No online service can
+                guarantee absolute security. We retain information as needed to provide services, handle support
+                and disputes, and meet applicable record-keeping obligations. Contact us about retention or deletion
+                of your records.
               </p>
             </Section>
 
@@ -104,7 +108,7 @@ function PrivacyPolicyContent() {
                 · Phone/WhatsApp: <a href={telHref(biz.phones[0] ?? "")} className="underline" style={{ color: C.riverTeal }}>{biz.phones[0]}</a>
               </p>
               <p className="text-xs" style={{ color: "#8aabb8" }}>
-                See also our <a href="/cancellation-policy" className="underline" style={{ color: C.riverTeal }}>Cancellation Policy</a>.
+                See also our <a href="/terms-and-conditions" className="underline" style={{ color: C.riverTeal }}>Terms & Conditions</a> and <a href="/cancellation-policy" className="underline" style={{ color: C.riverTeal }}>Cancellation Policy</a>.
               </p>
             </Section>
           </div>

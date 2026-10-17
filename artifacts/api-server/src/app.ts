@@ -12,6 +12,9 @@ import { firebaseAuthProxy } from "./middlewares/firebaseAuthProxy";
 import { redirectMiddleware } from "./lib/redirects";
 
 const app: Express = express();
+// Caddy reaches the container from Docker's private network. It overwrites
+// X-Forwarded-For; public clients cannot reach the loopback-bound app port.
+app.set("trust proxy", ["loopback", "uniquelocal"]);
 
 app.use(
   pinoHttp({

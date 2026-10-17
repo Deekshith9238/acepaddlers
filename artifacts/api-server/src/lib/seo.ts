@@ -3,6 +3,7 @@ import path from "node:path";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { db, tours, destinations, blogPosts, pages } from "@workspace/db";
 import { getSiteConfig } from "./site-config";
+import { firstPartyRating, listPublishedReviews } from "./reviews";
 
 /**
  * Server-side SEO for the client-rendered SPA. The React app only sets
@@ -17,9 +18,11 @@ import { getSiteConfig } from "./site-config";
  * button clears and re-warms the cache after content edits.
  */
 
-const ORIGIN = "https://acepaddlers.com";
+// The real address: the bare domain only 301s to www, and a canonical that
+// points at a redirect tells search engines the wrong page is the original.
+const ORIGIN = (process.env.PUBLIC_SITE_URL || "https://www.acepaddlers.com").replace(/\/+$/, "");
 const SITE_SUFFIX = "Ace Paddlers";
-const DEFAULT_OG_IMAGE = `${ORIGIN}/images/rafting-hero.png`;
+const DEFAULT_OG_IMAGE = `${ORIGIN}/opengraph.jpg`;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 let webDir = "";
@@ -48,6 +51,8 @@ type RouteMeta = {
   canonicalPath: string;
   image?: string;
   jsonLd?: object;
+  /** Open Graph type: "website" unless the page is an article. */
+  ogType?: "website" | "article";
   noindex?: boolean;
   status: number;
   /** Plain crawlable HTML injected into #root (replaced by React on hydration). */
@@ -128,6 +133,12 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
     h1: "Privacy Policy",
     text: "How we collect, use, and protect your personal information when you book with Ace Paddlers.",
   },
+  "/terms-and-conditions": {
+    title: "Terms & Conditions | Ace Paddlers",
+    description: "Terms for using the Ace Paddlers website, requesting bookings, payments, participation, cancellations, and contacting our team.",
+    h1: "Terms & Conditions",
+    text: "Website use, booking requests, payments, participation, and cancellation terms for Ace Paddlers.",
+  },
   "/data-deletion": {
     title: "Data Deletion Instructions | Ace Paddlers",
     description: "How to request deletion of your personal information held by Ace Paddlers, including data collected via our website or WhatsApp Business messaging.",
@@ -176,41 +187,71 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
   },
 };
 
-const LOCAL_BUSINESS = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "Ace Paddlers",
-  description: "White water rafting, camping and homestays in Coorg & Chikmagalur, Karnataka.",
-  url: ORIGIN,
-  telephone: "+91 94809 87672",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "T. Shettigeri, Virajpet",
-    addressLocality: "Kodagu",
-    addressRegion: "Karnataka",
-    postalCode: "571218",
-    addressCountry: "IN",
-  },
-};
+const BUSINESS_ID = `${ORIGIN}/#business`;
+const WEBSITE_ID = `${ORIGIN}/#website`;
 
 /**
- * The home page's business schema with its social profiles.
+ * The business as structured data, with its social profiles.
  *
  * `sameAs` tells Google which Instagram, Facebook, YouTube and TripAdvisor
  * pages belong to this business. It comes from Settings → Business details,
  * and lists only what is filled in: a guessed profile URL in structured data
  * is worse than none, because it attaches someone else's page to the business.
  */
-async function localBusinessSchema(): Promise<Record<string, unknown>> {
+async function businessNode(): Promise<Record<string, unknown>> {
   const { business } = await getSiteConfig();
   const sameAs = [business.instagram, business.facebook, business.youtube, business.tripadvisor].filter(Boolean);
   return {
-    ...LOCAL_BUSINESS,
-    name: business.name || LOCAL_BUSINESS.name,
-    ...(business.phones[0] ? { telephone: business.phones[0] } : {}),
+    "@type": "LocalBusiness",
+    "@id": BUSINESS_ID,
+    name: business.name || "Ace Paddlers",
+    description: "White water rafting, water sports, camping and homestays in Coorg & Chikmagalur, Karnataka.",
+    url: ORIGIN,
+    logo: `${ORIGIN}/favicon-192.png`,
+    image: DEFAULT_OG_IMAGE,
+    telephone: business.phones[0] || "+91 94809 87672",
+    ...(business.email ? { email: business.email } : {}),
+    priceRange: "₹₹",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "T. Shettigeri, Virajpet",
+      addressLocality: "Kodagu",
+      addressRegion: "Karnataka",
+      postalCode: "571218",
+      addressCountry: "IN",
+    },
+    areaServed: ["Coorg", "Chikmagalur", "Karnataka"],
     ...(sameAs.length ? { sameAs } : {}),
   };
 }
+
+const websiteNode = () => ({
+  "@type": "WebSite",
+  "@id": WEBSITE_ID,
+  url: ORIGIN,
+  name: "Ace Paddlers",
+  inLanguage: "en-IN",
+  publisher: { "@id": BUSINESS_ID },
+});
+
+/** Home › … › this page, for the breadcrumb trail search results show. */
+const breadcrumbs = (trail: [name: string, path: string][]) => ({
+  "@type": "BreadcrumbList",
+  itemListElement: [["Home", "/"] as [string, string], ...trail].map(([name, path], i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name,
+    item: `${ORIGIN}${path === "/" ? "/" : path}`,
+  })),
+});
+
+const graph = (...nodes: (Record<string, unknown> | null | undefined)[]) => ({
+  "@context": "https://schema.org",
+  "@graph": nodes.filter(Boolean),
+});
+
+/** The breadcrumb name of a built-in page: its heading, minus the brand. */
+const crumbName = (h1: string) => h1.replace(/^Our |^The Ace Paddlers /, "");
 
 const inr = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
@@ -240,11 +281,36 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
         .from(blogPosts).where(eq(blogPosts.status, "published")).orderBy(desc(blogPosts.publishedAt)).limit(100);
       links = rows.map((b) => ({ href: `/blog/${b.slug}`, label: b.title }));
     }
+    // Home is the business and the site; every other page is a step below it.
+    const crumb = breadcrumbs([[crumbName(s.h1), p]]);
+    const jsonLd = s.noindex
+      ? undefined
+      : p === "/"
+        ? graph(websiteNode(), await businessNode())
+        : p === "/tours"
+          ? graph(crumb, {
+              "@type": "ItemList",
+              name: "Ace Paddlers tours",
+              itemListElement: links.map((l, i) => ({ "@type": "ListItem", position: i + 1, url: `${ORIGIN}${l.href}`, name: l.label })),
+            })
+          : p === "/contact"
+            ? graph(crumb, { "@type": "ContactPage", url: `${ORIGIN}${p}`, name: s.title, about: { "@id": BUSINESS_ID } }, await businessNode())
+            : p === "/about"
+              ? graph(crumb, { "@type": "AboutPage", url: `${ORIGIN}${p}`, name: s.title, about: { "@id": BUSINESS_ID } })
+              : p === "/blog"
+                ? graph(crumb, {
+                    "@type": "Blog",
+                    url: `${ORIGIN}${p}`,
+                    name: s.h1,
+                    publisher: { "@id": BUSINESS_ID },
+                    blogPost: links.map((l) => ({ "@type": "BlogPosting", headline: l.label, url: `${ORIGIN}${l.href}` })),
+                  })
+                : graph(crumb);
     return {
       title: s.title,
       description: s.description,
       canonicalPath: p,
-      jsonLd: p === "/" ? await localBusinessSchema() : undefined,
+      jsonLd,
       noindex: s.noindex,
       status: 200,
       content: contentBlock(`<h1>${esc(s.h1)}</h1><p>${esc(s.text)}</p>${linkList(links)}`),
@@ -256,21 +322,51 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
     const [t] = await db.select().from(tours)
       .where(and(eq(tours.slug, m[1]), eq(tours.status, "published"))).limit(1);
     if (!t) return null;
-    const desc_ = t.seoDescription ?? t.tagline ?? truncate(t.description ?? "", 160);
+    const desc_ = t.seoDescription ?? t.tagline ?? truncate(plainText(t.description ?? ""), 160);
     const facts = [t.duration, t.location, `from ${inr(t.priceValue)}`].filter(Boolean).join(" · ");
+    const image = absUrl(t.heroImage ?? t.images[0]);
+    const url = `${ORIGIN}${p}`;
+    // Only reviews left on this site count: Google does not allow marking up
+    // reviews gathered from another platform as the page's own rating.
+    const rating = firstPartyRating(await listPublishedReviews(t.id));
+    const details = (t.details ?? {}) as Record<string, unknown>;
+    const faqs = (Array.isArray(details.faqs) ? details.faqs : [])
+      .map((f: { q?: string; a?: string }) => ({ q: plainText(f?.q ?? ""), a: plainText(f?.a ?? "") }))
+      .filter((f) => f.q && f.a);
     return {
       title: t.seoTitle ?? `${t.title} | ${SITE_SUFFIX}`,
       description: truncate(desc_ || t.title),
       canonicalPath: p,
-      image: absUrl(t.heroImage ?? t.images[0]),
-      jsonLd: {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: t.title,
-        description: desc_ || t.title,
-        image: absUrl(t.heroImage ?? t.images[0]),
-        offers: { "@type": "Offer", price: t.priceValue, priceCurrency: t.currency, url: `${ORIGIN}${p}` },
-      },
+      image,
+      jsonLd: graph(
+        breadcrumbs([["Tours", "/tours"], [t.title, p]]),
+        {
+          "@type": ["Product", "TouristTrip"],
+          "@id": `${url}#trip`,
+          name: t.title,
+          description: truncate(desc_ || t.title, 500),
+          image,
+          url,
+          ...(t.code ? { sku: t.code } : {}),
+          brand: { "@type": "Brand", name: "Ace Paddlers" },
+          provider: { "@id": BUSINESS_ID },
+          ...(t.location ? { touristType: "Adventure", itinerary: { "@type": "Place", name: t.location } } : {}),
+          offers: {
+            "@type": "Offer",
+            price: t.priceValue,
+            priceCurrency: t.currency,
+            url,
+            availability: "https://schema.org/InStock",
+            seller: { "@id": BUSINESS_ID },
+          },
+          ...(rating.value != null
+            ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rating.value, reviewCount: rating.count, bestRating: 5 } }
+            : {}),
+        },
+        faqs.length
+          ? { "@type": "FAQPage", mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }
+          : null,
+      ),
       status: 200,
       content: contentBlock(
         `<h1>${esc(t.title)}</h1><p>${esc(facts)}</p>${t.tagline ? `<p>${esc(t.tagline)}</p>` : ""}${
@@ -285,16 +381,24 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
     const [d] = await db.select().from(destinations)
       .where(and(eq(destinations.slug, m[1]), eq(destinations.status, "published"))).limit(1);
     if (!d) return null;
-    const desc_ = d.seoDescription ?? d.tagline ?? truncate(d.description ?? "", 160);
+    const desc_ = d.seoDescription ?? d.tagline ?? truncate(plainText(d.description ?? ""), 160);
+    const name = d.fullName ?? d.name;
     return {
-      title: d.seoTitle ?? `${d.fullName ?? d.name} | ${SITE_SUFFIX}`,
+      title: d.seoTitle ?? `${name} | ${SITE_SUFFIX}`,
       description: truncate(desc_ || d.name),
       canonicalPath: p,
       image: absUrl(d.heroImage ?? d.images[0]),
+      jsonLd: graph(breadcrumbs([["Destinations", "/destinations"], [name, p]]), {
+        "@type": "TouristDestination",
+        name,
+        description: truncate(desc_ || name, 500),
+        image: absUrl(d.heroImage ?? d.images[0]),
+        url: `${ORIGIN}${p}`,
+      }),
       status: 200,
       content: contentBlock(
         `<h1>${esc(d.fullName ?? d.name)}</h1>${d.tagline ? `<p>${esc(d.tagline)}</p>` : ""}${
-          d.description ? `<p>${esc(d.description)}</p>` : ""
+          d.description ? `<p>${esc(plainText(d.description))}</p>` : ""
         }${d.highlights.length ? `<ul>${d.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}`,
       ),
     };
@@ -305,25 +409,30 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
     const [b] = await db.select().from(blogPosts)
       .where(and(eq(blogPosts.slug, m[1]), eq(blogPosts.status, "published"))).limit(1);
     if (!b) return null;
-    const desc_ = b.seoDescription ?? b.excerpt ?? truncate(b.body ?? "", 160);
+    const desc_ = b.seoDescription ?? b.excerpt ?? truncate(plainText(b.body ?? ""), 160);
     return {
       title: b.seoTitle ?? `${b.title} | ${SITE_SUFFIX}`,
       description: truncate(desc_ || b.title),
       canonicalPath: p,
       image: absUrl(b.coverImage),
-      jsonLd: {
-        "@context": "https://schema.org",
+      ogType: "article",
+      jsonLd: graph(breadcrumbs([["Blog", "/blog"], [b.title, p]]), {
         "@type": "BlogPosting",
-        headline: b.title,
-        description: desc_ || b.title,
+        headline: truncate(b.title, 110),
+        description: truncate(desc_ || b.title, 300),
         image: absUrl(b.coverImage),
+        url: `${ORIGIN}${p}`,
+        mainEntityOfPage: `${ORIGIN}${p}`,
         datePublished: b.publishedAt?.toISOString(),
-        author: b.author ? { "@type": "Person", name: b.author } : undefined,
-      },
+        dateModified: (b.updatedAt ?? b.publishedAt)?.toISOString(),
+        author: b.author ? { "@type": "Person", name: b.author } : { "@id": BUSINESS_ID },
+        publisher: { "@id": BUSINESS_ID },
+        inLanguage: "en-IN",
+      }),
       status: 200,
       content: contentBlock(
         `<h1>${esc(b.title)}</h1>${b.excerpt ? `<p>${esc(b.excerpt)}</p>` : ""}${
-          (b.body ?? "").split(/\n\n+/).slice(0, 40).map((par) => `<p>${esc(par)}</p>`).join("")
+          plainText(b.body ?? "").split(/\n\n+/).slice(0, 40).map((par) => `<p>${esc(par)}</p>`).join("")
         }`,
       ),
     };
@@ -341,6 +450,7 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
       title: `${pg.title} | ${SITE_SUFFIX}`,
       description: pg.title,
       canonicalPath: p,
+      jsonLd: graph(breadcrumbs([[pg.title, p]])),
       status: 200,
       content: contentBlock(`<h1>${esc(pg.title)}</h1>`),
     };
@@ -362,7 +472,8 @@ async function resolveRoute(p: string): Promise<RouteMeta | null> {
 }
 
 function injectMeta(html: string, meta: RouteMeta): string {
-  const canonical = `${ORIGIN}${meta.canonicalPath === "/" ? "" : meta.canonicalPath}` || ORIGIN;
+  // Home ends in "/", as in the sitemap and the browser's own tag.
+  const canonical = `${ORIGIN}${meta.canonicalPath}`;
   const image = meta.image ?? DEFAULT_OG_IMAGE;
   let out = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`);
   if (meta.noindex) {
@@ -377,11 +488,17 @@ function injectMeta(html: string, meta: RouteMeta): string {
   head.push(`<link rel="canonical" href="${esc(canonical)}" />`);
   head.push(`<meta property="og:title" content="${esc(meta.title)}" />`);
   head.push(`<meta property="og:image" content="${esc(image)}" />`);
+  head.push(`<meta property="og:image:alt" content="${esc(meta.title)}" />`);
   head.push(`<meta property="og:url" content="${esc(canonical)}" />`);
-  head.push(`<meta property="og:type" content="website" />`);
+  head.push(`<meta property="og:type" content="${meta.ogType ?? "website"}" />`);
+  head.push(`<meta property="og:site_name" content="${SITE_SUFFIX}" />`);
+  head.push(`<meta property="og:locale" content="en_IN" />`);
   head.push(`<meta name="twitter:card" content="summary_large_image" />`);
   head.push(`<meta name="twitter:title" content="${esc(meta.title)}" />`);
-  if (meta.jsonLd) head.push(`<script type="application/ld+json">${JSON.stringify(meta.jsonLd)}</script>`);
+  head.push(`<meta name="twitter:image" content="${esc(image)}" />`);
+  head.push(`<meta name="twitter:image:alt" content="${esc(meta.title)}" />`);
+  // "<" escaped so text containing "</script>" can never close the tag early.
+  if (meta.jsonLd) head.push(`<script type="application/ld+json">${JSON.stringify(meta.jsonLd).replace(/</g, "\\u003c")}</script>`);
   out = out.replace("</head>", `    ${head.join("\n    ")}\n  </head>`);
   if (meta.content) out = out.replace(`<div id="root"></div>`, `<div id="root">${meta.content}</div>`);
   return out;

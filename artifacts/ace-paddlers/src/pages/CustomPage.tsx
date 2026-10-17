@@ -1,3 +1,4 @@
+import NotFound from "./not-found";
 import { lazy, Suspense } from "react";
 import { Link, useParams } from "wouter";
 import PageMeta from "@/components/PageMeta";
@@ -24,12 +25,7 @@ export default function CustomPage() {
 
   const data = page?.data as { content?: unknown[] } | undefined;
   if (!data?.content || data.content.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 pt-20">
-          <h1 className="text-4xl" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>Page Not Found</h1>
-          <Link href="/" className="no-underline" style={{ color: C.riverTeal }}>← Back home</Link>
-        </div>
-    );
+    return <NotFound />;
   }
 
   return (

@@ -243,6 +243,12 @@ function Toolbar({ editor }: { editor: Editor }) {
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
       {imageSelected && (
         <>
+          <label className="flex items-center gap-2 text-xs px-2">Image description
+            <input aria-label="Image description (alt text)" placeholder="Describe the image, or leave empty if decorative"
+              value={editor.getAttributes("image").alt ?? ""}
+              onChange={(e) => editor.chain().updateAttributes("image", { alt: e.target.value }).run()}
+              className="rounded border px-2 py-1" />
+          </label>
           <div style={{ width: 1, background: "#cbd5e1", margin: "4px 4px" }} />
           <ToolbarBtn title="Float left (wrap text)" active={editor.getAttributes("image").align === "left"} onClick={() => setImageAlign("left")}><AlignLeft size={15} /></ToolbarBtn>
           <ToolbarBtn title="Center" active={editor.getAttributes("image").align === "center"} onClick={() => setImageAlign("center")}><AlignCenter size={15} /></ToolbarBtn>

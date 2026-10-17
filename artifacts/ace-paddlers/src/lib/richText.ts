@@ -4,13 +4,13 @@ import { loadFontsUsedIn } from "@/lib/typography";
 /** Stored rich text, sanitized for rendering. Handles both HTML (from
  *  RichTextField) and legacy plain text saved before that field existed
  *  (rendered as \n\n-separated paragraphs). */
-export function richTextHtml(body: string | undefined): string {
+export function richTextHtml(body: string | undefined, imageAlt = ""): string {
   const raw = body ?? "";
   const html = isHtml(raw)
     ? raw
     : raw.split(/\n\n+/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${p.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("");
   if (typeof document !== "undefined") loadFontsUsedIn(html);
-  return pairFloats(DOMPurify.sanitize(html, { ADD_ATTR: ["data-align", "data-width", "style"] }));
+  return pairFloats(DOMPurify.sanitize(html, { ADD_ATTR: ["data-align", "data-width", "style"] }), imageAlt);
 }
 
 /**
@@ -29,10 +29,12 @@ export function richTextHtml(body: string | undefined): string {
  * next picture always starts a fresh block, so its heading cannot ride up. On
  * a phone the picture stops floating — see index.css.
  */
-function pairFloats(html: string): string {
-  if (typeof document === "undefined" || !/float\s*:/i.test(html)) return html;
+function pairFloats(html: string, imageAlt: string): string {
+  if (typeof document === "undefined" || !/<img\b/i.test(html)) return html;
   const root = document.createElement("div");
   root.innerHTML = html;
+  // ponytail: legacy images use the section title until an editor supplies a description.
+  for (const img of root.querySelectorAll("img:not([alt])")) img.setAttribute("alt", img.getAttribute("title") || imageAlt);
   const isFloating = (el: Element) =>
     el.tagName === "IMG" && /float\s*:\s*(left|right)/i.test(el.getAttribute("style") ?? "");
 
