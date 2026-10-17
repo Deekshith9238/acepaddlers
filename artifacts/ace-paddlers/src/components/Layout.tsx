@@ -1,83 +1,186 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Phone, Menu, X, ChevronDown, MessageCircle, MapPin } from "lucide-react";
+import { useCurrentTour } from "./CurrentTourContext";
+import { Phone, Menu, X, ChevronDown, MessageCircle, MapPin, CalendarCheck } from "lucide-react";
 import { C } from "@/data/constants";
-
-type DropItem = { label: string; href: string; sub?: string };
-type NavItem = { label: string; href?: string; items?: DropItem[] };
-
-const NAV: NavItem[] = [
-  {
-    label: "Rivers",
-    items: [
-      { label: "Barapole River", href: "/tours/barapole-rafting", sub: "Grade III–IV · Coorg" },
-      { label: "Bhadra River", href: "/tours/bhadra-rafting", sub: "Grade II–III · Chikmagalur" },
-      { label: "Harangi Dam", href: "/tours/harangi-dam-water-sports", sub: "Water Sports · Coorg" },
-    ],
-  },
-  {
-    label: "Activities",
-    items: [
-      { label: "White Water Rafting", href: "/experiences", sub: "Barapole & Bhadra rivers" },
-      { label: "Wilderness Camping", href: "/experiences", sub: "Riverbank & forest camps" },
-      { label: "Eco Homestays", href: "/experiences", sub: "Coffee estate stays" },
-      { label: "Water Sports", href: "/tours/harangi-dam-water-sports", sub: "Kayaking, speed boats & more" },
-      { label: "Trekking", href: "/experiences", sub: "Western Ghats trails" },
-    ],
-  },
-  {
-    label: "Destinations",
-    items: [
-      { label: "Coorg", href: "/destinations", sub: "Adventure capital of Karnataka" },
-      { label: "Chikmagalur", href: "/destinations", sub: "Hills, valleys & waterfalls" },
-    ],
-  },
-  { label: "All Tours", href: "/tours" },
-  { label: "About Us", href: "/about" },
-  { label: "Gallery", href: "/gallery" },
-];
+import {
+  fetchNavigation,
+  NAVIGATION_DEFAULTS,
+  type NavItem,
+  type NavDropItem as DropItem,
+} from "@/lib/navigation";
+import { fetchSiteConfig, telHref, waHref, BOOKING_TEXT_DEFAULTS, type BookingText } from "@/lib/site-config";
+import { useBusiness } from "@/lib/useBusiness";
+import { BookingModalContext } from "@/lib/bookingModalContext";
+import BookingModal from "./BookingModal";
+import FloatingPrice from "./FloatingPrice";
+import CookieConsent from "./CookieConsent";
 
 function DropMenu({ items, visible }: { items: DropItem[]; visible: boolean }) {
   return (
-    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
+    <div className="absolute top-full left-1/2 pt-3 z-50"
       style={{ pointerEvents: visible ? "auto" : "none", opacity: visible ? 1 : 0,
         transform: `translateX(-50%) translateY(${visible ? 0 : -8}px)`,
         transition: "opacity 0.22s ease, transform 0.22s ease" }}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl border min-w-[240px]"
+      {/* Clipping would cut off a submenu opening beside a row, so the corners are
+          rounded on the rows themselves when one of them has children. */}
+      <div className={`rounded-2xl shadow-2xl border min-w-[240px] ${
+        items.some((i) => (i.items?.length ?? 0) > 0)
+          ? "[&>*:first-child]:rounded-t-2xl [&>*:last-child]:rounded-b-2xl"
+          : "overflow-hidden"}`}
         style={{ backgroundColor: "#071820", borderColor: "rgba(26,127,166,0.25)" }}>
-        {items.map((item) => (
-          <Link key={item.href + item.label} href={item.href}
-            className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
-            style={{ borderColor: "rgba(26,127,166,0.12)" }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "rgba(26,127,166,0.14)")}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}>
-            <span className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
-              {item.label}
-            </span>
-            {item.sub && (
-              <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{item.sub}</span>
-            )}
-          </Link>
-        ))}
+        {items.map((item) => <DropRow key={(item.href ?? "") + item.label} item={item} />)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One line of a dropdown. An entry carrying its own `items` opens them in a
+ * panel beside it rather than linking anywhere, so a menu can go one level
+ * deeper — "Rivers → Coorg → Barapole" — without a wall of entries.
+ */
+function DropRow({ item }: { item: DropItem }) {
+  const [open, setOpen] = useState(false);
+  const nested = item.items ?? [];
+  const rowStyle = { borderColor: "rgba(26,127,166,0.12)" } as const;
+  const hover = (on: boolean) => (e: React.MouseEvent) => {
+    (e.currentTarget as HTMLElement).style.backgroundColor = on ? "rgba(26,127,166,0.14)" : "transparent";
+  };
+  const body = (
+    <>
+      <span className="flex items-center gap-2 text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
+        {item.label}
+        {nested.length > 0 && <ChevronDown className="w-3.5 h-3.5 -rotate-90 shrink-0" style={{ color: "rgba(168,223,240,0.6)" }} />}
+      </span>
+      {item.sub && <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{item.sub}</span>}
+    </>
+  );
+
+  if (nested.length === 0) {
+    return (
+      <Link href={item.href ?? "#"}
+        className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
+        style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      {item.href ? (
+        <Link href={item.href}
+          className="flex flex-col px-5 py-3.5 no-underline transition-colors group border-b last:border-b-0"
+          style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+          {body}
+        </Link>
+      ) : (
+        <div className="flex flex-col px-5 py-3.5 transition-colors group border-b last:border-b-0 cursor-default"
+          style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+          {body}
+        </div>
+      )}
+      {/* Opens to the left when there is no room on the right. */}
+      <div className="absolute top-0 left-full pl-1 z-50"
+        style={{ pointerEvents: open ? "auto" : "none", opacity: open ? 1 : 0, transition: "opacity 0.18s ease" }}>
+        <div className="rounded-2xl overflow-hidden shadow-2xl border min-w-[220px]"
+          style={{ backgroundColor: "#071820", borderColor: "rgba(26,127,166,0.25)" }}>
+          {nested.map((sub) => (
+            <Link key={(sub.href ?? "") + sub.label} href={sub.href ?? "#"}
+              className="flex flex-col px-5 py-3 no-underline transition-colors group border-b last:border-b-0"
+              style={rowStyle} onMouseEnter={hover(true)} onMouseLeave={hover(false)}>
+              <span className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{sub.label}</span>
+              {sub.sub && <span className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.55)" }}>{sub.sub}</span>}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  // Published by TourDetail through context rather than passed as a prop:
+  // Layout is mounted once above the router so the header and footer survive
+  // navigation, which means pages can no longer hand it props directly.
+  const currentTour = useCurrentTour();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [openDrop, setOpenDrop] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState<string | null>(null);
   const [location] = useLocation();
-  const isHome = location === "/";
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showFloaterBooking, setShowFloaterBooking] = useState(false);
+  const [floaterTxt, setFloaterTxt] = useState<BookingText>(BOOKING_TEXT_DEFAULTS);
+  const [floaterShowSeatCount, setFloaterShowSeatCount] = useState(true);
+
+  // Navigation is admin-editable (loaded from the API; falls back to defaults).
+  const [nav, setNav] = useState<NavItem[]>(NAVIGATION_DEFAULTS);
+  const biz = useBusiness();
+
+  useEffect(() => {
+    fetchNavigation().then(setNav).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!currentTour) return;
+    fetchSiteConfig().then((c) => { setFloaterTxt(c.bookingText); setFloaterShowSeatCount(c.showSeatCount); });
+  }, [currentTour]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  /**
+   * The corner booking card starts near the bottom of the first screen and
+   * travels up with the page, arriving under the menu and staying there. Set on
+   * the element rather than through state: this runs on every scroll frame.
+   */
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * Below a desktop the corner card becomes a bar across the bottom: 240px of
+   * floating card over a phone or tablet screen covered the page it was
+   * selling.
+   */
+  const [isPhone, setIsPhone] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    // The bottom bar is docked; nothing to move, and a stale transform would
+    // push it off-screen.
+    if (isPhone) { el.style.transform = ""; return; }
+    let frame = 0;
+    const place = () => {
+      frame = 0;
+      const rest = Math.max(0, window.innerHeight - 112 - el.offsetHeight - 24);
+      el.style.transform = `translate3d(0, ${Math.max(0, rest - window.scrollY)}px, 0)`;
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(place); };
+    place();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    // The price arrives after a fetch, which changes the card's height.
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+    };
+  }, [currentTour, isPhone]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -86,9 +189,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.scrollTo({ top: 0 });
   }, [location]);
 
-  const navBg = isHome
-    ? scrolled ? "rgba(6,18,28,0.97)" : "transparent"
-    : "rgba(6,18,28,0.98)";
+  // Nav uses the muted brand surface colour (#dceef6) in all states.
+
 
   const openDropDelayed = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -105,54 +207,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ backgroundColor: C.bg, color: C.text, fontFamily: "'DM Sans', sans-serif" }}
-      className="min-h-screen">
+    <div style={{ backgroundColor: C.bg, color: C.text, fontFamily: "var(--app-font-sans)" }}
+      className="min-h-screen pb-[4.75rem] lg:pb-0">
 
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          backgroundColor: navBg,
-          backdropFilter: scrolled || !isHome ? "blur(14px)" : "none",
-          borderBottom: scrolled || !isHome ? "1px solid rgba(255,255,255,0.07)" : "none",
-        }}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      {/* ── Floating nav (dynamic-island style) ──
+          Detached from the top edge: freestanding logo top-left, a centered
+          pill that sizes to its content (and compacts on scroll), and the
+          Book CTA in the top corner. */}
+      <header className="ap-header fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className={`ap-header-inner w-full px-2 md:px-3 flex items-center justify-between gap-3 transition-all duration-300 ${scrolled ? "pt-2" : "pt-3 md:pt-4"}`}>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center no-underline shrink-0">
-            <img src="/images/logo.png" alt="Ace Paddlers" className="h-12 w-auto" />
+          {/* Logo — freestanding chip, top left. Background is theme-controlled (default white). */}
+          <Link href="/" className="pointer-events-auto flex items-center no-underline shrink-0 rounded-2xl border px-3 py-1.5 shadow-lg transition-all duration-300"
+            style={{ backgroundColor: C.logoBg, borderColor: C.mutedBorder }}>
+            <img src="/images/logo.png" alt="Ace Paddlers"
+              className={`${scrolled ? "h-12 md:h-16" : "h-16 md:h-20"} w-auto transition-all duration-300`} />
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-1">
-            {NAV.map((item) => {
+          {/* Center pill — width fits content, compacts when scrolled */}
+          <nav className={`ap-nav-surface pointer-events-auto hidden lg:flex items-center gap-0.5 flex-nowrap rounded-full border transition-all duration-300 ${scrolled ? "px-1.5 py-0.5" : "px-2.5 py-1.5"}`}
+            >
+            {nav.map((item) => {
               const active = isActive(item);
               return (
-                <div key={item.label} className="relative"
+                <div key={item.label} className="relative shrink-0"
                   onMouseEnter={() => item.items && openDropDelayed(item.label)}
                   onMouseLeave={() => item.items && closeDropDelayed()}>
                   {item.href ? (
                     <Link href={item.href}
-                      className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium no-underline transition-colors"
-                      style={{ color: active ? "#a8dff0" : "rgba(255,255,255,0.85)" }}
-                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "#e0f7ff"; }}
-                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.85)"; }}>
+                      className="ap-nav-item flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-colors"
+                      style={{ color: active ? "white" : C.navText, backgroundColor: active ? C.riverTeal : undefined }}
+                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.riverTeal; }}
+                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = C.navText; }}>
                       {item.label}
-                      {active && <span className="ml-1 w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: C.lightTeal }} />}
                     </Link>
                   ) : (
-                    <button className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-transparent border-none cursor-pointer"
-                      style={{ color: active ? "#a8dff0" : "rgba(255,255,255,0.85)" }}>
+                    <button className="ap-nav-item flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-transparent border-none cursor-pointer"
+                      style={{ color: active ? "white" : C.navText,
+                        // Keep the highlight while its menu is open, even once the pointer has moved onto the menu.
+                        backgroundColor: active ? C.riverTeal : openDrop === item.label ? C.navHover : undefined }}>
                       {item.label}
                       <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200"
                         style={{ transform: openDrop === item.label ? "rotate(180deg)" : "rotate(0deg)",
-                          color: active ? "#a8dff0" : "rgba(255,255,255,0.60)" }} />
+                          color: active ? "white" : C.midOcean }} />
                     </button>
-                  )}
-
-                  {/* Active underline */}
-                  {active && (
-                    <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full"
-                      style={{ backgroundColor: C.lightTeal }} />
                   )}
 
                   {/* Dropdown */}
@@ -162,32 +260,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               );
             })}
-          </div>
+          </nav>
 
           {/* Right: phone + CTA + hamburger */}
-          <div className="flex items-center gap-3">
-            <a href="tel:+919480987672"
-              className="hidden xl:flex items-center gap-2 text-sm no-underline transition-colors"
-              style={{ color: "rgba(168,223,240,0.75)" }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#a8dff0")}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "rgba(168,223,240,0.75)")}>
-              <Phone className="w-3.5 h-3.5" />
-              <span>+91 94809 87672</span>
+          <div className="pointer-events-auto flex items-center gap-2 shrink-0">
+            <a href={telHref(biz.phones[0] ?? "")}
+              className="ap-nav-surface hidden xl:flex items-center gap-2 text-sm no-underline whitespace-nowrap rounded-full px-3.5 py-2.5 transition-colors"
+              style={{ color: C.navText }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = C.riverTeal)}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.deepOcean)}>
+              <Phone className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">{biz.phones[0]}</span>
             </a>
             <Link href="/tours"
-              className="hidden lg:block text-sm font-semibold rounded-full px-5 py-2.5 transition-all no-underline hover:-translate-y-0.5"
-              style={{ backgroundColor: C.riverTeal, color: "white" }}
+              className="hidden lg:block text-sm font-semibold rounded-full px-5 py-2.5 whitespace-nowrap shadow-lg transition-all no-underline hover:-translate-y-0.5"
+              style={{ backgroundColor: C.deepOcean, color: "white" }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.midOcean)}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.riverTeal)}>
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = C.deepOcean)}>
               Book a Trip
             </Link>
-            <button className="lg:hidden text-white p-1" onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu">
+            <button className="ap-nav-surface lg:hidden p-2.5 shrink-0 rounded-full"
+              onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu"
+              style={{ color: C.navText }}>
               {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* ── Mobile menu ── */}
       <div className="fixed inset-0 z-40 lg:hidden flex flex-col overflow-y-auto transition-all duration-300"
@@ -196,24 +295,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           transform: menuOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.32s cubic-bezier(0.22,1,0.36,1)",
         }}>
-        <div className="flex justify-between items-center px-6 py-5 border-b"
-          style={{ borderColor: "rgba(26,127,166,0.18)" }}>
-          <div className="flex items-center">
-            <img src="/images/logo.png" alt="Ace Paddlers" className="h-10 w-auto" />
-          </div>
-          <button className="text-white p-1" onClick={() => setMenuOpen(false)}>
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="flex-1 px-6 py-6 space-y-1">
-          {NAV.map((item) => (
+        <div className="flex-1 px-6 pt-28 pb-6 space-y-1">
+          {nav.map((item) => (
             <div key={item.label}>
               {item.href ? (
                 <Link href={item.href}
                   className="block py-3.5 text-lg font-semibold no-underline border-b transition-colors"
                   style={{ color: location === item.href ? "#a8dff0" : "rgba(255,255,255,0.85)",
-                    borderColor: "rgba(26,127,166,0.12)", fontFamily: "'Fraunces', serif" }}>
+                    borderColor: "rgba(26,127,166,0.12)", fontFamily: "var(--app-font-serif)" }}>
                   {item.label}
                 </Link>
               ) : (
@@ -221,7 +310,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <button onClick={() => setMobileOpen(mobileOpen === item.label ? null : item.label)}
                     className="w-full flex justify-between items-center py-3.5 text-lg font-semibold border-b bg-transparent border-none cursor-pointer text-left"
                     style={{ color: "rgba(255,255,255,0.85)", borderColor: "rgba(26,127,166,0.12)",
-                      fontFamily: "'Fraunces', serif", borderBottomWidth: "1px", borderBottomStyle: "solid" }}>
+                      fontFamily: "var(--app-font-serif)", borderBottomWidth: "1px", borderBottomStyle: "solid" }}>
                     {item.label}
                     <ChevronDown className="w-4 h-4 transition-transform duration-200"
                       style={{ color: "rgba(168,223,240,0.60)",
@@ -230,12 +319,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {mobileOpen === item.label && item.items && (
                     <div className="py-2 pl-4 space-y-0.5">
                       {item.items.map(sub => (
-                        <Link key={sub.href + sub.label} href={sub.href}
-                          className="block py-2.5 no-underline"
-                          style={{ color: "rgba(168,223,240,0.75)" }}>
-                          <div className="text-sm font-medium">{sub.label}</div>
-                          {sub.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{sub.sub}</div>}
-                        </Link>
+                        <div key={(sub.href ?? "") + sub.label}>
+                          {sub.href ? (
+                            <Link href={sub.href} className="block py-2.5 no-underline" style={{ color: "rgba(168,223,240,0.75)" }}>
+                              <div className="text-sm font-medium">{sub.label}</div>
+                              {sub.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{sub.sub}</div>}
+                            </Link>
+                          ) : (
+                            <div className="py-2.5 text-sm font-medium" style={{ color: "rgba(168,223,240,0.55)" }}>{sub.label}</div>
+                          )}
+                          {(sub.items ?? []).length > 0 && (
+                            <div className="pl-4 space-y-0.5 border-l" style={{ borderColor: "rgba(26,127,166,0.25)" }}>
+                              {(sub.items ?? []).map((deep) => (
+                                <Link key={(deep.href ?? "") + deep.label} href={deep.href ?? "#"}
+                                  className="block py-2 no-underline" style={{ color: "rgba(168,223,240,0.75)" }}>
+                                  <div className="text-sm">{deep.label}</div>
+                                  {deep.sub && <div className="text-xs mt-0.5" style={{ color: "rgba(168,223,240,0.40)" }}>{deep.sub}</div>}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -248,16 +352,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-6 py-6 space-y-3 border-t" style={{ borderColor: "rgba(26,127,166,0.18)" }}>
           <Link href="/tours"
             className="flex items-center justify-center gap-2 w-full rounded-full py-4 font-semibold no-underline text-white text-center"
-            style={{ backgroundColor: C.riverTeal }}>
+            style={{ backgroundColor: C.deepOcean }}>
             Book a Trip
           </Link>
           <div className="flex gap-3">
-            <a href="tel:+919480987672"
+            <a href={telHref(biz.phones[0] ?? "")}
               className="flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-medium no-underline border"
               style={{ borderColor: "rgba(26,127,166,0.40)", color: "#a8dff0" }}>
               <Phone className="w-4 h-4" /> Call Us
             </a>
-            <a href="https://wa.me/919480987672" target="_blank" rel="noopener noreferrer"
+            <a href={waHref(biz)} target="_blank" rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-medium no-underline"
               style={{ backgroundColor: "#25D366", color: "white" }}>
               <MessageCircle className="w-4 h-4" /> WhatsApp
@@ -266,25 +370,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {children}
+      <BookingModalContext.Provider value={currentTour ? () => setShowFloaterBooking(true) : null}>
+        {children}
+      </BookingModalContext.Provider>
 
       {/* ── Footer ── */}
-      <footer className="pt-20 pb-10" style={{ backgroundColor: C.footer, color: "#6b8fa0", borderTop: "1px solid rgba(26,127,166,0.20)" }}>
+      <footer className="ap-footer pt-20 pb-10" style={{ backgroundColor: C.footer, color: C.footerText, borderTop: "1px solid rgba(26,127,166,0.20)" }}>
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div className="ap-footer-columns grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="lg:col-span-2">
               <div className="mb-6">
-                <img src="/images/logo.png" alt="Ace Paddlers" className="h-14 w-auto" />
+                <img src="/images/logo.png" alt="Ace Paddlers" className="h-20 w-auto" />
               </div>
-              <p className="mb-8 max-w-sm" style={{ color: "#6b8fa0" }}>
+              <p className="mb-8 max-w-sm" style={{ color: C.footerText }}>
                 The pioneers of South Indian adventure tourism. Crafting unforgettable rafting, camping,
                 and homestay experiences in the Western Ghats for over two decades.
               </p>
               <div className="space-y-3">
-                {["+91 9480987672", "+91 6361956068", "+91 9380986884"].map((num, i) => (
-                  <a key={i} href={`tel:${num.replace(/\s/g, "")}`}
+                {biz.phones.map((num, i) => (
+                  <a key={i} href={telHref(num)}
                     className="flex items-center gap-3 hover:text-white transition-colors no-underline"
-                    style={{ color: "#6b8fa0" }}>
+                    style={{ color: C.footerText }}>
                     <Phone className="w-4 h-4 shrink-0" style={{ color: C.riverTeal }} />
                     <span>{num}</span>
                   </a>
@@ -305,7 +411,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       {label}
                     </Link>
                   </li>
@@ -326,7 +432,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       {label}
                     </Link>
                   </li>
@@ -341,7 +447,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ].map(([label, href]) => (
                   <li key={label}>
                     <Link href={href} className="hover:text-white transition-colors no-underline"
-                      style={{ color: "#6b8fa0" }}>
+                      style={{ color: C.footerText }}>
                       <MapPin className="w-3.5 h-3.5 inline mr-1.5 opacity-60" />{label}
                     </Link>
                   </li>
@@ -352,48 +458,111 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* NAP — Name, Address, Phone */}
           <div className="py-6 px-6 mb-4 rounded-xl text-center" style={{ backgroundColor: "rgba(26,127,166,0.08)", border: "1px solid rgba(26,127,166,0.15)" }}>
-            <p className="text-sm" style={{ color: "#5a8ea8" }}>
-              <strong className="text-white">Ace Paddlers</strong> &nbsp;|&nbsp; T. Shettigeri, Virajpet, Kodagu — 571218 &nbsp;|&nbsp;
-              <a href="tel:+919480987672" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 94809 87672</a>
-              {" · "}
-              <a href="tel:+916361956068" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 63619 56068</a>
-              {" · "}
-              <a href="tel:+919380986884" className="no-underline hover:text-white transition-colors" style={{ color: "#5a8ea8" }}>+91 93809 86884</a>
+            <p className="text-sm" style={{ color: C.footerText }}>
+              <strong className="text-white">{biz.name}</strong>
+              {biz.addressLine && <> &nbsp;|&nbsp; {biz.addressLine}</>}
+              {biz.phones.length > 0 && <> &nbsp;|&nbsp; </>}
+              {biz.phones.map((num, i) => (
+                <span key={num}>
+                  {i > 0 && " · "}
+                  <a href={telHref(num)} className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>{num}</a>
+                </span>
+              ))}
             </p>
           </div>
 
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm"
-            style={{ borderTop: "1px solid rgba(26,127,166,0.15)", color: "#4a7080" }}>
-            <div>© 2026, Ace Paddlers. All rights reserved.</div>
+            style={{ borderTop: "1px solid rgba(26,127,166,0.15)", color: C.footerText }}>
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <span>© 2026, Ace Paddlers. All rights reserved.</span>
+              <Link href="/privacy-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Privacy Policy</Link>
+              <Link href="/terms-and-conditions" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Terms & Conditions</Link>
+              <Link href="/cancellation-policy" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Cancellation Policy</Link>
+              <Link href="/data-deletion" className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>Data Deletion</Link>
+              <CookieConsent />
+            </div>
             <div className="flex gap-6">
-              {["Instagram", "Facebook", "TripAdvisor"].map(s => (
-                <a key={s} href="https://www.acepaddlers.com" target="_blank" rel="noopener noreferrer"
-                  className="hover:text-white transition-colors no-underline" style={{ color: "#4a7080" }}>
-                  {s}
-                </a>
-              ))}
+              {/* Only what is set. These used to be three links all pointing at
+                  the site's own homepage, which is worse than no link at all. */}
+              {([["instagram", "Instagram"], ["facebook", "Facebook"], ["tripadvisor", "TripAdvisor"], ["youtube", "YouTube"]] as const)
+                .filter(([k]) => biz[k])
+                .map(([k, label]) => (
+                  <a key={k} href={biz[k]} target="_blank" rel="noopener noreferrer"
+                    className="hover:text-white transition-colors no-underline" style={{ color: C.footerText }}>
+                    {label}
+                  </a>
+                ))}
             </div>
           </div>
         </div>
       </footer>
 
       {/* ── Floating contact buttons ── */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
-        <a href="https://wa.me/919480987672" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
-          style={{ backgroundColor: "#25D366", color: "white", boxShadow: "0 4px 20px rgba(37,211,102,0.40)" }}
+      {/* Rests low on an unscrolled page and rises with the scroll, one pixel per
+          pixel, until it docks under the menu and stays there. */}
+      <div ref={cardRef}
+        className={`fixed z-40 border ${menuOpen ? "hidden" : "flex"} ${
+          isPhone
+            ? "inset-x-0 bottom-0 flex-row items-center gap-2 rounded-t-2xl px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+            : "right-6 top-28 w-[15rem] max-w-[calc(100vw-3rem)] flex-col items-stretch gap-2.5 rounded-2xl p-3"
+        }`}
+        style={{
+          backgroundColor: C.bgCard,
+          borderColor: C.mutedBorder,
+          boxShadow: "0 10px 40px rgba(13,45,64,0.22)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}>
+        {/* Book Now leads the card, with the trip's price read underneath it. */}
+        {currentTour ? (
+          <button type="button" onClick={() => setShowFloaterBooking(true)} key={currentTour.slug}
+            className={`ap-trip-cta flex items-center justify-center gap-2.5 rounded-full text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl ${isPhone ? "min-w-0 flex-1 px-4 py-3" : "px-6 py-3.5"}`}
+            style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
+            title="Book now">
+            <CalendarCheck className="w-5 h-5 shrink-0" />
+            <span className="truncate">Book Now</span>
+          </button>
+        ) : (
+          <Link href="/tours"
+            className={`flex items-center justify-center gap-2.5 rounded-full text-sm font-bold uppercase tracking-wider no-underline shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl ${isPhone ? "min-w-0 flex-1 px-4 py-3" : "px-6 py-3.5"}`}
+            style={{ backgroundColor: C.riverTeal, color: "white", boxShadow: "0 4px 20px rgba(26,127,166,0.45)" }}
+            title="Book now">
+            <CalendarCheck className="w-5 h-5 shrink-0" />
+            <span className="truncate">Book Now</span>
+          </Link>
+        )}
+        {currentTour && (
+          <div className={isPhone ? "order-first shrink-0" : ""}>
+            <FloatingPrice slug={currentTour.slug} compact={isPhone} />
+          </div>
+        )}
+        <a href={waHref(biz)} target="_blank" rel="noopener noreferrer"
+          className={`flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5 ${isPhone ? "h-11 w-11 p-0" : "px-4 py-2.5"}`}
+          style={{ backgroundColor: "#25D366", color: "white" }}
           title="Chat on WhatsApp">
           <MessageCircle className="w-5 h-5" />
-          <span className="hidden sm:inline">WhatsApp</span>
+          {!isPhone && <span>WhatsApp</span>}
         </a>
-        <a href="tel:+919480987672"
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 font-semibold text-sm no-underline shadow-xl transition-all hover:-translate-y-0.5"
-          style={{ backgroundColor: C.deepOcean, color: "white", border: `1.5px solid ${C.riverTeal}`, boxShadow: "0 4px 20px rgba(13,58,94,0.50)" }}
+        <a href={telHref(biz.phones[0] ?? "")}
+          className={`flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold text-sm no-underline shadow-md transition-all hover:-translate-y-0.5 ${isPhone ? "h-11 w-11 p-0" : "px-4 py-2.5"}`}
+          style={{ backgroundColor: C.deepOcean, color: "white", border: `1.5px solid ${C.riverTeal}` }}
           title="Call us">
           <Phone className="w-5 h-5" />
-          <span className="hidden sm:inline">Call Us</span>
+          {!isPhone && <span>Call Us</span>}
         </a>
       </div>
+
+      {currentTour && showFloaterBooking && (
+        <BookingModal
+          tourSlug={currentTour.slug}
+          priceValue={currentTour.priceValue}
+          phone={biz.bookingPhone}
+          txt={floaterTxt}
+          showSeatCount={floaterShowSeatCount}
+          callButtonLabel="Call to Book"
+          onClose={() => setShowFloaterBooking(false)}
+        />
+      )}
     </div>
   );
 }

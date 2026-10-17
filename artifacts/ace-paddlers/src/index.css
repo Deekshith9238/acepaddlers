@@ -2,9 +2,14 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+html {
+  scroll-behavior: smooth;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --container-9xl: 96rem;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-border: hsl(var(--border));
@@ -145,9 +150,34 @@
   * {
     @apply border-border;
   }
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+}
+
+/* ── Animated image loading placeholder ── */
+@keyframes aceshimmer {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
+.ace-shimmer {
+  background-color: #0d2d40;
+  background-image: linear-gradient(
+    100deg,
+    rgba(26, 127, 166, 0.08) 30%,
+    rgba(168, 223, 240, 0.30) 50%,
+    rgba(26, 127, 166, 0.08) 70%
+  );
+  background-size: 200% 100%;
+  animation: aceshimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ace-shimmer { animation: none; }
 }
 
 /* ── Keyframe animations ── */
@@ -180,3 +210,267 @@
 .ace-anim-fadeleft  { animation: acefadeleft  1.0s cubic-bezier(0.22,1,0.36,1) both; }
 .ace-anim-faderight { animation: acefaderight 1.0s cubic-bezier(0.22,1,0.36,1) both; }
 .ace-anim-scaleup   { animation: acescaleup   0.95s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* Image download protection: block drag-to-save and long-press save on the
+   public site. A deterrent for casual copying, not DRM. */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Rich text block (builder RichText): base typography for admin-authored
+   HTML content, including floated inline images. */
+/* flow-root contains floated (wrap-text) images, so they never spill into the next section. */
+.ace-richtext { display: flow-root; }
+.ace-richtext p { margin-bottom: 1rem; }
+/* A blank line saved by the editor is an empty <p>, which a browser draws with
+   no height; the editor shows it one line tall, so the page must too. */
+.ace-richtext p:empty::before { content: "\00a0"; }
+.ace-richtext h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.75rem; font-family: var(--app-font-serif); }
+.ace-richtext h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: var(--app-font-serif); }
+.ace-richtext ul, .ace-richtext ol { margin: 0 0 1rem 1.25rem; }
+.ace-richtext ul { list-style: disc; }
+.ace-richtext ol { list-style: decimal; }
+.ace-richtext li { margin-bottom: 0.25rem; }
+.ace-richtext li > p { margin: 0; }
+.ace-richtext a { color: var(--brand-riverTeal, #1a7fa6); text-decoration: underline; }
+.ace-richtext img { height: auto; }
+/* An image's width is a percentage of the column it sits in, and that column is
+   far wider on the page than in the editor box — so a picture placed at "45%"
+   came out roughly twice the size live, with a gap beside short text. Floated
+   images are capped to the size they appeared when placed; a centred image is
+   left alone, since spanning the column is the point of it. */
+.ace-richtext img[style*="float"] { max-width: min(100%, 460px) !important; clear: both; }
+.ace-richtext strong { font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Theme styles.
+ *
+ * `applyTheme` puts the admin's choices on <html> as data-* attributes and a
+ * couple of variables; everything below is what those choices mean. Keeping it
+ * here rather than in components is the point — a theme change re-skins the
+ * site without any component knowing a theme exists, which is how Vacation
+ * Labs' theme editor behaves and why swapping a style there is instant.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --brand-headingWeight: 700;
+  --brand-bodyWeight: 400;
+  /* Corner radius for buttons, set by the button-style choice below. */
+  --ap-btn-radius: 9999px;
+}
+
+h1, h2, h3, h4, h5, h6 { font-weight: var(--brand-headingWeight, 700); }
+body { font-weight: var(--brand-bodyWeight, 400); }
+
+/* ── Button style: fill vs hollow, and how round the corners are ──
+   `.ap-btn` is the opt-in hook. Buttons that carry their own explicit styling
+   are left alone: a theme should restyle the site, not fight every component. */
+[data-button-style$="-box"]      { --ap-btn-radius: 4px; }
+[data-button-style$="-curved"]   { --ap-btn-radius: 10px; }
+[data-button-style$="-rounded"]  { --ap-btn-radius: 9999px; }
+
+.ap-btn {
+  border-radius: var(--ap-btn-radius);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+[data-button-style^="fill"] .ap-btn {
+  background-color: var(--brand-riverTeal, #1a7fa6);
+  color: #fff;
+  border: 2px solid transparent;
+}
+[data-button-style^="hollow"] .ap-btn {
+  background-color: transparent;
+  color: var(--brand-riverTeal, #1a7fa6);
+  border: 2px solid currentColor;
+}
+[data-button-style^="hollow"] .ap-btn:hover {
+  background-color: var(--brand-riverTeal, #1a7fa6);
+  color: #fff;
+}
+
+/* ── Section heading style ──
+   `.ap-section-heading` marks a heading that introduces a section. */
+.ap-section-heading { position: relative; }
+[data-section-heading-style="default"] .ap-section-heading { text-align: center; }
+[data-section-heading-style="left"] .ap-section-heading { text-align: left; }
+
+[data-section-heading-style="star"] .ap-section-heading { text-align: center; }
+[data-section-heading-style="star"] .ap-section-heading::after {
+  content: "★";
+  display: block;
+  font-size: 0.6em;
+  line-height: 1;
+  margin-top: 0.4em;
+  color: var(--brand-riverTeal, #1a7fa6);
+}
+
+[data-section-heading-style="side-lines"] .ap-section-heading {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+[data-section-heading-style="side-lines"] .ap-section-heading::before,
+[data-section-heading-style="side-lines"] .ap-section-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--brand-mutedBorder, #b8d9e8);
+}
+
+/* ── Header style ── */
+[data-header-style="transparent"] .ap-header { background: transparent !important; box-shadow: none !important; }
+[data-header-style="center"] .ap-header-inner { justify-content: center; }
+[data-header-style="reversed"] .ap-header-inner { flex-direction: row-reverse; }
+
+/* ── Footer style ── */
+[data-footer-style="concise"] .ap-footer-columns { display: none; }
+[data-footer-style="concise"] .ap-footer { padding-top: 2rem; padding-bottom: 2rem; }
+
+/* ── Trip card style ──
+   `TripCard` always renders every element; the chosen style decides which of
+   them show and how tall the image stands. One card component, five looks. */
+.ap-card-media { aspect-ratio: 4 / 3; }
+
+/* Default — image, title, price, meta, and a View Details footer. */
+[data-tour-card-style="default"] .ap-card-description { display: none; }
+
+/* Default + description — the same, plus the tagline. */
+[data-tour-card-style="default-description"] .ap-card-media { aspect-ratio: 4 / 3; }
+
+/* Modular — a square tile. Title and price only, so a grid of them reads as
+   a set of tiles rather than a list of paragraphs. */
+[data-tour-card-style="modular"] .ap-card-media { aspect-ratio: 1 / 1; }
+[data-tour-card-style="modular"] .ap-card-meta,
+[data-tour-card-style="modular"] .ap-card-description,
+[data-tour-card-style="modular"] .ap-card-cta { display: none; }
+[data-tour-card-style="modular"] .ap-card-body { padding: 1rem 1.25rem; }
+
+/* Concise — the shortest card there is: a wide strip of image and one line. */
+[data-tour-card-style="concise"] .ap-card-media { aspect-ratio: 16 / 9; }
+[data-tour-card-style="concise"] .ap-card-meta,
+[data-tour-card-style="concise"] .ap-card-description,
+[data-tour-card-style="concise"] .ap-card-cta { display: none; }
+[data-tour-card-style="concise"] .ap-card-body { padding: 0.85rem 1.25rem; }
+
+/* Detailed — everything, on a taller image. */
+[data-tour-card-style="detailed"] .ap-card-media { aspect-ratio: 3 / 2; }
+[data-tour-card-style="detailed"] .ap-card-description { -webkit-line-clamp: 4; line-clamp: 4; }
+
+/* ── Collection card style ──
+   The caption sits over the image by default; the variants change how much of
+   the image it covers, or lift it out from over the image entirely. */
+[data-collection-card-style="semi-overlay"] .ap-collection-overlay {
+  background: linear-gradient(to top, rgba(6, 24, 32, 0.55) 0%, transparent 45%) !important;
+}
+
+[data-collection-card-style="circular"] .ap-collection-media {
+  border-radius: 9999px;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+}
+[data-collection-card-style="circular"] .ap-collection-overlay { display: none; }
+[data-collection-card-style="circular"] .ap-collection-caption {
+  position: static;
+  padding: 1rem 0 0;
+  text-align: center;
+}
+[data-collection-card-style="circular"] .ap-collection-caption h3,
+[data-collection-card-style="circular"] .ap-collection-caption p { color: var(--brand-text, #0d2d40); }
+
+[data-collection-card-style="no-overlay"] .ap-collection-overlay { display: none; }
+[data-collection-card-style="no-overlay"] .ap-collection-media { height: 300px !important; }
+[data-collection-card-style="no-overlay"] .ap-collection-caption {
+  position: static;
+  padding: 1rem 0 0;
+}
+[data-collection-card-style="no-overlay"] .ap-collection-caption h3,
+[data-collection-card-style="no-overlay"] .ap-collection-caption p { color: var(--brand-text, #0d2d40); }
+
+/* ── Coupon strip style ── */
+[data-coupon-strip-style="without-image"] .ap-coupon-media { display: none; }
+[data-coupon-strip-style="without-image"] .ap-coupon-body { padding: 1.75rem; }
+
+/* ── Team members style ──
+   Both layouts are in the DOM; the theme picks one. */
+.ap-team-accordion { display: none; }
+[data-team-members-style="accordion"] .ap-team-grid { display: none; }
+[data-team-members-style="accordion"] .ap-team-accordion { display: block; }
+
+/* Builder pages: sections sharing a background used to run into one long
+   block. A hairline marks where one ends and the next begins. */
+.ap-builder section + section {
+  border-top: 1px solid rgba(13, 58, 94, 0.08);
+}
+
+/* Rich text editor: make a clicked image obviously selected (resize/align bar is showing). */
+.ProseMirror img { cursor: pointer; }
+.ProseMirror img.ProseMirror-selectednode { outline: 3px solid #0ea5e9; outline-offset: 2px; }
+
+/* A single formatted list item (inclusions, highlights): no paragraph gaps. */
+.ace-inline p { display: inline; margin: 0; }
+
+/* Header "Center aligned" (VL): logo centred on its own row, the menu centred beneath it.
+   An invisible full-width spacer forces the break, so the logo chip keeps its own size. */
+[data-header-style="center"] .ap-header-inner { flex-wrap: wrap; justify-content: center; row-gap: 0.5rem; }
+[data-header-style="center"] .ap-header-inner > * { order: 2; }
+[data-header-style="center"] .ap-header-inner > a:first-child { order: 0; }
+[data-header-style="center"] .ap-header-inner::after { content: ""; flex-basis: 100%; order: 1; }
+
+/* Corner booking panel: one attention pulse when a trip page is first opened. */
+@keyframes ap-trip-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 127, 166, 0); }
+  30%      { box-shadow: 0 0 0 8px rgba(26, 127, 166, 0.28); }
+  60%      { box-shadow: 0 0 0 14px rgba(26, 127, 166, 0); }
+}
+.ap-trip-cta { animation: ap-trip-cta-pulse 1.6s ease-out 0.5s 2; }
+@media (prefers-reduced-motion: reduce) { .ap-trip-cta { animation: none !important; } }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Navigation surfaces (menu pill, logo chip, phone and menu buttons).
+ * The Navigation style in Website Theme picks how much of the page shows
+ * through; the tint itself is the theme's Navigation colour.
+ * ────────────────────────────────────────────────────────────────────────── */
+.ap-nav-surface {
+  background-color: color-mix(in srgb, var(--brand-nav, #dceef6) var(--ap-nav-tint, 22%), transparent);
+  border-color: color-mix(in srgb, #ffffff var(--ap-nav-edge, 35%), transparent);
+  box-shadow: 0 8px 32px rgba(13, 45, 64, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(var(--ap-nav-blur, 22px)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--ap-nav-blur, 22px)) saturate(200%);
+}
+/* Clear: barely there, just a lens over the page. */
+/* Menu links light up with the theme's hover colour. Only non-active items:
+   an active link carries its own inline background, which wins over this. */
+/* The trip decides how many columns its add-ons tile into, but only where they
+   fit: a narrow window drops to two, a phone to one. */
+@media (max-width: 900px) {
+  .ace-addon-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  .ace-addon-grid { grid-template-columns: 1fr !important; }
+}
+
+.ap-nav-item:hover { background-color: var(--brand-navHover, #cfe8f3); }
+
+[data-nav-style="clear"]  { --ap-nav-tint: 8%;   --ap-nav-blur: 26px; --ap-nav-edge: 22%; }
+/* Glass (default): a light wash of the tint. */
+[data-nav-style="glass"]  { --ap-nav-tint: 22%;  --ap-nav-blur: 22px; --ap-nav-edge: 35%; }
+/* Frosted: heavier milk, text reads over any photo. */
+[data-nav-style="frosted"]{ --ap-nav-tint: 55%;  --ap-nav-blur: 28px; --ap-nav-edge: 55%; }
+/* Solid: no transparency at all. */
+[data-nav-style="solid"]  { --ap-nav-tint: 100%; --ap-nav-blur: 0px;  --ap-nav-edge: 100%; }
+
+/* A wrapped image and its own text, kept in one block (see pairFloats in lib/richText). */
+.ace-richtext .ace-float-row { display: flow-root; }
+@media (max-width: 640px) {
+  .ace-richtext .ace-float-row > img { float: none !important; width: 100% !important; max-width: 100% !important; margin: 0 0 0.75rem !important; }
+}

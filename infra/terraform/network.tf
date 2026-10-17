@@ -1,0 +1,112 @@
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+locals {
+  name = "${var.project_name}-${var.environment}"
+  azs  = slice(data.aws_availability_zones.available.names, 0, 2)
+}
+
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags                 = { Name = local.name }
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = local.name }
+}
+
+resource "aws_subnet" "public" {
+  count                   = 2
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 4, count.index)
+  availability_zone       = local.azs[count.index]
+  map_public_ip_on_launch = true
+  tags                    = { Name = "${local.name}-public-${count.index}" }
+}
+
+resource "aws_subnet" "private" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 4, count.index + 8)
+  availability_zone = local.azs[count.index]
+  tags              = { Name = "${local.name}-private-${count.index}" }
+}
+
+# No NAT gateway. The only thing that needed egress was the API task, and a NAT
+# costs ~$41/month in this region whether or not it is used — it was carrying
+# under 1 GB a month. The task now sits in a public subnet and reaches the
+# internet through the internet gateway directly. It stays unreachable from
+# outside because aws_security_group.ecs_tasks admits nothing but the ALB.
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+  tags = { Name = "${local.name}-public" }
+}
+
+resource "aws_route_table_association" "public" {
+  count          = 2
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  # Explicitly empty, not merely omitted: leaving the block out means "don't
+  # manage routes", which would strand the old 0.0.0.0/0 → NAT entry as a
+  # blackhole once the gateway is gone. Only RDS lives here and it has no
+  # outbound need, so local routing is all it should have.
+  route = []
+  tags  = { Name = "${local.name}-private" }
+}
+
+resource "aws_route_table_association" "private" {
+  count          = 2
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+
+# ── Security groups ──
+resource "aws_security_group" "ecs_tasks" {
+  name_prefix = "${local.name}-ecs-tasks-"
+  vpc_id      = aws_vpc.main.id
+  description = "ECS Fargate tasks"
+
+  # No ingress: only one-off tasks (e.g. acepaddlers-report) use this group now,
+  # to reach RDS. The site itself runs on the web server (ec2.tf). Explicitly
+  # empty, not omitted: omitting the block leaves the old ALB rule in place.
+  ingress = []
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle { create_before_destroy = true }
+  tags = { Name = "${local.name}-ecs-tasks" }
+}
+
+resource "aws_security_group" "rds" {
+  name_prefix = "${local.name}-rds-"
+  vpc_id      = aws_vpc.main.id
+  description = "Postgres - only from ECS tasks"
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id, aws_security_group.web.id]
+  }
+
+  lifecycle { create_before_destroy = true }
+  tags = { Name = "${local.name}-rds" }
+}

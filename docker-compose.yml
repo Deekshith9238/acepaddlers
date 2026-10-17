@@ -1,0 +1,25 @@
+# Local development services.
+# Published on host port 5433 (not 5432) to avoid clashing with any native
+# Postgres already running on the host. Connect with:
+#   postgresql://postgres:postgres@localhost:5433/postgres
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: acepaddlers-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - acepaddlers_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  acepaddlers_pgdata:

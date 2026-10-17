@@ -5,5 +5,7 @@
     "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "comment": "seed.ts imports frontend data files cross-package and is run via tsx, not typechecked here",
+  "exclude": ["src/seed.ts"]
 }

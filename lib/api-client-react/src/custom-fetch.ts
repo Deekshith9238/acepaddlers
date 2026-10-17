@@ -6,7 +6,12 @@ export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;
 
-export type AuthTokenGetter = () => Promise<string | null> | string | null;
+/**
+ * Supplies the bearer token for a request. The request URL is passed in so an
+ * app serving more than one credential realm can pick the right one — sending
+ * an admin token to an agent endpoint, or the reverse, must never happen.
+ */
+export type AuthTokenGetter = (url: string) => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
@@ -31,8 +36,8 @@ export function setBaseUrl(url: string | null): void {
 
 /**
  * Register a getter that supplies a bearer auth token.  Before every fetch
- * the getter is invoked; when it returns a non-null string, an
- * `Authorization: Bearer <token>` header is attached to the request.
+ * the getter is invoked with the request URL; when it returns a non-null
+ * string, an `Authorization: Bearer <token>` header is attached to the request.
  *
  * Useful for Expo bundles making token-gated API calls.
  * Pass `null` to clear the getter.
@@ -352,7 +357,7 @@ export async function customFetch<T = unknown>(
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
   if (_authTokenGetter && !headers.has("authorization")) {
-    const token = await _authTokenGetter();
+    const token = await _authTokenGetter(resolveUrl(input));
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
     }

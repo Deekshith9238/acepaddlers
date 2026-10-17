@@ -1,0 +1,1 @@
+ALTER TABLE "tours" ADD COLUMN "booking_mode" text DEFAULT 'direct' NOT NULL;
