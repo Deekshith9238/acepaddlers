@@ -20,8 +20,8 @@ function BlogContent() {
   return (
     <>
       <PageMeta
-          title="Blog | White Water Rafting Guides & Tips | Ace Paddlers"
-          description="Expert guides on white water rafting in Coorg, best seasons, river comparisons, safety certifications, and packing lists from Ace Paddlers — 20+ years on the Barapole & Bhadra rivers."
+          title="Coorg & Chikmagalur Guides — Rafting, Treks & Tips | Ace Paddlers"
+          description="Guides to rafting, trekking and things to do in Coorg & Chikmagalur: best seasons, river comparisons, how to reach from Bangalore, safety and packing lists."
           url="/blog"
         />
 

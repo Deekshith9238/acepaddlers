@@ -62,20 +62,20 @@ type RouteMeta = {
 // Mirrors the PageMeta values each page sets client-side via react-helmet.
 const STATIC_META: Record<string, { title: string; description: string; h1: string; text: string; noindex?: boolean }> = {
   "/": {
-    title: "White Water Rafting in Coorg & Chikmagalur | Ace Paddlers",
-    description: "Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur.",
+    title: "Rafting, Adventure & Trekking in Coorg & Chikmagalur | Ace Paddlers",
+    description: "Adventure activities in Coorg & Chikmagalur: white water rafting on the Barapole & Bhadra, Harangi water sports, camping, treks and homestays. From ₹1,200.",
     h1: "White Water Rafting in Coorg & Chikmagalur",
     text: "South India's most experienced rafting team — NOLS-certified guides, 20+ years on the Barapole and Bhadra rivers, 87,000+ guests with zero accidents.",
   },
   "/tours": {
-    title: "All Tours — River Rafting, Camping & Homestays | Ace Paddlers",
-    description: "Browse all Ace Paddlers tours: white water rafting on Barapole & Bhadra rivers, overnight camping, eco-homestays in Coorg & Chikmagalur. From ₹1,200.",
+    title: "Adventure Activities in Karnataka — All Trips | Ace Paddlers",
+    description: "River rafting in Coorg & Chikmagalur, Harangi water sports, camping near Hassan and Coorg homestays — adventure weekend getaways from Bangalore. From ₹1,200.",
     h1: "Our Tours",
     text: "From white-water rapids to misty mountain homestays — pick the adventure that calls to you.",
   },
   "/experiences": {
-    title: "Adventure Experiences — Rafting, Camping & Homestays | Ace Paddlers",
-    description: "White water rafting on Barapole & Bhadra rivers, riverside camping, and eco-homestays in Coorg's Western Ghats. NOLS-certified. From ₹1,200.",
+    title: "Things to Do in Coorg & Chikmagalur — Adventure | Ace Paddlers",
+    description: "Things to do in Coorg & Chikmagalur: white water rafting, kayaking, water sports, riverside camping, nature trails, nearby treks and homestays. From ₹1,200.",
     h1: "Adventure Experiences",
     text: "White water rafting, riverside camping and eco-homestays in the Western Ghats.",
   },
@@ -86,8 +86,8 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
     text: "South India's pioneer white water rafting company since 1999 — NOLS-certified guides and 87,000+ happy guests.",
   },
   "/destinations": {
-    title: "Destinations — Coorg, Chikmagalur & Harangi Dam | Ace Paddlers",
-    description: "Explore our adventure destinations: Coorg (Kodagu) for Barapole rafting, Chikmagalur for Bhadra river rafting, and Harangi Dam for year-round water sports.",
+    title: "Adventure in Coorg, Chikmagalur & Hassan — Destinations | Ace Paddlers",
+    description: "Adventure destinations in Karnataka: Coorg for Barapole rafting and treks, Chikmagalur for Bhadra rafting and Mullayanagiri trekking, Harangi Dam water sports.",
     h1: "Our Destinations",
     text: "Iconic locations in Karnataka's Western Ghats — each with its own rivers, forests, and character.",
   },
@@ -110,20 +110,20 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
     text: "NOLS, WFR, CPR and Rescue 3 certified guides. 20+ years of white water rafting with zero serious incidents.",
   },
   "/contact": {
-    title: "Contact Ace Paddlers | White Water Rafting in Coorg",
+    title: "Contact Ace Paddlers | Rafting in Coorg & Chikmagalur",
     description: "Contact Ace Paddlers for white water rafting bookings in Coorg & Chikmagalur. Call +91 94809 87672. Located at T. Shettigeri, Virajpet, Kodagu — 571218.",
     h1: "Contact Ace Paddlers",
     text: "Call +91 94809 87672 for bookings. T. Shettigeri, Virajpet, Kodagu — 571218, Karnataka.",
   },
   "/corporate-groups": {
-    title: "Corporate Team Outing Coorg | White Water Rafting | Ace Paddlers",
-    description: "Corporate team outings in Coorg featuring white water rafting on the Barapole River. Groups of 10–100 people. Fully managed packages from ₹1,200/person. NOLS-certified guides.",
+    title: "Corporate Team Outing near Bangalore — Coorg Rafting | Ace Paddlers",
+    description: "Corporate outings and team building near Bangalore: white water rafting in Coorg, water sports, camping and treks for groups of 10–100. From ₹1,200/person.",
     h1: "Corporate Team Outings in Coorg",
     text: "Fully managed corporate adventure packages for groups of 10–100 people, from ₹1,200 per person.",
   },
   "/blog": {
-    title: "Blog | White Water Rafting Guides & Tips | Ace Paddlers",
-    description: "Expert guides on white water rafting in Coorg, best seasons, river comparisons, safety certifications, and packing lists from Ace Paddlers — 20+ years on the Barapole & Bhadra rivers.",
+    title: "Coorg & Chikmagalur Guides — Rafting, Treks & Tips | Ace Paddlers",
+    description: "Guides to rafting, trekking and things to do in Coorg & Chikmagalur: best seasons, river comparisons, how to reach from Bangalore, safety and packing lists.",
     h1: "The Ace Paddlers Blog",
     text: "River guides, seasonal advice, safety deep-dives, and travel tips from 20+ years on the Barapole and Bhadra.",
   },
@@ -185,6 +185,77 @@ const STATIC_META: Record<string, { title: string; description: string; h1: stri
     h1: "Cancellation Policy",
     text: "Cancellation charges, refunds, changes made by us before travel, and how to raise a complaint.",
   },
+};
+
+// Search phrases each page targets, sent as <meta name="keywords">. Google
+// ignores that tag (Bing gives it a little weight); what ranks is the same
+// phrases in the titles and descriptions above and in the page copy.
+const KEYWORDS: Record<string, string[]> = {
+  "/": [
+    "adventure in Chikmagalur", "adventure in Coorg", "activities near Chikmagalur", "activities near Coorg",
+    "things to do in Coorg", "things to do in Chikmagalur", "river rafting in Karnataka", "white water rafting near Bangalore",
+    "trekking in Coorg", "trekking in Chikmagalur", "adventure activities in Karnataka", "weekend getaways from Bangalore",
+  ],
+  "/tours": [
+    "adventure activities in Karnataka", "river rafting in Karnataka", "best rafting in Karnataka", "weekend getaways from Bangalore",
+    "one day trip from Bangalore", "two day adventure trip from Bangalore", "outdoor activities near Bangalore", "trek and rafting weekend from Bangalore",
+  ],
+  "/experiences": [
+    "things to do in Coorg", "things to do in Chikmagalur", "activities near Coorg", "activities near Chikkamagaluru",
+    "kayaking in Coorg", "water sports in Coorg", "camping in Coorg", "nature walk Coorg", "trekking near Coorg",
+  ],
+  "/destinations": [
+    "adventure in Coorg", "adventure in Chikmagalur", "adventure in Hassan", "treks near Bangalore",
+    "best treks in Karnataka", "trekking in Karnataka", "Western Ghats adventure",
+  ],
+  "/corporate-groups": [
+    "corporate outing near Bangalore", "team outing in Coorg", "team building in Coorg", "corporate trek near Bangalore",
+    "college trip adventure Karnataka", "group rafting booking", "team trekking outing",
+  ],
+  "/blog": [
+    "Coorg travel guide", "Chikmagalur travel guide", "best treks in Coorg", "best treks near Chikmagalur",
+    "best time for rafting in Coorg", "how to reach Coorg from Bangalore",
+  ],
+  "/tours/bhadra-rafting": [
+    "Bhadra river rafting", "river rafting in Chikmagalur", "rafting in Chikkamagaluru", "white water rafting near Chikmagalur",
+    "adventure in Chikmagalur", "activities near Chikmagalur", "water sports in Chikmagalur", "kayaking in Chikmagalur",
+    "Bhadra rafting price", "Bhadra rafting timings", "trekking and rafting in Chikmagalur", "Chikmagalur adventure package",
+  ],
+  "/tours/barapole-rafting": [
+    "Barapole river rafting", "river rafting in Coorg", "white water rafting in Coorg", "Barapole rafting price",
+    "Barapole rafting timings", "rafting near Virajpet", "rafting near Gonikoppa", "rafting near Madikeri",
+    "grade 4 rafting Karnataka", "adventure activities in Coorg", "trekking and rafting in Coorg", "Coorg adventure trip from Bangalore",
+  ],
+  "/tours/harangi-dam-water-sports": [
+    "Harangi dam water sports", "water sports in Coorg", "water sports near Kushalnagar", "kayaking in Coorg",
+    "jet ski Coorg", "things to do near Kushalnagar", "things to do near Bylakuppe", "Harangi backwaters",
+  ],
+  "/tours/camp-karle": [
+    "camping near Hassan", "camping in Hassan", "adventure activities in Hassan", "things to do near Sakleshpur",
+    "Sakleshpur trek", "trekking near Hassan", "camping and trekking near Hassan", "guided nature trail near Hassan",
+  ],
+  "/tours/lake-lounge-homestay": [
+    "lake view homestay in Coorg", "homestay in Coorg with activities", "Coorg homestay with rafting package", "homestay near Barapole",
+  ],
+  "/tours/misty-coorg-homestay": [
+    "hilltop homestay in Coorg", "homestay in Coorg with activities", "homestay near Gonikoppa", "homestay near Brahmagiri trek",
+  ],
+  "/tours/thithimathi-heritage-stay": [
+    "heritage stay in Coorg", "heritage homestay Coorg", "homestay in Coorg with nature walk", "homestay near Nagarhole",
+  ],
+  "/destinations/coorg": [
+    "adventure in Coorg", "things to do in Coorg", "activities near Coorg", "trekking in Coorg", "treks near Coorg",
+    "Tadiandamol trek", "Brahmagiri trek", "Kote Betta trek", "Nishani Motte trek", "Coorg trekking package",
+    "trek and homestay in Coorg", "river rafting in Coorg",
+  ],
+  "/destinations/chikmagalur": [
+    "adventure in Chikmagalur", "things to do in Chikmagalur", "activities near Chikkamagaluru", "trekking in Chikmagalur",
+    "treks near Chikmagalur", "Mullayanagiri trek", "Kudremukh trek", "Kemmangundi trek", "Chikmagalur trekking package",
+    "Chikmagalur weekend trip from Bangalore", "river rafting in Chikmagalur", "trek and stay Chikmagalur",
+  ],
+  "/destinations/harangi": [
+    "Harangi dam", "Harangi water sports", "water sports in Coorg", "things to do near Kushalnagar", "kayaking in Coorg",
+  ],
 };
 
 const BUSINESS_ID = `${ORIGIN}/#business`;
@@ -485,6 +556,8 @@ function injectMeta(html: string, meta: RouteMeta): string {
     head.push(`<meta property="og:description" content="${esc(meta.description)}" />`);
     head.push(`<meta name="twitter:description" content="${esc(meta.description)}" />`);
   }
+  const keywords = KEYWORDS[meta.canonicalPath];
+  if (keywords && !meta.noindex) head.push(`<meta name="keywords" content="${esc(keywords.join(", "))}" />`);
   head.push(`<link rel="canonical" href="${esc(canonical)}" />`);
   head.push(`<meta property="og:title" content="${esc(meta.title)}" />`);
   head.push(`<meta property="og:image" content="${esc(image)}" />`);

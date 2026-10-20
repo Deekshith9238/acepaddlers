@@ -40,8 +40,8 @@ function DestinationsContent() {
   return (
     <>
       <PageMeta
-          title="Destinations — Coorg, Chikmagalur & Harangi Dam | Ace Paddlers"
-          description="Explore our adventure destinations: Coorg (Kodagu) for Barapole rafting, Chikmagalur for Bhadra river rafting, and Harangi Dam for year-round water sports."
+          title="Adventure in Coorg, Chikmagalur & Hassan — Destinations | Ace Paddlers"
+          description="Adventure destinations in Karnataka: Coorg for Barapole rafting and treks, Chikmagalur for Bhadra rafting and Mullayanagiri trekking, Harangi Dam water sports."
           url="/destinations"
         />
         {/* Hero */}
