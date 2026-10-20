@@ -100,31 +100,6 @@ function DropRow({ item }: { item: DropItem }) {
   );
 }
 
-const POPULAR_SEARCHES: [string, [string, string][]][] = [
-  ["Chikmagalur", [
-    ["Adventure in Chikmagalur", "/destinations/chikmagalur"],
-    ["Things to do in Chikmagalur", "/destinations/chikmagalur"],
-    ["Trekking in Chikmagalur", "/destinations/chikmagalur"],
-    ["River rafting in Chikmagalur", "/tours/bhadra-rafting"],
-    ["Bhadra river rafting", "/tours/bhadra-rafting"],
-  ]],
-  ["Coorg", [
-    ["Adventure in Coorg", "/destinations/coorg"],
-    ["Things to do in Coorg", "/destinations/coorg"],
-    ["Trekking in Coorg", "/destinations/coorg"],
-    ["White water rafting in Coorg", "/tours/barapole-rafting"],
-    ["Water sports in Coorg", "/tours/harangi-dam-water-sports"],
-    ["Homestays in Coorg", "/experiences"],
-  ]],
-  ["Near Bangalore", [
-    ["Weekend getaways from Bangalore", "/tours"],
-    ["Adventure activities in Karnataka", "/tours"],
-    ["Treks near Bangalore", "/destinations"],
-    ["Camping near Hassan", "/tours/camp-karle"],
-    ["Corporate outings near Bangalore", "/corporate-groups"],
-  ]],
-];
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   // Published by TourDetail through context rather than passed as a prop:
   // Layout is mounted once above the router so the header and footer survive
@@ -480,23 +455,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
           </div>
-
-          {/* The phrases people search for, each linking to the page that answers it. */}
-          <nav aria-label="Popular searches" className="mb-10 grid md:grid-cols-3 gap-8 text-sm">
-            {POPULAR_SEARCHES.map(([place, links]) => (
-              <div key={place}>
-                <h4 className="text-white font-bold mb-3 uppercase tracking-wider text-xs">{place}</h4>
-                <p className="m-0 leading-7">
-                  {links.map(([label, href], i) => (
-                    <span key={label}>
-                      {i > 0 && " · "}
-                      <Link href={href} className="no-underline hover:text-white transition-colors" style={{ color: C.footerText }}>{label}</Link>
-                    </span>
-                  ))}
-                </p>
-              </div>
-            ))}
-          </nav>
 
           {/* NAP — Name, Address, Phone */}
           <div className="py-6 px-6 mb-4 rounded-xl text-center" style={{ backgroundColor: "rgba(26,127,166,0.08)", border: "1px solid rgba(26,127,166,0.15)" }}>
