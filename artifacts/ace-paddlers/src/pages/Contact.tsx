@@ -24,7 +24,7 @@ function ContactContent() {
   return (
     <>
       <PageMeta
-          title="Contact Ace Paddlers | White Water Rafting in Coorg"
+          title="Contact Ace Paddlers | Rafting in Coorg & Chikmagalur"
           description={`Contact ${biz.name} for white water rafting bookings in Coorg & Chikmagalur. Call ${biz.phones[0]}.${biz.addressLine ? ` Located at ${biz.addressLine}.` : ""}`}
           url="/contact"
         />

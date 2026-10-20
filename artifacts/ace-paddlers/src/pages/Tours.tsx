@@ -34,8 +34,8 @@ function ToursContent() {
   return (
     <>
       <PageMeta
-          title="All Tours — River Rafting, Camping & Homestays | Ace Paddlers"
-          description="Browse all Ace Paddlers tours: white water rafting on Barapole & Bhadra rivers, overnight camping, eco-homestays in Coorg & Chikmagalur. From ₹1,200."
+          title="Adventure Activities in Karnataka — All Trips | Ace Paddlers"
+          description="River rafting in Coorg & Chikmagalur, Harangi water sports, camping near Hassan and Coorg homestays — adventure weekend getaways from Bangalore. From ₹1,200."
           url="/tours"
         />
         {/* Hero */}

@@ -96,8 +96,8 @@ function ExperiencesContent() {
   return (
     <>
       <PageMeta
-          title="Adventure Experiences — Rafting, Camping & Homestays | Ace Paddlers"
-          description="White water rafting on Barapole & Bhadra rivers, riverside camping, and eco-homestays in Coorg's Western Ghats. NOLS-certified. From ₹1,200."
+          title="Things to Do in Coorg & Chikmagalur — Adventure | Ace Paddlers"
+          description="Things to do in Coorg & Chikmagalur: white water rafting, kayaking, water sports, riverside camping, nature trails, nearby treks and homestays. From ₹1,200."
           url="/experiences"
         />
         {/* Hero */}

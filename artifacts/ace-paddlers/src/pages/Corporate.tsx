@@ -92,8 +92,8 @@ function CorporateContent() {
   return (
     <>
       <PageMeta
-          title="Corporate Team Outing Coorg | White Water Rafting | Ace Paddlers"
-          description="Corporate team outings in Coorg featuring white water rafting on the Barapole River. Groups of 10–100 people. Fully managed packages from ₹1,200/person. NOLS-certified guides."
+          title="Corporate Team Outing near Bangalore — Coorg Rafting | Ace Paddlers"
+          description="Corporate outings and team building near Bangalore: white water rafting in Coorg, water sports, camping and treks for groups of 10–100. From ₹1,200/person."
           url="/corporate-groups"
         />
 

@@ -39,8 +39,8 @@ export default function Home() {
   return (
     <>
       <PageMeta
-          title="White Water Rafting in Coorg & Chikmagalur | Ace Paddlers"
-          description="Book white water rafting on the Barapole & Bhadra rivers — NOLS-certified guides, 20+ years, 87,000+ guests, zero accidents. From ₹1,200. Coorg & Chikmagalur."
+          title="Rafting, Adventure & Trekking in Coorg & Chikmagalur | Ace Paddlers"
+          description="Adventure activities in Coorg & Chikmagalur: white water rafting on the Barapole & Bhadra, Harangi water sports, camping, treks and homestays. From ₹1,200."
           url="/"
         />
 
