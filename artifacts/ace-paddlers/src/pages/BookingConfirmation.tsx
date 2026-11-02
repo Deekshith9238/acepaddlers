@@ -3,6 +3,7 @@ import { CheckCircle, Calendar, Clock, Users, ArrowRight } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import { useGetBooking } from "@workspace/api-client-react";
 import { C } from "@/data/constants";
+import { PayScreen } from "@/components/BookingModal";
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return "—";
@@ -13,7 +14,7 @@ function formatDate(d: string | null | undefined): string {
 
 export default function BookingConfirmation() {
   const { ref } = useParams<{ ref: string }>();
-  const { data: booking, isLoading } = useGetBooking(ref);
+  const { data: booking, isLoading, refetch } = useGetBooking(ref);
 
   if (isLoading) {
     return (
@@ -34,6 +35,16 @@ export default function BookingConfirmation() {
   }
 
   const paid = booking.paymentStatus === "paid";
+  // Paid after the booking was abandoned and its departure filled up: the
+  // money is in but there is no seat — the team calls to sort it out.
+  const paidNoSeat = paid && booking.status === "cart_abandoned";
+  // Unpaid and still payable: the link in the "complete your payment" e-mail
+  // lands here, so this is where a customer who closed the payment window
+  // comes back to pay. An abandoned booking can still be paid; the seats are
+  // taken back on payment if there is room.
+  const upcoming = !booking.date || booking.date >= new Date().toLocaleDateString("en-CA");
+  const payable = !paid && upcoming && (booking.status === "pending" || booking.status === "cart_abandoned")
+    && !!(booking.razorpayOrderId || (booking.paymentLinkUrl && booking.paymentLinkStatus !== "paid"));
 
   return (
     <>
@@ -43,13 +54,17 @@ export default function BookingConfirmation() {
             <div className="text-center mb-8">
               <CheckCircle className="w-14 h-14 mx-auto mb-4" style={{ color: paid ? "#16a34a" : C.riverTeal }} />
               <h1 className="text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
-                {paid ? "You're confirmed!" : "Request received!"}
+                {paidNoSeat ? "Payment received" : paid ? "You're confirmed!" : payable ? "Complete your payment" : "Request received!"}
               </h1>
               <p style={{ color: "#5a8ea8" }}>
                 Reference <span className="font-bold" style={{ color: C.deepOcean }}>{booking.bookingRef}</span>
-                {paid
-                  ? " — payment received, see you on the water!"
-                  : " — our team will confirm by call / WhatsApp shortly."}
+                {paidNoSeat
+                  ? " — that departure has just filled up. Our team will call you to arrange another date or a refund."
+                  : paid
+                    ? " — payment received, see you on the water!"
+                    : payable
+                      ? " — pay below to confirm your place."
+                      : " — our team will confirm by call / WhatsApp shortly."}
               </p>
             </div>
 
@@ -67,10 +82,31 @@ export default function BookingConfirmation() {
               <div className="mt-3">
                 <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide"
                   style={{ backgroundColor: C.riverTeal + "18", color: C.riverTeal }}>
-                  {booking.status}
+                  {booking.status === "cart_abandoned" ? (paid ? "payment received" : "awaiting payment") : booking.status}
                 </span>
               </div>
             </div>
+
+            {payable && booking.razorpayOrderId && (
+              <div className="rounded-2xl border bg-white p-6 shadow-lg mt-6" style={{ borderColor: C.mutedBorder }}>
+                <PayScreen
+                  bookingRef={booking.bookingRef}
+                  booking={booking}
+                  phone=""
+                  customerName={booking.customerName}
+                  customerEmail={booking.customerEmail ?? ""}
+                  customerPhone={booking.customerPhone}
+                  onDone={() => void refetch()}
+                />
+              </div>
+            )}
+            {payable && !booking.razorpayOrderId && booking.paymentLinkUrl && (
+              <a href={booking.paymentLinkUrl}
+                className="mt-6 flex items-center justify-center rounded-full py-3.5 font-semibold no-underline"
+                style={{ backgroundColor: C.riverTeal, color: "white" }}>
+                Pay {booking.currency} {booking.amountDue.toLocaleString("en-IN")} now
+              </a>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <a href={`${import.meta.env.VITE_API_URL || ""}/api/bookings/${booking.bookingRef}/calendar.ics`}

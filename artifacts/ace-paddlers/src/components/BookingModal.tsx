@@ -946,7 +946,7 @@ export default function BookingModal({
   );
 }
 
-function PayScreen({
+export function PayScreen({
   bookingRef,
   booking,
   phone,

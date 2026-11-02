@@ -8,7 +8,7 @@ import { getCalendarClient } from "./calendar";
 import { logger } from "./logger";
 import { withinLeadTime, checkPartySize, amountDueNow, paymentDueAt } from "./trip-rules";
 import { applyDepartureSharing } from "./seat-sharing";
-import { notifyPaymentConfirmed } from "./notify";
+import { notifyPaidButFull, notifyPaymentConfirmed } from "./notify";
 import { upsertCustomer } from "./customers";
 import { recomputeBookingPaymentStatus } from "./payments-ledger";
 import { evaluateCoupon, claimCouponUse, recordRedemption, computeDiscount } from "./coupons";
@@ -419,7 +419,28 @@ export async function markBookingPaidAndConfirm(bookingId: string): Promise<void
     return;
   }
 
-  if (booking.status !== "pending") return; // already confirmed/cancelled/completed — nothing more to do
+  // Paid after the 6-hour sweep gave the seats away: take them back if the
+  // departure still has room, otherwise the team has to sort it out by hand.
+  if (booking.status === "cart_abandoned") {
+    const retake = await retakeAbandonedCapacity(bookingId);
+    if (retake === "full") {
+      const [t] = await db.select({ title: tours.title }).from(tours).where(eq(tours.id, booking.tourId)).limit(1);
+      const [s] = await db.select().from(tourSlots).where(eq(tourSlots.id, booking.slotId)).limit(1);
+      await notifyPaidButFull({
+        bookingRef: booking.bookingRef,
+        customerName: booking.customerName,
+        customerPhone: booking.customerPhone,
+        tourTitle: t?.title ?? "a trip",
+        when: s ? `${s.date} ${s.startTime}` : "",
+        amount: summary.net,
+        currency: booking.currency,
+      });
+      return;
+    }
+    if (retake === "skip") return; // the other confirm call got here first
+  } else if (booking.status !== "pending") {
+    return; // already confirmed/cancelled/completed — nothing more to do
+  }
 
   const [tour] = await db.select().from(tours).where(eq(tours.id, booking.tourId)).limit(1);
   const [slot] = await db.select().from(tourSlots).where(eq(tourSlots.id, booking.slotId)).limit(1);
@@ -464,6 +485,35 @@ export async function createBookingCalendarEvent(
 }
 
 /** Release a cancelled booking's seats back to its slot. */
+/**
+ * Takes an abandoned booking's seats back, for a customer who pays after the
+ * sweep released them. Moves it back to "pending" in the same transaction, so
+ * the webhook and the browser's verify call racing each other can't take the
+ * seats twice. "full" when the departure no longer has room (or has already
+ * happened); "skip" when the
+ * booking isn't abandoned (any more).
+ */
+export async function retakeAbandonedCapacity(bookingId: string): Promise<"taken" | "full" | "skip"> {
+  return db.transaction(async (tx) => {
+    const [b] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update");
+    if (!b || b.status !== "cart_abandoned") return "skip";
+    const [slot] = await tx.select().from(tourSlots).where(eq(tourSlots.id, b.slotId)).for("update");
+    const seats = b.seatsUsed ?? b.numGuests;
+    // IST is UTC+5:30 with no daylight saving; a departure already gone has no seat to give.
+    const todayIst = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+    if (!slot || slot.date < todayIst || slot.status !== "open" || slot.bookedCount + seats > slot.capacity) return "full";
+    const newBooked = slot.bookedCount + seats;
+    await tx
+      .update(tourSlots)
+      .set({ bookedCount: newBooked, status: newBooked >= slot.capacity ? "full" : "open" })
+      .where(eq(tourSlots.id, slot.id));
+    const [tour] = await tx.select().from(tours).where(eq(tours.id, slot.tourId)).limit(1);
+    if (tour) await applyDepartureSharing(tx, tour, slot, seats);
+    await tx.update(bookings).set({ status: "pending", updatedAt: new Date() }).where(eq(bookings.id, bookingId));
+    return "taken";
+  });
+}
+
 export async function releaseBookingCapacity(bookingId: string): Promise<void> {
   await db.transaction(async (tx) => {
     const [b] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);

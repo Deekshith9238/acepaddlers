@@ -2,7 +2,7 @@ import { normalizePhone } from "./customers";
 import { logger } from "./logger";
 
 /**
- * Guards the public "someone started the form" alert.
+ * Guards the public booking-form alerts ("started the form", "left the form").
  *
  * This endpoint is unauthenticated and makes the server send a WhatsApp
  * message, which means it is both a spam vector aimed at the team's phone and
@@ -20,49 +20,50 @@ const PER_PHONE_WINDOW_MS = 6 * 60 * 60 * 1000;
 const GLOBAL_LIMIT_PER_HOUR = 40;
 const MAX_TRACKED = 5_000;
 
-const recentByPhone = new Map<string, number>();
-let hourStartedAt = Date.now();
-let sentThisHour = 0;
-
-function prune(now: number): void {
-  if (recentByPhone.size < MAX_TRACKED) return;
-  for (const [key, at] of recentByPhone) {
-    if (now - at > PER_PHONE_WINDOW_MS) recentByPhone.delete(key);
-  }
-  // Still oversized after pruning expired entries — drop the oldest wholesale
-  // rather than let an attacker grow this without bound.
-  if (recentByPhone.size >= MAX_TRACKED) recentByPhone.clear();
-}
-
 export type IntentDecision = "send" | "duplicate" | "rate_limited" | "unusable";
 
-/** Decides whether this alert should go out, and records the decision. */
-export function shouldAlertFormStart(phone: string, now = Date.now()): IntentDecision {
-  const key = normalizePhone(phone);
-  // Too short to be a real number — the visitor is mid-typing.
-  if (!key) return "unusable";
+/** One limiter per kind of alert, each with its own per-phone and hourly budget. */
+function createLimiter(label: string) {
+  const recentByPhone = new Map<string, number>();
+  let hourStartedAt = Date.now();
+  let sentThisHour = 0;
 
-  const last = recentByPhone.get(key);
-  if (last && now - last < PER_PHONE_WINDOW_MS) return "duplicate";
-
-  if (now - hourStartedAt > 60 * 60 * 1000) {
-    hourStartedAt = now;
-    sentThisHour = 0;
-  }
-  if (sentThisHour >= GLOBAL_LIMIT_PER_HOUR) {
-    logger.warn({ limit: GLOBAL_LIMIT_PER_HOUR }, "form-start alerts rate limited for this hour");
-    return "rate_limited";
+  function prune(now: number): void {
+    if (recentByPhone.size < MAX_TRACKED) return;
+    for (const [key, at] of recentByPhone) {
+      if (now - at > PER_PHONE_WINDOW_MS) recentByPhone.delete(key);
+    }
+    // Still oversized after pruning expired entries — drop the oldest wholesale
+    // rather than let an attacker grow this without bound.
+    if (recentByPhone.size >= MAX_TRACKED) recentByPhone.clear();
   }
 
-  prune(now);
-  recentByPhone.set(key, now);
-  sentThisHour++;
-  return "send";
+  /** Decides whether this alert should go out, and records the decision. */
+  return (phone: string, now = Date.now()): IntentDecision => {
+    const key = normalizePhone(phone);
+    // Too short to be a real number — the visitor is mid-typing.
+    if (!key) return "unusable";
+
+    const last = recentByPhone.get(key);
+    if (last && now - last < PER_PHONE_WINDOW_MS) return "duplicate";
+
+    if (now - hourStartedAt > 60 * 60 * 1000) {
+      hourStartedAt = now;
+      sentThisHour = 0;
+    }
+    if (sentThisHour >= GLOBAL_LIMIT_PER_HOUR) {
+      logger.warn({ limit: GLOBAL_LIMIT_PER_HOUR, label }, "form alerts rate limited for this hour");
+      return "rate_limited";
+    }
+
+    prune(now);
+    recentByPhone.set(key, now);
+    sentThisHour++;
+    return "send";
+  };
 }
 
-/** Test seam — resets the in-memory limiter. */
-export function resetFormIntentLimits(): void {
-  recentByPhone.clear();
-  hourStartedAt = Date.now();
-  sentThisHour = 0;
-}
+/** "Someone is filling in the form right now." */
+export const shouldAlertFormStart = createLimiter("form-start");
+/** "Someone filled in their details and left without booking." */
+export const shouldWatchFormLeft = createLimiter("form-left");

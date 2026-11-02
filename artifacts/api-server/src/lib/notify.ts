@@ -596,6 +596,68 @@ export async function notifyBookingFormStarted(v: {
 
 
 /**
+ * A customer paid for a booking the 6-hour sweep had already abandoned, and
+ * its departure has since filled up (or already gone). The money is in, the seat is not — the
+ * team has to offer another date or refund. E-mail only: rare enough not to
+ * need its own WhatsApp template, and it needs the detail an e-mail carries.
+ */
+export async function notifyPaidButFull(b: {
+  bookingRef: string;
+  customerName: string;
+  customerPhone: string;
+  tourTitle: string;
+  when: string;
+  amount: number;
+  currency: string;
+}): Promise<void> {
+  const text =
+    `${b.customerName} paid ${money(b.currency, b.amount)} for booking ${b.bookingRef} (${b.tourTitle}, ${b.when}) ` +
+    `after it had been marked abandoned, and that departure is now full or has already happened. The booking is NOT confirmed.\n\n` +
+    `Call ${b.customerPhone} to move them to another date or refund the payment.`;
+  const html = renderEmailHtml({
+    heading: `Paid, but no seats left — ${b.bookingRef}`,
+    bodyText: text,
+    details: [
+      { label: "Experience", value: b.tourTitle },
+      { label: "Date & time", value: b.when },
+      { label: "Paid", value: money(b.currency, b.amount) },
+      { label: "Customer", value: b.customerName },
+      { label: "Phone", value: b.customerPhone },
+    ],
+    cta: { label: "Open bookings", url: `${siteBase()}/admin/bookings` },
+  });
+  for (const to of staffEmails()) await safeSend(to, `Action needed: paid but departure full — ${b.bookingRef}`, text, html);
+}
+
+/**
+ * Tells the team someone entered their details in the booking form (and
+ * agreed to be contacted) but left without booking. Unlike the "started"
+ * ping this one is worth an e-mail: it is a lead with a name and a number.
+ */
+export async function notifyBookingFormLeft(v: {
+  customerName: string;
+  customerPhone: string;
+  tourTitle: string;
+}): Promise<void> {
+  const text =
+    `${v.customerName} entered their details in the booking form for ${v.tourTitle} but left without booking. ` +
+    `They agreed to be contacted to help complete it.\n\nCall ${v.customerPhone}.`;
+  const html = renderEmailHtml({
+    heading: "Left the booking form without booking",
+    bodyText: text,
+    details: [
+      { label: "Experience", value: v.tourTitle },
+      { label: "Customer", value: v.customerName },
+      { label: "Phone", value: v.customerPhone },
+    ],
+  });
+  for (const to of staffEmails()) await safeSend(to, `Left without booking — ${v.customerName}, ${v.tourTitle}`, text, html);
+  for (const phone of staffPhones()) {
+    await sendWaNotification(phone, "staff_form_left", [v.customerName, v.customerPhone, v.tourTitle], text);
+  }
+}
+
+/**
  * Tells the team a direct booking went unpaid long enough to be swept as
  * abandoned — its seats are already back on sale. Sent once, at the moment of
  * the sweep, so the team can call while the customer still remembers the trip.
