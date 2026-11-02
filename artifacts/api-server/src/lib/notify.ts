@@ -596,6 +596,53 @@ export async function notifyBookingFormStarted(v: {
 
 
 /**
+ * Tells the team a direct booking went unpaid long enough to be swept as
+ * abandoned — its seats are already back on sale. Sent once, at the moment of
+ * the sweep, so the team can call while the customer still remembers the trip.
+ */
+export async function notifyCartAbandoned(b: {
+  bookingRef: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  tourTitle: string;
+  when: string;
+  numGuests: number;
+  totalAmount: number;
+  currency: string;
+}): Promise<void> {
+  const adminUrl = `${siteBase()}/admin/bookings`;
+  const amount = `${money(b.currency, b.totalAmount)} for ${b.numGuests} guest${b.numGuests === 1 ? "" : "s"}`;
+  const text =
+    `${b.customerName} started booking ${b.tourTitle} (${b.when}, ${amount}) but did not pay. ` +
+    `The booking ${b.bookingRef} is now marked abandoned and its seats are back on sale.\n\n` +
+    `Call ${b.customerPhone} to help them finish.`;
+  const html = renderEmailHtml({
+    heading: `Unpaid booking ${b.bookingRef}`,
+    bodyText: text,
+    details: [
+      { label: "Experience", value: b.tourTitle },
+      { label: "Date & time", value: b.when },
+      { label: "Amount", value: amount },
+      { label: "Customer", value: b.customerName },
+      { label: "Phone", value: b.customerPhone },
+      { label: "Email", value: b.customerEmail },
+    ],
+    cta: { label: "Open bookings", url: adminUrl },
+  });
+  for (const to of staffEmails()) await safeSend(to, `Abandoned booking — ${b.customerName}, ${b.tourTitle}`, `${text}\n\n${adminUrl}`, html);
+
+  for (const phone of staffPhones()) {
+    await sendWaNotification(
+      phone,
+      "staff_cart_abandoned",
+      [b.customerName, b.tourTitle, b.when, amount, b.customerPhone],
+      `${text} ${adminUrl}`,
+    );
+  }
+}
+
+/**
  * Tells the team that Google reviews are waiting for approval.
  *
  * One message per check, not one per review: a busy day should be one ping

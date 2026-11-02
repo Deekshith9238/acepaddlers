@@ -1,7 +1,7 @@
 import { and, eq, isNull, lt } from "drizzle-orm";
 import { db, bookings, tours, tourSlots } from "@workspace/db";
 import { logger } from "./logger";
-import { notifyTripReminder } from "./notify";
+import { notifyCartAbandoned, notifyTripReminder } from "./notify";
 import { releaseBookingCapacity } from "./booking";
 import { runDueReports } from "./scheduled-reports";
 import { pruneAnalytics } from "./analytics";
@@ -61,8 +61,8 @@ export async function sendTripReminders(): Promise<void> {
 const ABANDON_AFTER_MS = 6 * 60 * 60 * 1000;
 
 /**
- * Moves stale unpaid direct-mode bookings to "cart_abandoned" and gives their
- * seats back.
+ * Moves stale unpaid direct-mode bookings to "cart_abandoned", gives their
+ * seats back and tells the team, who can call the customer.
  *
  * Only direct-mode tours qualify: on an enquiry-mode tour, "pending and
  * unpaid" is the correct resting state for a booking waiting on the team, and
@@ -71,9 +71,10 @@ const ABANDON_AFTER_MS = 6 * 60 * 60 * 1000;
 export async function sweepAbandonedCarts(): Promise<number> {
   const cutoff = new Date(Date.now() - ABANDON_AFTER_MS);
   const rows = await db
-    .select({ booking: bookings })
+    .select({ booking: bookings, tour: tours, slot: tourSlots })
     .from(bookings)
     .innerJoin(tours, eq(bookings.tourId, tours.id))
+    .leftJoin(tourSlots, eq(bookings.slotId, tourSlots.id))
     .where(
       and(
         eq(bookings.status, "pending"),
@@ -83,13 +84,24 @@ export async function sweepAbandonedCarts(): Promise<number> {
       ),
     );
 
-  for (const { booking } of rows) {
+  for (const { booking, tour, slot } of rows) {
     try {
       await releaseBookingCapacity(booking.id);
       await db
         .update(bookings)
         .set({ status: "cart_abandoned", updatedAt: new Date() })
         .where(eq(bookings.id, booking.id));
+      await notifyCartAbandoned({
+        bookingRef: booking.bookingRef,
+        customerName: booking.customerName,
+        customerPhone: booking.customerPhone,
+        customerEmail: booking.customerEmail,
+        tourTitle: tour.title,
+        when: slot ? `${slot.date} ${slot.startTime}` : "date not chosen",
+        numGuests: booking.numGuests,
+        totalAmount: booking.totalAmount,
+        currency: booking.currency,
+      });
     } catch (err) {
       logger.error({ err, bookingId: booking.id }, "cart abandon sweep failed for booking");
     }
