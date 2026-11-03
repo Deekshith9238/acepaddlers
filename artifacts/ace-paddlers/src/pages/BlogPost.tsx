@@ -7,7 +7,7 @@ import Animate from "@/components/Animate";
 import PageMeta from "@/components/PageMeta";
 import SmartImage from "@/components/SmartImage";
 import { C } from "@/data/constants";
-import { useGetBlogPost, useListBlogPosts } from "@workspace/api-client-react";
+import { useGetBlogPost, useListBlogPosts, useListTours } from "@workspace/api-client-react";
 import { adaptBlogPost, adaptBlogSummary } from "@/lib/content";
 import { fetchSiteConfig, telHref, BUSINESS_DEFAULTS, type BusinessInfo } from "@/lib/site-config";
 
@@ -17,6 +17,7 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const { data: apiPost, isLoading } = useGetBlogPost(slug);
   const { data: allPosts } = useListBlogPosts();
+  const { data: tours } = useListTours();
 
   if (isLoading) {
     return (
@@ -35,6 +36,17 @@ export default function BlogPost() {
     .filter(p => p.slug !== slug)
     .slice(0, 3)
     .map(adaptBlogSummary);
+
+  // Quick Info shows the trip the post is about: the first trip whose name
+  // (barapole, bhadra, harangi…) the post's title mentions. Posts naming none
+  // are about Coorg rafting, so they fall back to the Barapole.
+  const postTitle = post.title.toLowerCase();
+  const tripName = (t: { slug: string }) => t.slug.split("-")[0];
+  const trip =
+    (tours ?? [])
+      .map((t) => ({ t, at: postTitle.search(new RegExp(`\\b${tripName(t)}\\b`)) }))
+      .filter((m) => m.at >= 0)
+      .sort((a, b) => a.at - b.at)[0]?.t ?? tours?.find((t) => t.slug === "barapole-rafting");
 
   return (
     <>
@@ -123,20 +135,23 @@ export default function BlogPost() {
               <div className="lg:col-span-1">
                 <Animate variant="right">
                   <div className="sticky top-28 space-y-6">
-                    <div className="rounded-2xl p-6 border" style={{ borderColor: C.mutedBorder, backgroundColor: C.muted }}>
-                      <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider" style={{ color: "#5a8ea8" }}>Quick Info</h4>
-                      <div className="space-y-3 text-sm" style={{ color: "#2e5a74" }}>
-                        <div><strong>Rafting from:</strong> ₹1,200/person</div>
-                        <div><strong>Season:</strong> June – October</div>
-                        <div><strong>River:</strong> Barapole, Grade III–IV</div>
-                        <div><strong>Duration:</strong> ~1 hour on water</div>
+                    {trip && (
+                      <div className="rounded-2xl p-6 border" style={{ borderColor: C.mutedBorder, backgroundColor: C.muted }}>
+                        <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider" style={{ color: "#5a8ea8" }}>Quick Info</h4>
+                        <div className="space-y-3 text-sm" style={{ color: "#2e5a74" }}>
+                          <div><strong>{trip.title}</strong></div>
+                          <div><strong>From:</strong> {trip.currency === "INR" ? "₹" : `${trip.currency} `}{trip.priceValue.toLocaleString("en-IN")}/person</div>
+                          {trip.season && <div><strong>Season:</strong> {trip.season}</div>}
+                          {trip.difficulty && <div><strong>Difficulty:</strong> {trip.difficulty}</div>}
+                          {trip.duration && <div><strong>Duration:</strong> {trip.duration}</div>}
+                        </div>
+                        <Link href={`/tours/${trip.slug}`}
+                          className="mt-5 flex items-center justify-center rounded-full py-3 text-sm font-semibold no-underline text-white"
+                          style={{ backgroundColor: C.riverTeal }}>
+                          Book Now
+                        </Link>
                       </div>
-                      <a href={telHref(biz.phones[0] ?? "")}
-                        className="mt-5 flex items-center justify-center rounded-full py-3 text-sm font-semibold no-underline text-white"
-                        style={{ backgroundColor: C.riverTeal }}>
-                        Book Now
-                      </a>
-                    </div>
+                    )}
 
                     <div>
                       <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider" style={{ color: "#5a8ea8" }}>More Posts</h4>
