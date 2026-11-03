@@ -603,7 +603,7 @@ paths:
           description: Booking created
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/BookingDetail" }
+              schema: { $ref: "#/components/schemas/PublicBookingDetail" }
         "404": { description: Slot not found }
         "409": { description: Slot full / not enough capacity }
   /bookings/{ref}:
@@ -618,7 +618,7 @@ paths:
           description: Booking
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/BookingDetail" }
+              schema: { $ref: "#/components/schemas/PublicBookingDetail" }
         "404": { description: Not found }
   /bookings/{ref}/verify-payment:
     post:
@@ -637,7 +637,7 @@ paths:
           description: Booking, now paid and confirmed
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/BookingDetail" }
+              schema: { $ref: "#/components/schemas/PublicBookingDetail" }
         "400": { description: Invalid signature or order/booking mismatch }
         "404": { description: Not found }
   /admin/slots:
@@ -2550,6 +2550,39 @@ components:
         razorpayKeyId: { type: string, nullable: true, description: "Razorpay public key id for checkout.js, while unpaid" }
         createdAt: { type: string, nullable: true }
       required: [id, bookingRef, tourId, slotId, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, paymentStatus, amountPaid, amountDue, tags, source, discountAmount]
+    PublicBookingDetail:
+      type: object
+      description: What anyone holding the booking reference may see — BookingDetail minus staff-only fields (internal notes, tags, source, agent, internal ids).
+      properties:
+        bookingRef: { type: string }
+        tourSlug: { type: string, nullable: true }
+        tourTitle: { type: string, nullable: true }
+        date: { type: string, nullable: true }
+        startTime: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: string }
+        numGuests: { type: integer }
+        totalAmount: { type: integer }
+        currency: { type: string }
+        status: { type: string, enum: [pending, confirmed, cancelled, completed, cart_abandoned] }
+        paymentStatus: { type: string, enum: [unpaid, deposit, paid, refunded] }
+        paymentMethod: { type: string, nullable: true }
+        chargesBreakdown: { type: array, items: { $ref: "#/components/schemas/ChargeLine" } }
+        participantBreakdown: { type: array, items: { $ref: "#/components/schemas/ParticipantLine" } }
+        addonsBreakdown: { type: array, items: { $ref: "#/components/schemas/AddonLine" } }
+        couponCode: { type: string, nullable: true }
+        discountAmount: { type: integer }
+        amountPaid: { type: integer }
+        amountDue: { type: integer }
+        notes: { type: string, nullable: true, description: "The customer's own message from the booking form" }
+        paymentLinkUrl: { type: string, nullable: true }
+        paymentLinkStatus: { type: string, nullable: true }
+        razorpayOrderId: { type: string, nullable: true }
+        razorpayKeyId: { type: string, nullable: true }
+        createdAt: { type: string, nullable: true }
+      required: [bookingRef, customerName, customerEmail, customerPhone, numGuests, totalAmount, currency, status, paymentStatus, amountPaid, amountDue, discountAmount]
     ParticipantType:
       type: object
       properties:

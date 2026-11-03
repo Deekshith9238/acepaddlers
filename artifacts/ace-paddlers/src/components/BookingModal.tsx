@@ -17,7 +17,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { useGetAvailability, useCreateBooking, useGetBooking, useGetTour, useGetTourRateCard, useVerifyBookingPayment, useValidateCoupon, quoteBooking, type QuoteResult, type Slot, type BookingDetail } from "@workspace/api-client-react";
+import { useGetAvailability, useCreateBooking, useGetBooking, useGetTour, useGetTourRateCard, useVerifyBookingPayment, useValidateCoupon, quoteBooking, type QuoteResult, type Slot, type PublicBookingDetail } from "@workspace/api-client-react";
 import { C } from "@/data/constants";
 import { formatINR } from "@/lib/content";
 import { fetchCharges, fetchPaymentMethods, computeCharges, type Charge, type PaymentMethodOption } from "@/lib/charges";
@@ -956,7 +956,7 @@ function PayScreen({
   onDone,
 }: {
   bookingRef: string;
-  booking: BookingDetail | undefined;
+  booking: PublicBookingDetail | undefined;
   phone: string;
   customerName: string;
   customerEmail: string;
@@ -964,7 +964,7 @@ function PayScreen({
   onDone: () => void;
 }) {
   const verify = useVerifyBookingPayment();
-  const [verifiedBooking, setVerifiedBooking] = useState<BookingDetail | null>(null);
+  const [verifiedBooking, setVerifiedBooking] = useState<PublicBookingDetail | null>(null);
   const [opening, setOpening] = useState(false);
   const [dismissedOnce, setDismissedOnce] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);

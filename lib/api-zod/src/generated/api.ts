@@ -1100,16 +1100,9 @@ export const GetBookingParams = zod.object({
 })
 
 export const GetBookingResponse = zod.object({
-  "id": zod.string(),
   "bookingRef": zod.string(),
-  "tourId": zod.string(),
   "tourSlug": zod.string().nullish(),
   "tourTitle": zod.string().nullish(),
-  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
-  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
-  "agentId": zod.string().nullish(),
-  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
-  "slotId": zod.string(),
   "date": zod.string().nullish(),
   "startTime": zod.string().nullish(),
   "location": zod.string().nullish(),
@@ -1127,7 +1120,7 @@ export const GetBookingResponse = zod.object({
   "type": zod.enum(['percent', 'flat']),
   "value": zod.number(),
   "amount": zod.number().describe('Resolved rupee amount for this charge')
-})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+})).optional(),
   "participantBreakdown": zod.array(zod.object({
   "typeId": zod.string().nullish(),
   "label": zod.string(),
@@ -1144,20 +1137,17 @@ export const GetBookingResponse = zod.object({
   "priceType": zod.string(),
   "amount": zod.number()
 })).optional(),
-  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
-  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
-  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
-  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "couponCode": zod.string().nullish(),
+  "discountAmount": zod.number(),
+  "amountPaid": zod.number(),
+  "amountDue": zod.number(),
   "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
-  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
-  "tags": zod.array(zod.string()),
-  "source": zod.string().describe('website | whatsapp | phone | manual'),
-  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
-  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
-  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
-  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "paymentLinkUrl": zod.string().nullish(),
+  "paymentLinkStatus": zod.string().nullish(),
+  "razorpayOrderId": zod.string().nullish(),
+  "razorpayKeyId": zod.string().nullish(),
   "createdAt": zod.string().nullish()
-})
+}).describe('What anyone holding the booking reference may see — BookingDetail minus staff-only fields (internal notes, tags, source, agent, internal ids).')
 
 
 /**
@@ -1174,16 +1164,9 @@ export const VerifyBookingPaymentBody = zod.object({
 })
 
 export const VerifyBookingPaymentResponse = zod.object({
-  "id": zod.string(),
   "bookingRef": zod.string(),
-  "tourId": zod.string(),
   "tourSlug": zod.string().nullish(),
   "tourTitle": zod.string().nullish(),
-  "tourCode": zod.string().nullish().describe('Operator-facing trip code'),
-  "variantLabel": zod.string().nullish().describe('Which trip variant was sold'),
-  "agentId": zod.string().nullish(),
-  "agentName": zod.string().nullish().describe('The agent credited with this booking'),
-  "slotId": zod.string(),
   "date": zod.string().nullish(),
   "startTime": zod.string().nullish(),
   "location": zod.string().nullish(),
@@ -1201,7 +1184,7 @@ export const VerifyBookingPaymentResponse = zod.object({
   "type": zod.enum(['percent', 'flat']),
   "value": zod.number(),
   "amount": zod.number().describe('Resolved rupee amount for this charge')
-})).optional().describe('Base-price add-ons (taxes\/fees) resolved at booking time'),
+})).optional(),
   "participantBreakdown": zod.array(zod.object({
   "typeId": zod.string().nullish(),
   "label": zod.string(),
@@ -1218,20 +1201,17 @@ export const VerifyBookingPaymentResponse = zod.object({
   "priceType": zod.string(),
   "amount": zod.number()
 })).optional(),
-  "couponCode": zod.string().nullish().describe('Discount code applied at booking time'),
-  "discountAmount": zod.number().describe('Rupees taken off the base price by the coupon'),
-  "amountPaid": zod.number().describe('Net settled from the payments ledger (payments minus refunds)'),
-  "amountDue": zod.number().describe('totalAmount minus amountPaid, floored at 0'),
+  "couponCode": zod.string().nullish(),
+  "discountAmount": zod.number(),
+  "amountPaid": zod.number(),
+  "amountDue": zod.number(),
   "notes": zod.string().nullish().describe('The customer\'s own message from the booking form'),
-  "internalNotes": zod.string().nullish().describe('Staff-only notes, never shown to the customer'),
-  "tags": zod.array(zod.string()),
-  "source": zod.string().describe('website | whatsapp | phone | manual'),
-  "paymentLinkUrl": zod.string().nullish().describe('Latest Razorpay payment link sent for this booking, if any'),
-  "paymentLinkStatus": zod.string().nullish().describe('created | paid | expired | cancelled | failed'),
-  "razorpayOrderId": zod.string().nullish().describe('Razorpay Order id to pay via Standard Checkout, while unpaid'),
-  "razorpayKeyId": zod.string().nullish().describe('Razorpay public key id for checkout.js, while unpaid'),
+  "paymentLinkUrl": zod.string().nullish(),
+  "paymentLinkStatus": zod.string().nullish(),
+  "razorpayOrderId": zod.string().nullish(),
+  "razorpayKeyId": zod.string().nullish(),
   "createdAt": zod.string().nullish()
-})
+}).describe('What anyone holding the booking reference may see — BookingDetail minus staff-only fields (internal notes, tags, source, agent, internal ids).')
 
 
 /**

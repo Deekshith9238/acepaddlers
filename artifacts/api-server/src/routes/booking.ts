@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
-import { withinLeadTime } from "../lib/trip-rules";
+import { withinLeadTime, amountDueNow } from "../lib/trip-rules";
 import { db, tours, tourSlots, bookings, payments } from "@workspace/db";
 import { VerifyBookingPaymentBody, ValidateCouponBody, QuoteBookingBody } from "@workspace/api-zod";
 import { PublicBookingBody } from "../middlewares/publicForms";
-import { createBooking, toBookingDetail, BookingError, issueBookingOrder, markBookingPaidAndConfirm } from "../lib/booking";
+import { createBooking, toBookingDetail, toPublicBookingDetail, BookingError, issueBookingOrder, markBookingPaidAndConfirm } from "../lib/booking";
 import { notifyNewBooking } from "../lib/notify";
 import { verifyPaymentSignature } from "../lib/razorpay";
 import { evaluateCoupon } from "../lib/coupons";
@@ -282,9 +282,10 @@ router.post("/bookings", async (req, res) => {
       totalAmount: detail.totalAmount,
       currency: detail.currency,
       bookingMode: tour.bookingMode === "enquiry" ? "enquiry" : "direct",
+      amountDue: payment?.amount ?? amountDueNow(tour, detail.totalAmount),
       tripIntro: tour.confirmationEmailIntro,
     }).catch(() => undefined);
-    res.status(201).json(detail);
+    res.status(201).json(toPublicBookingDetail(booking, tour, slot, payment));
   } catch (e) {
     if (e instanceof BookingError) {
       res.status(e.status).json({ error: e.code });
@@ -314,7 +315,7 @@ router.get("/bookings/:ref", async (req, res) => {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  res.json(toBookingDetail(found.booking, found.tour, found.slot, found.payment));
+  res.json(toPublicBookingDetail(found.booking, found.tour, found.slot, found.payment));
 });
 
 // Fast-path confirmation right after Standard Checkout's client-side `handler`
@@ -346,7 +347,7 @@ router.post("/bookings/:ref/verify-payment", async (req, res) => {
   }
   await markBookingPaidAndConfirm(found.booking.id);
   const refreshed = await loadBookingByRef(req.params.ref);
-  res.json(toBookingDetail(refreshed!.booking, refreshed!.tour, refreshed!.slot, refreshed!.payment));
+  res.json(toPublicBookingDetail(refreshed!.booking, refreshed!.tour, refreshed!.slot, refreshed!.payment));
 });
 
 function icsEscape(s: string): string {

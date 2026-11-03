@@ -50,7 +50,7 @@ export async function sendBookingPaymentLink(bookingId: string) {
       provider: "razorpay",
       providerLinkId: link.id,
       shortUrl: link.shortUrl,
-      amount: booking.totalAmount,
+      amount: amountDue,
       currency: booking.currency,
       status: link.status,
     })
@@ -66,6 +66,7 @@ export async function sendBookingPaymentLink(bookingId: string) {
       date: slot?.date ?? null,
       startTime: slot?.startTime ?? null,
       totalAmount: booking.totalAmount,
+      amountDue,
       currency: booking.currency,
       paymentUrl: link.shortUrl,
     });

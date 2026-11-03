@@ -102,6 +102,7 @@ import type {
   PageSummary,
   PaymentDetail,
   PaymentMethodOptions,
+  PublicBookingDetail,
   QuoteInput,
   QuoteResult,
   RateCard,
@@ -2986,9 +2987,9 @@ export const getCreateBookingUrl = () => {
 /**
  * @summary Request a booking (request-to-book)
  */
-export const createBooking = async (bookingInput: BookingInput, options?: RequestInit): Promise<BookingDetail> => {
+export const createBooking = async (bookingInput: BookingInput, options?: RequestInit): Promise<PublicBookingDetail> => {
 
-  return customFetch<BookingDetail>(getCreateBookingUrl(),
+  return customFetch<PublicBookingDetail>(getCreateBookingUrl(),
   {
     ...options,
     method: 'POST',
@@ -3057,9 +3058,9 @@ export const getGetBookingUrl = (ref: string,) => {
 /**
  * @summary Look up a booking by reference
  */
-export const getBooking = async (ref: string, options?: RequestInit): Promise<BookingDetail> => {
+export const getBooking = async (ref: string, options?: RequestInit): Promise<PublicBookingDetail> => {
 
-  return customFetch<BookingDetail>(getGetBookingUrl(ref),
+  return customFetch<PublicBookingDetail>(getGetBookingUrl(ref),
   {
     ...options,
     method: 'GET'
@@ -3135,9 +3136,9 @@ export const getVerifyBookingPaymentUrl = (ref: string,) => {
  * @summary Verify a Standard Checkout payment signature and mark the booking paid/confirmed
  */
 export const verifyBookingPayment = async (ref: string,
-    verifyPaymentInput: VerifyPaymentInput, options?: RequestInit): Promise<BookingDetail> => {
+    verifyPaymentInput: VerifyPaymentInput, options?: RequestInit): Promise<PublicBookingDetail> => {
 
-  return customFetch<BookingDetail>(getVerifyBookingPaymentUrl(ref),
+  return customFetch<PublicBookingDetail>(getVerifyBookingPaymentUrl(ref),
   {
     ...options,
     method: 'POST',
