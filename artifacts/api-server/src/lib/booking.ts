@@ -481,6 +481,8 @@ export async function markBookingPaidAndConfirm(bookingId: string): Promise<void
     date: slot?.date ?? null,
     startTime: slot?.startTime ?? null,
     totalAmount: booking.totalAmount,
+    amountPaid: Math.max(0, summary.net),
+    amountDue: summary.due,
     currency: booking.currency,
   }).catch((err) => logger.error({ err, bookingId }, "payment-confirmed notification failed"));
 }

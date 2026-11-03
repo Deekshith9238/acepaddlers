@@ -62,6 +62,10 @@ export const EMAIL_TEMPLATE_VARS = [
   "when",
   "numGuests",
   "totalAmount",
+  // What has been paid so far / what is owed right now — differ from
+  // totalAmount when the trip takes a deposit.
+  "amountPaid",
+  "amountDue",
   "currency",
   "paymentUrl",
   // Enquiry-only

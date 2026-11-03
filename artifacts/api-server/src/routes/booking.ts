@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
-import { withinLeadTime } from "../lib/trip-rules";
+import { withinLeadTime, amountDueNow } from "../lib/trip-rules";
 import { db, tours, tourSlots, bookings, payments } from "@workspace/db";
 import { VerifyBookingPaymentBody, ValidateCouponBody, QuoteBookingBody } from "@workspace/api-zod";
 import { PublicBookingBody } from "../middlewares/publicForms";
@@ -282,6 +282,7 @@ router.post("/bookings", async (req, res) => {
       totalAmount: detail.totalAmount,
       currency: detail.currency,
       bookingMode: tour.bookingMode === "enquiry" ? "enquiry" : "direct",
+      amountDue: payment?.amount ?? amountDueNow(tour, detail.totalAmount),
       tripIntro: tour.confirmationEmailIntro,
     }).catch(() => undefined);
     res.status(201).json(toPublicBookingDetail(booking, tour, slot, payment));

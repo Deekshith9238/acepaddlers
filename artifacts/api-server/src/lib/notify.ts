@@ -151,12 +151,16 @@ export async function notifyNewBooking(b: {
   /** Which tour's mode this booking was made under — decides whether the
    *  customer is told to pay now or told the team will follow up. */
   bookingMode?: "direct" | "enquiry";
+  /** What the customer is asked to pay now — the deposit when the trip takes
+   *  one. Defaults to the total. */
+  amountDue?: number;
   /** The trip's own opening line, from the trip editor. */
   tripIntro?: string | null;
 }): Promise<void> {
   const when = [b.date, b.startTime].filter(Boolean).join(" ") || "TBD";
   const isDirect = b.bookingMode !== "enquiry";
   const tripIntro = (b.tripIntro ?? "").trim();
+  const amountDue = b.amountDue ?? b.totalAmount;
   const vars = {
     tripIntro,
     bookingRef: b.bookingRef,
@@ -167,6 +171,8 @@ export async function notifyNewBooking(b: {
     when,
     numGuests: b.numGuests,
     totalAmount: b.totalAmount,
+    amountPaid: 0,
+    amountDue,
     currency: b.currency,
   };
 
@@ -199,12 +205,13 @@ export async function notifyNewBooking(b: {
         { label: "Experience", value: b.tourTitle },
         { label: "Date & time", value: when },
         { label: "Guests", value: String(b.numGuests) },
-        { label: isDirect ? "Amount due" : "Total", value: money(b.currency, b.totalAmount) },
+        { label: "Total", value: money(b.currency, b.totalAmount) },
+        ...(isDirect && amountDue < b.totalAmount ? [{ label: "Deposit due now", value: money(b.currency, amountDue) }] : []),
       ],
       // Direct-mode customers land back on their booking page, where the
       // payment sheet can be reopened — recovers an abandoned checkout.
       ...(isDirect
-        ? { cta: { label: `Pay ${money(b.currency, b.totalAmount)} securely`, url: `${siteUrl}/booking/${b.bookingRef}` } }
+        ? { cta: { label: `Pay ${money(b.currency, amountDue)} securely`, url: `${siteUrl}/booking/${b.bookingRef}` } }
         : {}),
     }),
   );
@@ -276,6 +283,8 @@ export async function notifyPaymentLink(b: {
   date: string | null;
   startTime: string | null;
   totalAmount: number;
+  /** What this link charges — the outstanding balance on a part-paid booking. */
+  amountDue: number;
   currency: string;
   paymentUrl: string;
 }): Promise<void> {
@@ -288,6 +297,8 @@ export async function notifyPaymentLink(b: {
     tourTitle: b.tourTitle,
     when,
     totalAmount: b.totalAmount,
+    amountPaid: b.totalAmount - b.amountDue,
+    amountDue: b.amountDue,
     currency: b.currency,
     paymentUrl: b.paymentUrl,
   };
@@ -304,9 +315,10 @@ export async function notifyPaymentLink(b: {
         { label: "Reference", value: b.bookingRef },
         { label: "Experience", value: b.tourTitle },
         { label: "Date & time", value: when },
-        { label: "Amount due", value: money(b.currency, b.totalAmount) },
+        ...(b.amountDue < b.totalAmount ? [{ label: "Total", value: money(b.currency, b.totalAmount) }] : []),
+        { label: "Amount due", value: money(b.currency, b.amountDue) },
       ],
-      cta: { label: `Pay ${money(b.currency, b.totalAmount)} securely`, url: b.paymentUrl },
+      cta: { label: `Pay ${money(b.currency, b.amountDue)} securely`, url: b.paymentUrl },
     }),
   );
   // The template's button is https://rzp.io/rzp/{{1}}, so it takes just the
@@ -315,7 +327,7 @@ export async function notifyPaymentLink(b: {
   await sendWaNotification(
     b.customerPhone,
     "payment_link",
-    [b.customerName, `${b.currency} ${b.totalAmount}`, b.tourTitle, when, b.bookingRef],
+    [b.customerName, `${b.currency} ${b.amountDue}`, b.tourTitle, when, b.bookingRef],
     renderWhatsAppTemplate(waTemplates.payment_link, vars),
     b.paymentUrl.startsWith("https://rzp.io/rzp/") ? linkCode : undefined,
   );
@@ -330,6 +342,10 @@ export async function notifyPaymentConfirmed(b: {
   date: string | null;
   startTime: string | null;
   totalAmount: number;
+  /** Net settled on the ledger — less than the total after a deposit. */
+  amountPaid: number;
+  /** Balance still owed, 0 when paid in full. */
+  amountDue: number;
   currency: string;
 }): Promise<void> {
   const when = [b.date, b.startTime].filter(Boolean).join(" ") || "TBD";
@@ -341,6 +357,8 @@ export async function notifyPaymentConfirmed(b: {
     tourTitle: b.tourTitle,
     when,
     totalAmount: b.totalAmount,
+    amountPaid: b.amountPaid,
+    amountDue: b.amountDue,
     currency: b.currency,
   };
   const [templates, waTemplates] = await Promise.all([getEmailTemplates(), getWhatsAppTemplates()]);
@@ -356,7 +374,13 @@ export async function notifyPaymentConfirmed(b: {
         { label: "Reference", value: b.bookingRef },
         { label: "Experience", value: b.tourTitle },
         { label: "Date & time", value: when },
-        { label: "Amount paid", value: money(b.currency, b.totalAmount) },
+        { label: "Amount paid", value: money(b.currency, b.amountPaid) },
+        ...(b.amountDue > 0
+          ? [
+              { label: "Total", value: money(b.currency, b.totalAmount) },
+              { label: "Balance due", value: money(b.currency, b.amountDue) },
+            ]
+          : []),
       ],
     }),
   );

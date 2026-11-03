@@ -41,6 +41,10 @@ export const EMAIL_TEMPLATE_VARS = [
   "when",
   "numGuests",
   "totalAmount",
+  // What has been paid so far / what is owed right now — differ from
+  // totalAmount when the trip takes a deposit.
+  "amountPaid",
+  "amountDue",
   "currency",
   "paymentUrl",
   // Enquiry-only
@@ -104,7 +108,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplates = {
       "Hi {{customerName}},\n\n" +
       "We've held your spot on {{tourTitle}} on {{when}} for {{numGuests}} guest(s).\n" +
       "Reference: {{bookingRef}}.\n\n" +
-      "Your seats are confirmed the moment your payment of {{currency}} {{totalAmount}} goes through. " +
+      "Your seats are confirmed the moment your payment of {{currency}} {{amountDue}} goes through. " +
       "If you closed the payment window, you can pick up right where you left off using the button below.\n\n" +
       "— Ace Paddlers",
   },
@@ -119,7 +123,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplates = {
     subject: "Complete your payment for booking {{bookingRef}}",
     body:
       "Hi {{customerName}},\n\n" +
-      "Please complete your payment of {{currency}} {{totalAmount}} for {{tourTitle}} on {{when}}.\n\n" +
+      "Please complete your payment of {{currency}} {{amountDue}} for {{tourTitle}} on {{when}}.\n\n" +
       "Pay securely here: {{paymentUrl}}\n\n" +
       "Reference: {{bookingRef}}.\n\n— Ace Paddlers",
   },
@@ -127,7 +131,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplates = {
     subject: "You're confirmed! Booking {{bookingRef}}",
     body:
       "Hi {{customerName}},\n\n" +
-      "We've received your payment of {{currency}} {{totalAmount}} — you're all set for {{tourTitle}} on {{when}}.\n" +
+      "We've received your payment of {{currency}} {{amountPaid}} — you're all set for {{tourTitle}} on {{when}}.\n" +
       "Reference: {{bookingRef}}.\n\n" +
       "See you on the water!\n\n— Ace Paddlers",
   },
