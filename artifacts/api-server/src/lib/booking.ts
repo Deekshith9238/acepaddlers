@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, tours, tourSlots, tourVariants, bookings, payments } from "@workspace/db";
-import type { BookingDetail } from "@workspace/api-zod";
+import type { BookingDetail, PublicBookingDetail } from "@workspace/api-zod";
 import { getCharges, computeCharges } from "./charges";
 import { createOrder, PaymentProviderError } from "./razorpay";
 import { getCalendarClient } from "./calendar";
@@ -95,6 +95,48 @@ export function toBookingDetail(
     razorpayKeyId:
       latestPayment?.provider === "razorpay_order" && b.paymentStatus === "unpaid" ? (process.env.RAZORPAY_KEY_ID ?? null) : null,
     createdAt: b.createdAt ? b.createdAt.toISOString() : null,
+  };
+}
+
+/** What anyone holding the booking reference may see (the public confirmation
+ *  and pay screens). An allowlist, so a staff-only field added to BookingDetail
+ *  stays private by default. */
+export function toPublicBookingDetail(
+  b: BookingRow,
+  tour?: TourRow | null,
+  slot?: SlotRow | null,
+  latestPayment?: PaymentRow | null,
+): PublicBookingDetail {
+  const d = toBookingDetail(b, tour, slot, latestPayment);
+  return {
+    bookingRef: d.bookingRef,
+    tourSlug: d.tourSlug,
+    tourTitle: d.tourTitle,
+    date: d.date,
+    startTime: d.startTime,
+    location: d.location,
+    customerName: d.customerName,
+    customerEmail: d.customerEmail,
+    customerPhone: d.customerPhone,
+    numGuests: d.numGuests,
+    totalAmount: d.totalAmount,
+    currency: d.currency,
+    status: d.status,
+    paymentStatus: d.paymentStatus,
+    paymentMethod: d.paymentMethod,
+    chargesBreakdown: d.chargesBreakdown,
+    participantBreakdown: d.participantBreakdown,
+    addonsBreakdown: d.addonsBreakdown,
+    couponCode: d.couponCode,
+    discountAmount: d.discountAmount,
+    amountPaid: d.amountPaid,
+    amountDue: d.amountDue,
+    notes: d.notes,
+    paymentLinkUrl: d.paymentLinkUrl,
+    paymentLinkStatus: d.paymentLinkStatus,
+    razorpayOrderId: d.razorpayOrderId,
+    razorpayKeyId: d.razorpayKeyId,
+    createdAt: d.createdAt,
   };
 }
 

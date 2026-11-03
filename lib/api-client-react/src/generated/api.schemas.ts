@@ -612,6 +612,62 @@ export interface BookingDetail {
   createdAt?: string | null;
 }
 
+export type PublicBookingDetailStatus = typeof PublicBookingDetailStatus[keyof typeof PublicBookingDetailStatus];
+
+
+export const PublicBookingDetailStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+  completed: 'completed',
+  cart_abandoned: 'cart_abandoned',
+} as const;
+
+export type PublicBookingDetailPaymentStatus = typeof PublicBookingDetailPaymentStatus[keyof typeof PublicBookingDetailPaymentStatus];
+
+
+export const PublicBookingDetailPaymentStatus = {
+  unpaid: 'unpaid',
+  deposit: 'deposit',
+  paid: 'paid',
+  refunded: 'refunded',
+} as const;
+
+/**
+ * What anyone holding the booking reference may see — BookingDetail minus staff-only fields (internal notes, tags, source, agent, internal ids).
+ */
+export interface PublicBookingDetail {
+  bookingRef: string;
+  tourSlug?: string | null;
+  tourTitle?: string | null;
+  date?: string | null;
+  startTime?: string | null;
+  location?: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  numGuests: number;
+  totalAmount: number;
+  currency: string;
+  status: PublicBookingDetailStatus;
+  paymentStatus: PublicBookingDetailPaymentStatus;
+  paymentMethod?: string | null;
+  chargesBreakdown?: ChargeLine[];
+  participantBreakdown?: ParticipantLine[];
+  addonsBreakdown?: AddonLine[];
+  couponCode?: string | null;
+  discountAmount: number;
+  amountPaid: number;
+  amountDue: number;
+  /** The customer's own message from the booking form */
+  notes?: string | null;
+  paymentLinkUrl?: string | null;
+  paymentLinkStatus?: string | null;
+  razorpayOrderId?: string | null;
+  razorpayKeyId?: string | null;
+  createdAt?: string | null;
+}
+
 export interface ParticipantType {
   id: string;
   /** null = applies to every variant */
