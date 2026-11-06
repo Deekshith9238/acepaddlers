@@ -2,7 +2,8 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { logger } from "./logger";
 import { getEmailTemplates, renderTemplate } from "./email-templates";
 import { getWhatsAppTemplates, renderWhatsAppTemplate } from "./whatsapp-templates";
-import { sendWhatsAppMessage, sendWhatsAppTemplate, whatsappConfigured } from "./whatsapp";
+import { clip, sendWhatsAppMessage, sendWhatsAppTemplate, whatsappConfigured } from "./whatsapp";
+import { plainText } from "./seo";
 import { sendResendEmail, resendConfigured, type EmailAttachment } from "./resend";
 import { renderEmailHtml } from "./email-layout";
 import type { StayView } from "./stays";
@@ -127,6 +128,61 @@ async function sendWaNotification(
   }
   const sent = await sendWhatsAppTemplate(to, templateName, params, { urlButtonParam });
   if (!sent) await sendWhatsAppMessage(to, fallbackBody);
+}
+
+/** The trip fields a customer needs to turn up, from the Trip editor's
+ *  Location and Itinerary tabs. */
+export interface TripLogistics {
+  slug: string;
+  latitude: string | null;
+  longitude: string | null;
+  shortAddress: string | null;
+  detailedAddress: string | null;
+  itinerary: unknown[];
+  itineraryText: string | null;
+}
+
+function tripLogistics(t: TripLogistics | null | undefined): { mapUrl: string | null; steps: string[] } {
+  if (!t) return { mapUrl: null, steps: [] };
+  // Same link as the trip page: the saved pin, else an address search.
+  const address = t.detailedAddress || t.shortAddress;
+  const mapUrl = t.latitude && t.longitude
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${t.latitude},${t.longitude}`)}`
+    : address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+      : null;
+  // The day-wise builder wins when it has content, as on the trip page;
+  // otherwise the free-text itinerary (rich-text HTML, or older "- " lines).
+  const days = t.itinerary as { title?: string; items?: { title?: string; description?: string }[] }[];
+  const fromDays = days.flatMap((d) => [d?.title, ...(d?.items ?? []).map((i) => [i?.title, i?.description].filter(Boolean).join(" — "))]).filter(Boolean);
+  const raw = fromDays.length ? fromDays.join("\n\n") : (t.itineraryText ?? "");
+  const steps = plainText(raw)
+    .split(/\n\s*\n|\n(?=\s*[-•*]\s)/)
+    .map((s) => s.replace(/^\s*[-•*]\s*/, "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return { mapUrl, steps };
+}
+
+/**
+ * Location + itinerary on WhatsApp, as its own template message: the
+ * confirmation and reminder templates are already approved with fixed
+ * parameters, so this rides alongside them rather than changing them.
+ */
+async function sendTripDetails(phone: string, tourTitle: string, trip: TripLogistics | null | undefined): Promise<void> {
+  const { mapUrl, steps } = tripLogistics(trip);
+  if (!mapUrl && steps.length === 0) return;
+  const location = mapUrl ?? "Ask us on this chat";
+  // Template parameters can't hold line breaks, and Meta caps the whole
+  // message at 1024 characters — a long itinerary links to the trip page.
+  const all = steps.map((s, i) => `${i + 1}) ${s}`).join(" ");
+  const pageUrl = `${process.env.PUBLIC_SITE_URL ?? "https://www.acepaddlers.com"}/tours/${trip!.slug}`;
+  const itinerary = !steps.length ? "Ask us on this chat" : all.length <= 600 ? all : `${clip(all, 600)} Full itinerary: ${pageUrl}`;
+  await sendWaNotification(
+    phone,
+    "trip_itinerary",
+    [tourTitle, location, itinerary],
+    `Here are the details for your ${tourTitle} trip.\n\nLocation: ${location}\n\nItinerary:\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}`,
+  );
 }
 
 /** Comma-separated staff recipients for new-booking alerts. */
@@ -347,8 +403,10 @@ export async function notifyPaymentConfirmed(b: {
   /** Balance still owed, 0 when paid in full. */
   amountDue: number;
   currency: string;
+  trip?: TripLogistics | null;
 }): Promise<void> {
   const when = [b.date, b.startTime].filter(Boolean).join(" ") || "TBD";
+  const { mapUrl, steps } = tripLogistics(b.trip);
   const vars = {
     bookingRef: b.bookingRef,
     customerName: b.customerName,
@@ -363,13 +421,19 @@ export async function notifyPaymentConfirmed(b: {
   };
   const [templates, waTemplates] = await Promise.all([getEmailTemplates(), getWhatsAppTemplates()]);
   const tpl = renderTemplate(templates.payment_confirmed, vars);
+  const extras = [
+    mapUrl ? `Location: ${mapUrl}` : "",
+    steps.length ? `Itinerary:\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}` : "",
+  ].filter(Boolean);
+  const body = [tpl.body, ...extras].join("\n\n");
   await safeSend(
     b.customerEmail,
     tpl.subject,
-    tpl.body,
+    body,
     renderEmailHtml({
       heading: "You're confirmed — see you on the water!",
-      bodyText: tpl.body,
+      bodyText: body,
+      ...(mapUrl ? { cta: { label: "Open location in Google Maps", url: mapUrl } } : {}),
       details: [
         { label: "Reference", value: b.bookingRef },
         { label: "Experience", value: b.tourTitle },
@@ -390,6 +454,7 @@ export async function notifyPaymentConfirmed(b: {
     [b.customerName, b.tourTitle, when, b.bookingRef],
     renderWhatsAppTemplate(waTemplates.payment_confirmed, vars),
   );
+  await sendTripDetails(b.customerPhone, b.tourTitle, b.trip);
 }
 
 /** Trip reminder — sent the day before a confirmed booking's slot. WhatsApp-only
@@ -402,6 +467,7 @@ export async function notifyTripReminder(b: {
   tourTitle: string;
   when: string;
   numGuests: number;
+  trip?: TripLogistics | null;
 }): Promise<void> {
   const waTemplates = await getWhatsAppTemplates();
   const body = renderWhatsAppTemplate(waTemplates.trip_reminder, {
@@ -418,6 +484,7 @@ export async function notifyTripReminder(b: {
     [b.customerName, b.tourTitle, b.when, b.numGuests, b.bookingRef],
     body,
   );
+  await sendTripDetails(b.customerPhone, b.tourTitle, b.trip);
 }
 
 /**

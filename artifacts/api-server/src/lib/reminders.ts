@@ -41,6 +41,7 @@ export async function sendTripReminders(): Promise<void> {
         tourTitle: tour?.title ?? "your tour",
         when: `${slot.date} ${slot.startTime}`,
         numGuests: booking.numGuests,
+        trip: tour,
       });
     } catch (err) {
       logger.error({ err, bookingId: booking.id }, "trip reminder failed");
