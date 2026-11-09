@@ -34,6 +34,9 @@ export default function BookingConfirmation() {
   }
 
   const paid = booking.paymentStatus === "paid";
+  // A deposit confirms the booking without paying it off.
+  const confirmed = paid || booking.status === "confirmed";
+  const partPaid = !paid && booking.amountPaid > 0 && booking.amountDue > 0;
 
   return (
     <>
@@ -41,15 +44,19 @@ export default function BookingConfirmation() {
         <section className="pt-40 pb-24 px-6" style={{ backgroundColor: C.bg }}>
           <div className="max-w-xl mx-auto">
             <div className="text-center mb-8">
-              <CheckCircle className="w-14 h-14 mx-auto mb-4" style={{ color: paid ? "#16a34a" : C.riverTeal }} />
+              <CheckCircle className="w-14 h-14 mx-auto mb-4" style={{ color: confirmed ? "#16a34a" : C.riverTeal }} />
               <h1 className="text-4xl mb-2" style={{ fontFamily: "var(--app-font-serif)", color: C.text }}>
-                {paid ? "You're confirmed!" : "Request received!"}
+                {confirmed ? "You're confirmed!" : "Request received!"}
               </h1>
               <p style={{ color: "#5a8ea8" }}>
                 Reference <span className="font-bold" style={{ color: C.deepOcean }}>{booking.bookingRef}</span>
                 {paid
                   ? " — payment received, see you on the water!"
-                  : " — our team will confirm by call / WhatsApp shortly."}
+                  : confirmed
+                    ? partPaid
+                      ? " — deposit received, see you on the water!"
+                      : " — see you on the water!"
+                    : " — our team will confirm by call / WhatsApp shortly."}
               </p>
             </div>
 
@@ -61,9 +68,21 @@ export default function BookingConfirmation() {
                 <Row icon={<Users className="w-4 h-4" />} label="Guests" value={String(booking.numGuests)} />
               </div>
               <div className="flex items-center justify-between mt-5 pt-5" style={{ borderTop: `1px solid ${C.muted}` }}>
-                <span className="text-sm" style={{ color: "#5a8ea8" }}>{paid ? "Total paid" : "Estimated total"}</span>
+                <span className="text-sm" style={{ color: "#5a8ea8" }}>{paid ? "Total paid" : confirmed ? "Total" : "Estimated total"}</span>
                 <span className="text-2xl font-bold" style={{ color: C.deepOcean }}>{booking.currency} {booking.totalAmount.toLocaleString("en-IN")}</span>
               </div>
+              {partPaid && (
+                <div className="space-y-2 mt-3 text-sm" style={{ color: "#2e5a74" }}>
+                  <div className="flex items-center justify-between">
+                    <span style={{ color: "#5a8ea8" }}>Paid</span>
+                    <span className="font-medium" style={{ color: C.text }}>{booking.currency} {booking.amountPaid.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span style={{ color: "#5a8ea8" }}>Balance due</span>
+                    <span className="font-semibold" style={{ color: C.deepOcean }}>{booking.currency} {booking.amountDue.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              )}
               <div className="mt-3">
                 <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide"
                   style={{ backgroundColor: C.riverTeal + "18", color: C.riverTeal }}>

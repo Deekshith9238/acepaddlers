@@ -106,8 +106,11 @@ export function toPublicBookingDetail(
   tour?: TourRow | null,
   slot?: SlotRow | null,
   latestPayment?: PaymentRow | null,
+  /** Net settled on the ledger. Without it a deposit-paid booking reads as
+   *  nothing paid and the whole total due. */
+  amountPaid?: number,
 ): PublicBookingDetail {
-  const d = toBookingDetail(b, tour, slot, latestPayment);
+  const d = toBookingDetail(b, tour, slot, latestPayment, amountPaid);
   return {
     bookingRef: d.bookingRef,
     tourSlug: d.tourSlug,
