@@ -13,7 +13,7 @@ import { loadRateCard, quoteBooking as priceBooking, PricingError } from "../lib
 import { listVariants } from "../lib/tour-editor";
 import { serializeRateCard } from "../lib/rate-card";
 import { hasMethodScopedCharges } from "../lib/charges";
-import { ONLINE_PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "../lib/payments-ledger";
+import { ONLINE_PAYMENT_METHODS, PAYMENT_METHOD_LABELS, bookingPaymentSummary } from "../lib/payments-ledger";
 
 const router: IRouter = Router();
 
@@ -306,7 +306,8 @@ async function loadBookingByRef(ref: string) {
     .where(eq(payments.bookingId, booking.id))
     .orderBy(desc(payments.createdAt))
     .limit(1);
-  return { booking, tour, slot, payment };
+  const { net } = await bookingPaymentSummary(booking.id);
+  return { booking, tour, slot, payment, amountPaid: Math.max(0, net) };
 }
 
 router.get("/bookings/:ref", async (req, res) => {
@@ -315,7 +316,7 @@ router.get("/bookings/:ref", async (req, res) => {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  res.json(toPublicBookingDetail(found.booking, found.tour, found.slot, found.payment));
+  res.json(toPublicBookingDetail(found.booking, found.tour, found.slot, found.payment, found.amountPaid));
 });
 
 // Fast-path confirmation right after Standard Checkout's client-side `handler`
@@ -347,7 +348,7 @@ router.post("/bookings/:ref/verify-payment", async (req, res) => {
   }
   await markBookingPaidAndConfirm(found.booking.id);
   const refreshed = await loadBookingByRef(req.params.ref);
-  res.json(toPublicBookingDetail(refreshed!.booking, refreshed!.tour, refreshed!.slot, refreshed!.payment));
+  res.json(toPublicBookingDetail(refreshed!.booking, refreshed!.tour, refreshed!.slot, refreshed!.payment, refreshed!.amountPaid));
 });
 
 function icsEscape(s: string): string {
